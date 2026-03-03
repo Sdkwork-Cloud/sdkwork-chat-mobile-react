@@ -1,0 +1,48 @@
+export default {
+  user: {
+    profile: {
+      title: 'Profile',
+      avatar: 'Avatar',
+      name: 'Name',
+      wxid: 'ID',
+      qrcode: 'QR Code',
+      gender: 'Gender',
+      region: 'Region',
+      signature: 'Signature',
+      address: 'My Addresses',
+      invoice: 'Invoice Title',
+    },
+    gender: {
+      male: 'Male',
+      female: 'Female',
+    },
+    address: {
+      title: 'My Addresses',
+      add: 'Add Address',
+      edit: 'Edit Address',
+      name: 'Name',
+      phone: 'Phone',
+      detail: 'Address',
+      tag: 'Tag',
+      default: 'Default',
+      setDefault: 'Set as Default',
+    },
+    invoice: {
+      title: 'Invoice Title',
+      add: 'Add Invoice',
+      edit: 'Edit Invoice',
+      type: 'Type',
+      company: 'Company',
+      personal: 'Personal',
+      invoiceTitle: 'Title',
+      taxNo: 'Tax Number',
+    },
+    actions: {
+      copied: 'Copied',
+      save: 'Save',
+      cancel: 'Cancel',
+      delete: 'Delete',
+      edit: 'Edit',
+    },
+  },
+};

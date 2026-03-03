@@ -1,0 +1,26 @@
+{
+  "name": "@sdkwork/react-mobile-notification",
+  "version": "1.0.0",
+  "description": "Notification module for OpenChat React Mobile",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "typescript": "catalog:",
+    "tsup": "catalog:"
+  },
+  "peerDependencies": {
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "zustand": "catalog:",
+    "react-i18next": "catalog:",
+    "i18next": "catalog:",
+    "lucide-react": "catalog:",
+    "@sdkwork/react-mobile-core": "workspace:*"
+  }
+}

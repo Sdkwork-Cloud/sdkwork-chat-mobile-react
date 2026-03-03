@@ -1,0 +1,110 @@
+.commerce-order-list__tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.commerce-order-list__tab {
+  border: 0.5px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-body);
+  color: var(--text-secondary);
+  font-size: 13px;
+  white-space: nowrap;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.commerce-order-list__tab--active {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 8%, transparent);
+}
+
+.commerce-order-list__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.commerce-order-list__no {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.commerce-order-list__status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 58px;
+  height: 24px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-cell-active);
+}
+
+.commerce-order-list__status--danger {
+  color: #fff;
+  background: #fa5151;
+}
+
+.commerce-order-list__status--warn {
+  color: #ff7d00;
+  background: rgba(255, 125, 0, 0.12);
+}
+
+.commerce-order-list__main {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 0;
+}
+
+.commerce-order-list__cover {
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--bg-cell-active);
+  flex-shrink: 0;
+}
+
+.commerce-order-list__main-body {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  flex-direction: column;
+}
+
+.commerce-order-list__title {
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.commerce-order-list__meta {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.commerce-order-list__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}

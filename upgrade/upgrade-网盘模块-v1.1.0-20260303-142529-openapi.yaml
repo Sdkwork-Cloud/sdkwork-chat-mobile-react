@@ -1,0 +1,82 @@
+﻿openapi: 3.0.3
+info:
+  title: OpenChat Drive Upload Upgrade API
+  version: 1.1.0
+  description: |
+    Proposed additive upload endpoint for binary files in drive domain.
+servers:
+  - url: /app/v3/api
+paths:
+  /drive/items/upload:
+    post:
+      summary: Upload a drive file
+      operationId: uploadDriveItem
+      tags: [Drive]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                parentId:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResultDriveItemVO'
+components:
+  schemas:
+    DriveItemVO:
+      type: object
+      properties:
+        itemId:
+          type: string
+        itemName:
+          type: string
+        fileType:
+          type: string
+          enum: [FILE, DIRECTORY]
+        assetType:
+          type: string
+          enum: [IMAGE, VIDEO, AUDIO, DOCUMENT, FILE]
+        mimeType:
+          type: string
+        size:
+          type: integer
+          format: int64
+        parentId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ApiResultBase:
+      type: object
+      required: [code, msg]
+      properties:
+        code:
+          type: string
+          example: '2000'
+        msg:
+          type: string
+        requestId:
+          type: string
+        errorName:
+          type: string
+    ApiResultDriveItemVO:
+      allOf:
+        - $ref: '#/components/schemas/ApiResultBase'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/DriveItemVO'

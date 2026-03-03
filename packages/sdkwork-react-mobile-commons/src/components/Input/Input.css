@@ -1,0 +1,139 @@
+.oc-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 0;
+}
+
+.oc-input-wrapper--full-width {
+  width: 100%;
+}
+
+.oc-input__label {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 8px;
+  padding-left: 4px;
+}
+
+.oc-input__container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-radius: 14px;
+  padding: 0 12px;
+  min-height: 52px;
+  transition: all 0.2s;
+}
+
+.oc-input__container--focused {
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+}
+
+.oc-input__container--disabled {
+  opacity: 0.7;
+}
+
+.oc-input__container--error {
+  border-color: #fa5151 !important;
+}
+
+.oc-input {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #ffffff !important;
+  outline: none;
+  padding: 12px 0;
+  min-width: 0;
+  font-family: inherit;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  caret-color: #007aff;
+}
+
+.oc-input:disabled {
+  color: rgba(255, 255, 255, 0.4);
+  cursor: not-allowed;
+}
+
+.oc-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.oc-input__prefix,
+.oc-input__suffix {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.4);
+  flex-shrink: 0;
+}
+
+.oc-input__prefix {
+  margin-right: 8px;
+}
+
+.oc-input__suffix {
+  margin-left: 8px;
+}
+
+.oc-input__clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.3);
+  transition: color 0.2s;
+}
+
+.oc-input__clear:hover {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.oc-input__password-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.4);
+  margin-left: 4px;
+}
+
+.oc-input__password-toggle:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.oc-input__footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  padding: 0 4px;
+}
+
+.oc-input__helper {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.4;
+}
+
+.oc-input__helper--error {
+  color: #fa5151;
+}
+
+.oc-input__count {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.3);
+  margin-left: 12px;
+  white-space: nowrap;
+}
+
+.oc-input--ghost {
+  padding: 0;
+}

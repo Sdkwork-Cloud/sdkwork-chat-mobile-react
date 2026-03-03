@@ -1,0 +1,123 @@
+.navbar {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  background: rgba(var(--nav-surface-rgb, var(--navbar-bg-rgb, 247, 247, 247)), 0.98);
+  border-bottom: 0.5px solid var(--border-color);
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  color: var(--nav-text-primary, var(--text-primary));
+  user-select: none;
+  position: relative;
+  font-family:
+    "PingFang SC",
+    "Hiragino Sans GB",
+    "Noto Sans CJK SC",
+    "Microsoft YaHei",
+    "Helvetica Neue",
+    Helvetica,
+    Arial,
+    sans-serif;
+}
+
+.navbar--sticky {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+}
+
+.navbar--elevated {
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
+}
+
+.navbar--transparent {
+  background: transparent;
+  border-bottom: none;
+  box-shadow: none;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.24);
+}
+
+.navbar__left {
+  min-width: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-shrink: 0;
+}
+
+.navbar__back-btn {
+  width: 44px;
+  height: 44px;
+  margin-left: -10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.16s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.navbar__back-btn svg {
+  transform: translateX(-1px);
+}
+
+.navbar__back-btn:active {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.navbar--transparent .navbar__back-btn:active {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="wechat-dark"] .navbar__back-btn:active,
+[data-theme="dark"] .navbar__back-btn:active,
+[data-theme="midnight-blue"] .navbar__back-btn:active {
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.navbar__center {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+
+.navbar__title {
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 1.2;
+  color: var(--nav-text-primary, var(--text-primary));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.1px;
+  font-family: inherit;
+}
+
+.navbar__subtitle {
+  max-width: 100%;
+  font-size: 11px;
+  line-height: 1.1;
+  color: var(--nav-text-secondary, var(--text-secondary));
+  opacity: 0.95;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.navbar__right {
+  min-width: 74px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-shrink: 0;
+}

@@ -1,0 +1,21 @@
+.auth-protected-route__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.auth-protected-route__spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #E5E7EB;
+  border-top-color: #6366F1;
+  border-radius: 50%;
+  animation: auth-protected-route-spin 0.8s linear infinite;
+}
+
+@keyframes auth-protected-route-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

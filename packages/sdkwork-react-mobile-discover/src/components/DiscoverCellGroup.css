@@ -1,0 +1,54 @@
+.discover-cell-group {
+  margin: 0 12px 12px;
+  background: var(--bg-card);
+  border-radius: 16px;
+  overflow: hidden;
+  border: 0.5px solid var(--border-color);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+}
+
+.discover-cell {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 13px 14px;
+  display: flex;
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+  border-bottom: 0.5px solid var(--border-color);
+  transition: background 0.2s ease;
+}
+
+.discover-cell:active {
+  background: var(--bg-cell-active);
+}
+
+.discover-cell--last {
+  border-bottom: none;
+}
+
+.discover-cell__icon-wrap {
+  width: 32px;
+  height: 32px;
+  margin-right: 12px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.discover-cell__title {
+  flex: 1;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.discover-cell__arrow {
+  opacity: 0.7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

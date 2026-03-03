@@ -1,0 +1,156 @@
+.oc-avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  background-color: #E5E7EB;
+  user-select: none;
+}
+
+/* Sizes */
+.oc-avatar--xs {
+  width: 24px;
+  height: 24px;
+}
+
+.oc-avatar--sm {
+  width: 32px;
+  height: 32px;
+}
+
+.oc-avatar--md {
+  width: 40px;
+  height: 40px;
+}
+
+.oc-avatar--lg {
+  width: 48px;
+  height: 48px;
+}
+
+.oc-avatar--xl {
+  width: 64px;
+  height: 64px;
+}
+
+.oc-avatar--2xl {
+  width: 96px;
+  height: 96px;
+}
+
+/* Shapes */
+.oc-avatar--circle {
+  border-radius: 50%;
+}
+
+.oc-avatar--square {
+  border-radius: 4px;
+}
+
+.oc-avatar--rounded {
+  border-radius: 12px;
+}
+
+/* Image */
+.oc-avatar__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Initials */
+.oc-avatar__initials {
+  font-weight: 600;
+  color: #FFFFFF;
+  line-height: 1;
+}
+
+.oc-avatar--xs .oc-avatar__initials {
+  font-size: 10px;
+}
+
+.oc-avatar--sm .oc-avatar__initials {
+  font-size: 12px;
+}
+
+.oc-avatar--md .oc-avatar__initials {
+  font-size: 14px;
+}
+
+.oc-avatar--lg .oc-avatar__initials {
+  font-size: 16px;
+}
+
+.oc-avatar--xl .oc-avatar__initials {
+  font-size: 20px;
+}
+
+.oc-avatar--2xl .oc-avatar__initials {
+  font-size: 28px;
+}
+
+/* Fallback */
+.oc-avatar__fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6B7280;
+}
+
+/* Status indicator */
+.oc-avatar__status {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 25%;
+  height: 25%;
+  min-width: 8px;
+  min-height: 8px;
+  border-radius: 50%;
+  border: 2px solid #FFFFFF;
+}
+
+.oc-avatar__status--online {
+  background-color: #10B981;
+}
+
+.oc-avatar__status--offline {
+  background-color: #9CA3AF;
+}
+
+.oc-avatar__status--away {
+  background-color: #F59E0B;
+}
+
+.oc-avatar__status--busy {
+  background-color: #EF4444;
+}
+
+/* More indicator */
+.oc-avatar--more {
+  background-color: #6B7280;
+}
+
+/* Avatar Group */
+.oc-avatar-group {
+  display: flex;
+  align-items: center;
+}
+
+.oc-avatar-group .oc-avatar {
+  border: 2px solid #FFFFFF;
+}
+
+.oc-avatar-group--sm .oc-avatar:not(:first-child) {
+  margin-left: -8px;
+}
+
+.oc-avatar-group--md .oc-avatar:not(:first-child) {
+  margin-left: -12px;
+}
+
+.oc-avatar-group--lg .oc-avatar:not(:first-child) {
+  margin-left: -16px;
+}

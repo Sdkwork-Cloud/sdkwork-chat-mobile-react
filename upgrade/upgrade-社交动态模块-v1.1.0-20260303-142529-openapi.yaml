@@ -1,0 +1,226 @@
+﻿openapi: 3.0.3
+info:
+  title: OpenChat Social Moments Upgrade API
+  version: 1.1.0
+  description: |
+    Proposed additive APIs for explicit moments lifecycle.
+servers:
+  - url: /app/v3/api
+paths:
+  /social/moments:
+    get:
+      summary: List moments
+      operationId: listMoments
+      tags: [SocialMoments]
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: size
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResultPageMomentVO'
+    post:
+      summary: Publish a moment
+      operationId: publishMoment
+      tags: [SocialMoments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MomentCreateForm'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResultMomentVO'
+  /social/moments/{momentId}/like:
+    post:
+      summary: Like a moment
+      operationId: likeMoment
+      tags: [SocialMoments]
+      parameters:
+        - $ref: '#/components/parameters/MomentId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResultMomentVO'
+    delete:
+      summary: Unlike a moment
+      operationId: unlikeMoment
+      tags: [SocialMoments]
+      parameters:
+        - $ref: '#/components/parameters/MomentId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResultMomentVO'
+  /social/moments/{momentId}/comments:
+    post:
+      summary: Comment on a moment
+      operationId: commentMoment
+      tags: [SocialMoments]
+      parameters:
+        - $ref: '#/components/parameters/MomentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MomentCommentForm'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResultMomentCommentVO'
+components:
+  parameters:
+    MomentId:
+      in: path
+      name: momentId
+      required: true
+      schema:
+        type: string
+  schemas:
+    MomentAuthorVO:
+      type: object
+      properties:
+        userId:
+          type: string
+        username:
+          type: string
+        nickname:
+          type: string
+        avatar:
+          type: string
+          format: uri
+    MomentCommentVO:
+      type: object
+      properties:
+        commentId:
+          type: string
+        userId:
+          type: string
+        username:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    MomentVO:
+      type: object
+      properties:
+        momentId:
+          type: string
+        content:
+          type: string
+        images:
+          type: array
+          items:
+            type: string
+            format: uri
+        author:
+          $ref: '#/components/schemas/MomentAuthorVO'
+        likeCount:
+          type: integer
+        commentCount:
+          type: integer
+        liked:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    MomentCreateForm:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+        images:
+          type: array
+          items:
+            type: string
+            format: uri
+    MomentCommentForm:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+    PageMomentVO:
+      type: object
+      properties:
+        totalPages:
+          type: integer
+        totalElements:
+          type: integer
+        size:
+          type: integer
+        number:
+          type: integer
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/MomentVO'
+    ApiResultBase:
+      type: object
+      required: [code, msg]
+      properties:
+        code:
+          type: string
+          example: '2000'
+        msg:
+          type: string
+        requestId:
+          type: string
+        errorName:
+          type: string
+    ApiResultMomentVO:
+      allOf:
+        - $ref: '#/components/schemas/ApiResultBase'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/MomentVO'
+    ApiResultMomentCommentVO:
+      allOf:
+        - $ref: '#/components/schemas/ApiResultBase'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/MomentCommentVO'
+    ApiResultPageMomentVO:
+      allOf:
+        - $ref: '#/components/schemas/ApiResultBase'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/PageMomentVO'

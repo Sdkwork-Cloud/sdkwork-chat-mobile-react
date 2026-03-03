@@ -1,0 +1,103 @@
+.oc-card {
+  background-color: #FFFFFF;
+  overflow: hidden;
+  transition: all 150ms ease-in-out;
+}
+
+/* Variants */
+.oc-card--default {
+  background-color: #FFFFFF;
+  border: 1px solid #E5E7EB;
+}
+
+.oc-card--outlined {
+  background-color: transparent;
+  border: 1.5px solid #E5E7EB;
+}
+
+.oc-card--elevated {
+  background-color: #FFFFFF;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Padding */
+.oc-card--padding-none {
+  padding: 0;
+}
+
+.oc-card--padding-sm {
+  padding: 12px;
+}
+
+.oc-card--padding-md {
+  padding: 16px;
+}
+
+.oc-card--padding-lg {
+  padding: 24px;
+}
+
+/* Border radius */
+.oc-card--radius-sm {
+  border-radius: 8px;
+}
+
+.oc-card--radius-md {
+  border-radius: 12px;
+}
+
+.oc-card--radius-lg {
+  border-radius: 16px;
+}
+
+/* Header */
+.oc-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #E5E7EB;
+  margin-bottom: 16px;
+}
+
+.oc-card__header-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.oc-card__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.4;
+}
+
+.oc-card__subtitle {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: #6B7280;
+  line-height: 1.5;
+}
+
+.oc-card__action {
+  flex-shrink: 0;
+}
+
+/* Content */
+.oc-card__content {
+  color: #374151;
+  line-height: 1.6;
+}
+
+/* Footer */
+.oc-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #E5E7EB;
+  margin-top: 16px;
+}

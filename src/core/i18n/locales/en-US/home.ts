@@ -1,0 +1,17 @@
+export default {
+  home_title: 'OpenChat',
+  home_subtitle: 'AI Chat Platform',
+  home_recent: 'Recent',
+  home_agents: 'Agents',
+  home_no_messages: 'No messages',
+  home_go_agents: 'Discover Agents',
+  tab_chat: 'Chat',
+  tab_agents: 'Agents',
+  tab_creation: 'Create',
+  tab_discover: 'Discover',
+  tab_me: 'Me',
+  menu_group_chat: 'New Group',
+  menu_add_friend: 'Add Friend',
+  menu_scan: 'Scan',
+  menu_money: 'Payment',
+};

@@ -1,0 +1,184 @@
+.new-friends-page {
+  min-height: 100%;
+  background: var(--bg-body);
+  padding-bottom: calc(18px + env(safe-area-inset-bottom));
+}
+
+.new-friends-page__add-btn {
+  height: 28px;
+  border: 0.5px solid rgba(122, 137, 164, 0.26);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.new-friends-page__add-btn:active {
+  background: var(--bg-cell-active);
+}
+
+.new-friends-page__tip {
+  margin: 10px 12px 0;
+  border-radius: 12px;
+  background: rgba(41, 121, 255, 0.08);
+  border: 0.5px solid rgba(41, 121, 255, 0.16);
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 9px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.new-friends-page__section-title {
+  padding: 14px 14px 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.new-friends-page__list {
+  margin: 0 12px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--bg-card);
+  border: 0.5px solid rgba(122, 137, 164, 0.2);
+  box-shadow: 0 8px 22px rgba(23, 39, 64, 0.06);
+}
+
+.new-friends-page__status {
+  padding: 36px 12px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.new-friends-page__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border-bottom: 0.5px solid var(--border-color);
+  transition: background 0.18s ease;
+}
+
+.new-friends-page__item:last-child {
+  border-bottom: none;
+}
+
+.new-friends-page__item.is-clickable {
+  cursor: pointer;
+}
+
+.new-friends-page__item.is-clickable:active {
+  background: var(--bg-cell-active);
+}
+
+.new-friends-page__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.new-friends-page__row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.new-friends-page__name {
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.new-friends-page__time {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.new-friends-page__message {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.new-friends-page__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.new-friends-page__accept,
+.new-friends-page__reject {
+  border: none;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.new-friends-page__accept {
+  color: #fff;
+  background: linear-gradient(145deg, #2979ff 0%, #3f64ff 100%);
+}
+
+.new-friends-page__reject {
+  color: var(--text-secondary);
+  background: var(--bg-cell-active);
+}
+
+.new-friends-page__status-tag {
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+}
+
+.new-friends-page__tail {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.new-friends-page__status-tag.is-accepted {
+  background: rgba(7, 193, 96, 0.14);
+  color: #07c160;
+}
+
+.new-friends-page__status-tag.is-rejected {
+  background: rgba(127, 142, 167, 0.16);
+  color: #7f8ea7;
+}
+
+.new-friends-page__empty {
+  padding: 44px 16px;
+  text-align: center;
+}
+
+.new-friends-page__empty-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  margin: 0 auto 12px;
+  background: rgba(127, 142, 167, 0.12);
+  color: #7f8ea7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.new-friends-page__empty-title {
+  color: var(--text-primary);
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.new-friends-page__empty-subtitle {
+  color: var(--text-secondary);
+  font-size: 12px;
+}

@@ -1,0 +1,31 @@
+.commerce-price-text {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.commerce-price-text__current {
+  color: #fa5151;
+  font-weight: 700;
+  font-size: 18px;
+  font-family: 'DIN Alternate', var(--font-family-base);
+}
+
+.commerce-price-text__current--large {
+  font-size: 24px;
+}
+
+.commerce-price-text__symbol {
+  margin-right: 1px;
+  font-size: 12px;
+}
+
+.commerce-price-text__symbol--large {
+  font-size: 14px;
+}
+
+.commerce-price-text__original {
+  color: var(--text-placeholder);
+  text-decoration: line-through;
+  font-size: 12px;
+}

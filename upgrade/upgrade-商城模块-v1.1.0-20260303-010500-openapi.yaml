@@ -1,0 +1,389 @@
+openapi: 3.0.3
+info:
+  title: SDKwork Commerce Upgrade Proposal
+  version: 1.1.0
+  description: >
+    Commerce module API upgrade proposal for OpenChat integration.
+    This file defines additive changes only and follows OpenAPI 3.x.
+servers:
+  - url: https://api.sdkwork.com/app/v3/api
+    description: Production
+  - url: https://api-dev.sdkwork.com/app/v3/api
+    description: Non-production
+tags:
+  - name: cart
+  - name: orders
+  - name: products
+paths:
+  /cart/items:
+    post:
+      tags: [cart]
+      summary: Add item to cart (upgraded id types)
+      operationId: addCartItemUpgraded
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCartItemFormUpgraded'
+      responses:
+        '200':
+          description: Business response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultShoppingCartVO'
+
+  /cart/items/{itemId}/select:
+    put:
+      tags: [cart]
+      summary: Update item selection and return cart snapshot
+      operationId: updateCartItemSelectionUpgraded
+      parameters:
+        - in: path
+          name: itemId
+          required: true
+          schema:
+            oneOf:
+              - type: integer
+              - type: string
+        - in: query
+          name: selected
+          required: true
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Business response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultShoppingCartVO'
+
+  /cart/items/select:
+    put:
+      tags: [cart]
+      summary: Batch update selection and return cart snapshot
+      operationId: batchUpdateSelectionUpgraded
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchSelectFormUpgraded'
+      responses:
+        '200':
+          description: Business response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultShoppingCartVO'
+
+  /orders:
+    post:
+      tags: [orders]
+      summary: Create order (supports addressId or shippingAddress)
+      operationId: createOrderUpgraded
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreateFormUpgraded'
+      responses:
+        '200':
+          description: Business response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultOrderVO'
+
+  /orders/statistics:
+    get:
+      tags: [orders]
+      summary: Get full status statistics
+      operationId: getOrderStatisticsUpgraded
+      responses:
+        '200':
+          description: Business response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultOrderStatisticsVOUpgraded'
+
+  /products/favorites:
+    get:
+      tags: [products]
+      summary: Get favorite products
+      operationId: listFavoriteProducts
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Business response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultPageProductVO'
+    post:
+      tags: [products]
+      summary: Toggle product favorite
+      operationId: toggleFavoriteProduct
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [productId, favorite]
+              properties:
+                productId:
+                  oneOf:
+                    - type: integer
+                    - type: string
+                favorite:
+                  type: boolean
+      responses:
+        '200':
+          description: Business response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultBoolean'
+
+components:
+  schemas:
+    PlusApiResultBase:
+      type: object
+      required: [code, msg, requestId]
+      properties:
+        code:
+          type: string
+          description: Business code, success is 2000
+          example: '2000'
+        msg:
+          type: string
+          example: OK
+        requestId:
+          type: string
+        errorName:
+          type: string
+
+    AddCartItemFormUpgraded:
+      type: object
+      required: [productId, skuId, quantity]
+      properties:
+        productId:
+          oneOf:
+            - type: integer
+            - type: string
+          description: Product identifier, string id is recommended
+        skuId:
+          oneOf:
+            - type: integer
+            - type: string
+          description: SKU identifier, string id is recommended
+        quantity:
+          type: integer
+          minimum: 1
+        cartGroupUuid:
+          type: string
+
+    BatchSelectFormUpgraded:
+      type: object
+      required: [selected]
+      properties:
+        itemIds:
+          type: array
+          items:
+            oneOf:
+              - type: integer
+              - type: string
+        selected:
+          type: boolean
+
+    ShippingAddressForm:
+      type: object
+      required: [name, phone, detail]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        phone:
+          type: string
+        province:
+          type: string
+        city:
+          type: string
+        district:
+          type: string
+        detail:
+          type: string
+        isDefault:
+          type: boolean
+
+    OrderItemForm:
+      type: object
+      properties:
+        productId:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+        price:
+          type: string
+        productName:
+          type: string
+
+    OrderCreateFormUpgraded:
+      type: object
+      required: [orderType, productId, quantity]
+      properties:
+        orderType:
+          type: string
+        productId:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemForm'
+        addressId:
+          type: string
+        shippingAddress:
+          $ref: '#/components/schemas/ShippingAddressForm'
+        paymentMethod:
+          type: string
+        couponId:
+          type: string
+        remark:
+          type: string
+        sourceChannel:
+          type: string
+      oneOf:
+        - required: [addressId]
+        - required: [shippingAddress]
+
+    ShoppingCartVO:
+      type: object
+      properties:
+        cartId:
+          type: string
+        totalQuantity:
+          type: integer
+        totalPrice:
+          type: number
+        selectedQuantity:
+          type: integer
+        selectedPrice:
+          type: number
+        groups:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+
+    OrderVO:
+      type: object
+      properties:
+        orderId:
+          type: string
+        orderSn:
+          type: string
+        status:
+          type: string
+        totalAmount:
+          type: string
+        paidAmount:
+          type: string
+        discountAmount:
+          type: string
+        shippingAmount:
+          type: string
+
+    OrderStatisticsVOUpgraded:
+      type: object
+      properties:
+        totalOrders:
+          type: integer
+        pendingPayment:
+          type: integer
+        pendingShipment:
+          type: integer
+        pendingReceipt:
+          type: integer
+        completed:
+          type: integer
+        paid:
+          type: integer
+        shipped:
+          type: integer
+        cancelled:
+          type: integer
+        refunding:
+          type: integer
+        refunded:
+          type: integer
+
+    PageProductVO:
+      type: object
+      properties:
+        totalElements:
+          type: integer
+        content:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+
+    PlusApiResultShoppingCartVO:
+      allOf:
+        - $ref: '#/components/schemas/PlusApiResultBase'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/ShoppingCartVO'
+
+    PlusApiResultOrderVO:
+      allOf:
+        - $ref: '#/components/schemas/PlusApiResultBase'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/OrderVO'
+
+    PlusApiResultOrderStatisticsVOUpgraded:
+      allOf:
+        - $ref: '#/components/schemas/PlusApiResultBase'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/OrderStatisticsVOUpgraded'
+
+    PlusApiResultPageProductVO:
+      allOf:
+        - $ref: '#/components/schemas/PlusApiResultBase'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/PageProductVO'
+
+    PlusApiResultBoolean:
+      allOf:
+        - $ref: '#/components/schemas/PlusApiResultBase'
+        - type: object
+          properties:
+            data:
+              type: boolean

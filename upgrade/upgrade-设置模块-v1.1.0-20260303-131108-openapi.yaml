@@ -1,0 +1,186 @@
+﻿openapi: 3.0.3
+info:
+  title: OpenChat Settings Upgrade API
+  version: 1.1.0
+  description: |
+    Upgrade contract for settings module to unify preferences domain,
+    normalize theme semantics, and support stable partial updates.
+servers:
+  - url: https://api.example.com
+    description: Production placeholder
+  - url: https://staging-api.example.com
+    description: Staging placeholder
+tags:
+  - name: SettingsUpgrade
+    description: Upgraded settings APIs
+paths:
+  /app/v3/api/settings/preferences:
+    get:
+      tags: [SettingsUpgrade]
+      summary: Get unified user preferences
+      operationId: getPreferences
+      responses:
+        '200':
+          description: Preferences fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultSettingsPreferencesVO'
+    put:
+      tags: [SettingsUpgrade]
+      summary: Update unified user preferences (partial update)
+      operationId: updatePreferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsPreferencesUpdateForm'
+      responses:
+        '200':
+          description: Preferences updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultSettingsPreferencesVO'
+
+  /app/v3/api/settings/ui:
+    get:
+      deprecated: true
+      tags: [SettingsUpgrade]
+      summary: Compatibility endpoint for UI settings
+      operationId: getUiSettingsCompat
+      responses:
+        '200':
+          description: UI settings fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultSettingsPreferencesVO'
+    put:
+      deprecated: true
+      tags: [SettingsUpgrade]
+      summary: Compatibility endpoint for UI settings update
+      operationId: updateUiSettingsCompat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsPreferencesUpdateForm'
+      responses:
+        '200':
+          description: UI settings updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultSettingsPreferencesVO'
+
+  /app/v3/api/user/settings:
+    get:
+      deprecated: true
+      tags: [SettingsUpgrade]
+      summary: Compatibility endpoint for user settings
+      operationId: getUserSettingsCompat
+      responses:
+        '200':
+          description: User settings fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultSettingsPreferencesVO'
+    put:
+      deprecated: true
+      tags: [SettingsUpgrade]
+      summary: Compatibility endpoint for user settings update
+      operationId: updateUserSettingsCompat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsPreferencesUpdateForm'
+      responses:
+        '200':
+          description: User settings updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultSettingsPreferencesVO'
+
+components:
+  schemas:
+    ThemeMode:
+      type: string
+      enum: [system, light, dark]
+      description: |
+        Canonical theme mode.
+        Legacy app themes should be mapped by server-side compatibility layer.
+
+    NotificationPreferences:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        pushEnabled:
+          type: boolean
+        emailEnabled:
+          type: boolean
+
+    SettingsPreferencesVO:
+      type: object
+      required: [themeMode, language]
+      properties:
+        themeMode:
+          $ref: '#/components/schemas/ThemeMode'
+        language:
+          type: string
+          enum: [zh-CN, en-US]
+        fontScale:
+          type: number
+          format: float
+          minimum: 0.85
+          maximum: 1.35
+        fontSize:
+          type: integer
+          format: int32
+        notifications:
+          $ref: '#/components/schemas/NotificationPreferences'
+        updatedAt:
+          type: string
+          format: date-time
+
+    SettingsPreferencesUpdateForm:
+      type: object
+      properties:
+        themeMode:
+          $ref: '#/components/schemas/ThemeMode'
+        language:
+          type: string
+          enum: [zh-CN, en-US]
+        fontScale:
+          type: number
+          format: float
+          minimum: 0.85
+          maximum: 1.35
+        notifications:
+          $ref: '#/components/schemas/NotificationPreferences'
+
+    PlusApiResultSettingsPreferencesVO:
+      type: object
+      required: [code, msg, requestId, data]
+      properties:
+        code:
+          type: string
+          example: '2000'
+        msg:
+          type: string
+          example: ok
+        requestId:
+          type: string
+          example: req_settings_001
+        data:
+          $ref: '#/components/schemas/SettingsPreferencesVO'
+        errorName:
+          type: string
+          example: ''

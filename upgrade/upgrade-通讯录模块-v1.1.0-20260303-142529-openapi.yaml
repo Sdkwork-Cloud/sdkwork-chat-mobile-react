@@ -1,0 +1,250 @@
+﻿openapi: 3.0.3
+info:
+  title: OpenChat Contacts Upgrade API
+  version: 1.1.0
+  description: |
+    Proposed additive APIs for contacts and friend-request lifecycle.
+servers:
+  - url: /app/v3/api
+paths:
+  /user/contacts:
+    get:
+      summary: List contacts
+      operationId: listContacts
+      tags: [Contacts]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResultListContactVO'
+    post:
+      summary: Add contact
+      operationId: addContact
+      tags: [Contacts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactCreateForm'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResultContactVO'
+  /user/contacts/{contactId}:
+    delete:
+      summary: Delete contact
+      operationId: deleteContact
+      tags: [Contacts]
+      parameters:
+        - $ref: '#/components/parameters/ContactId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResultVoid'
+  /user/friend-requests:
+    get:
+      summary: List friend requests
+      operationId: listFriendRequests
+      tags: [Contacts]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResultListFriendRequestVO'
+    post:
+      summary: Send friend request
+      operationId: sendFriendRequest
+      tags: [Contacts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FriendRequestCreateForm'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResultFriendRequestVO'
+  /user/friend-requests/{requestId}/accept:
+    put:
+      summary: Accept friend request
+      operationId: acceptFriendRequest
+      tags: [Contacts]
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResultFriendRequestVO'
+  /user/friend-requests/{requestId}/reject:
+    put:
+      summary: Reject friend request
+      operationId: rejectFriendRequest
+      tags: [Contacts]
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResultFriendRequestVO'
+components:
+  parameters:
+    ContactId:
+      in: path
+      name: contactId
+      required: true
+      schema:
+        type: string
+    RequestId:
+      in: path
+      name: requestId
+      required: true
+      schema:
+        type: string
+  schemas:
+    ContactVO:
+      type: object
+      properties:
+        contactId:
+          type: string
+        name:
+          type: string
+        avatar:
+          type: string
+          format: uri
+        wxid:
+          type: string
+        region:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        remark:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    FriendRequestVO:
+      type: object
+      properties:
+        requestId:
+          type: string
+        fromUserId:
+          type: string
+        fromUserName:
+          type: string
+        fromUserAvatar:
+          type: string
+          format: uri
+        message:
+          type: string
+        status:
+          type: string
+          enum: [pending, accepted, rejected]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ContactCreateForm:
+      type: object
+      required: [name]
+      properties:
+        userId:
+          type: string
+        name:
+          type: string
+        avatar:
+          type: string
+          format: uri
+        wxid:
+          type: string
+        region:
+          type: string
+        remark:
+          type: string
+    FriendRequestCreateForm:
+      type: object
+      required: [toUserId]
+      properties:
+        toUserId:
+          type: string
+        message:
+          type: string
+    ApiResultBase:
+      type: object
+      required: [code, msg]
+      properties:
+        code:
+          type: string
+          example: '2000'
+        msg:
+          type: string
+        requestId:
+          type: string
+        errorName:
+          type: string
+    ApiResultContactVO:
+      allOf:
+        - $ref: '#/components/schemas/ApiResultBase'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/ContactVO'
+    ApiResultListContactVO:
+      allOf:
+        - $ref: '#/components/schemas/ApiResultBase'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/ContactVO'
+    ApiResultFriendRequestVO:
+      allOf:
+        - $ref: '#/components/schemas/ApiResultBase'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/FriendRequestVO'
+    ApiResultListFriendRequestVO:
+      allOf:
+        - $ref: '#/components/schemas/ApiResultBase'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/FriendRequestVO'
+    ApiResultVoid:
+      allOf:
+        - $ref: '#/components/schemas/ApiResultBase'
+        - type: object
+          properties:
+            data:
+              nullable: true

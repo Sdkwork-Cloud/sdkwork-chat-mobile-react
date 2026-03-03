@@ -1,0 +1,18 @@
+.commerce-empty-state {
+  min-height: 42vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--text-secondary);
+}
+
+.commerce-empty-state__icon {
+  font-size: 40px;
+  opacity: 0.72;
+}
+
+.commerce-empty-state__title {
+  font-size: 14px;
+}

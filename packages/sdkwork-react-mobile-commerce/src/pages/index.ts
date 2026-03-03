@@ -1,0 +1,16 @@
+export { MallPage } from './MallPage';
+export { CategoryPage } from './CategoryPage';
+export { ProductDetailPage } from './ProductDetailPage';
+export { ShoppingCartPage } from './ShoppingCartPage';
+export { OrderConfirmationPage } from './OrderConfirmationPage';
+export { OrderListPage } from './OrderListPage';
+export { OrderDetailPage } from './OrderDetailPage';
+export { GigCenterPage } from './GigCenterPage';
+export { MyGigsPage } from './MyGigsPage';
+export { DistributionCenterPage } from './DistributionCenterPage';
+export { DistributionGoodsPage } from './DistributionGoodsPage';
+export { MyTeamPage } from './MyTeamPage';
+export { CommissionPage } from './CommissionPage';
+export { DistributionRankPage } from './DistributionRankPage';
+export { WithdrawPage } from './WithdrawPage';
+export { SharePosterPage } from './SharePosterPage';

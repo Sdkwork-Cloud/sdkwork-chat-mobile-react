@@ -1,0 +1,110 @@
+.voice-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 20px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.18) 100%);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  transition: padding-bottom 0.18s ease;
+}
+
+.voice-overlay__card {
+  width: 172px;
+  height: 172px;
+  border-radius: 24px;
+  background: rgba(17, 22, 30, 0.92);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 18px 14px 14px;
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.34);
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  transform: translateY(0) scale(1);
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.voice-overlay__card.is-cancel {
+  background: linear-gradient(160deg, rgba(250, 81, 81, 0.95) 0%, rgba(235, 63, 63, 0.95) 100%);
+  transform: translateY(-4px) scale(1.03);
+}
+
+.voice-overlay__icon-wrap {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  transform-origin: center;
+  animation: voice-overlay-icon-pulse 1.2s ease-in-out infinite;
+}
+
+.voice-overlay__card.is-cancel .voice-overlay__icon-wrap {
+  animation: none;
+  background: rgba(255, 255, 255, 0.2);
+  transform: rotate(-12deg);
+}
+
+.voice-overlay__hint {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  padding: 5px 9px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.voice-overlay__wave {
+  margin-top: auto;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.voice-overlay__wave span {
+  width: 4px;
+  height: 6px;
+  border-radius: 2px;
+  background: #30d77b;
+  animation: voice-overlay-wave 0.68s ease-in-out infinite;
+}
+
+.voice-overlay__cancel-tip {
+  margin-top: auto;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+@keyframes voice-overlay-wave {
+  0%,
+  100% {
+    height: 6px;
+    opacity: 0.5;
+  }
+  45% {
+    height: 24px;
+    opacity: 1;
+  }
+}
+
+@keyframes voice-overlay-icon-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.07);
+  }
+}

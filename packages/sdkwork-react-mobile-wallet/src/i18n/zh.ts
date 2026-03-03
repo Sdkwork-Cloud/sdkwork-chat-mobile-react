@@ -1,0 +1,30 @@
+export default {
+  wallet: {
+    title: '钱包',
+    balance: '零钱',
+    balance_title: '我的零钱',
+    pay: '收付款',
+    pay_desc: '扫码支付',
+    income_yesterday: '昨日收益',
+    services_title: '金融服务',
+    services: {
+      credit_card: '信用卡',
+      top_up: '手机充值',
+      wealth: '理财通',
+      utilities: '生活缴费',
+      qb: 'Q币充值',
+      city: '城市服务',
+      orders: '我的订单',
+      charity: '腾讯公益',
+    },
+    bill: '账单',
+    red_packet: {
+      title: '红包',
+      open: '开',
+      close: '关闭',
+      received: '已领取',
+      deposit: '已存入零钱',
+      withdraw: '立即提现',
+    },
+  },
+};

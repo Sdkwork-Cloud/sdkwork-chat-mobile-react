@@ -1,0 +1,302 @@
+.contacts-page {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-body);
+  position: relative;
+}
+
+.contacts-page__scroll {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+  padding-bottom: calc(22px + env(safe-area-inset-bottom));
+}
+
+.contacts-page__confirm-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--primary-color);
+}
+
+.contacts-page__confirm-btn:disabled {
+  background: var(--bg-cell-active);
+  color: var(--text-secondary);
+}
+
+.contacts-page__new-friend-btn {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.contacts-page__new-friend-btn:active {
+  background: var(--bg-cell-active);
+}
+
+.contacts-page__search-wrap {
+  padding: 10px 12px 8px;
+}
+
+.contacts-page__search-btn {
+  width: 100%;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 14px;
+  border: 0.5px solid rgba(120, 132, 155, 0.2);
+}
+
+.contacts-page__search-btn:active {
+  background: var(--bg-cell-active);
+}
+
+.contacts-page__quick-panel {
+  margin: 0 12px 12px;
+  background: var(--bg-card);
+  border-radius: 14px;
+  overflow: hidden;
+  border: 0.5px solid rgba(120, 132, 155, 0.2);
+  box-shadow: 0 8px 20px rgba(25, 41, 68, 0.06);
+}
+
+.contacts-page__quick-item {
+  width: 100%;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border-bottom: 0.5px solid var(--border-color);
+}
+
+.contacts-page__quick-item:last-child {
+  border-bottom: none;
+}
+
+.contacts-page__quick-item:active {
+  background: var(--bg-cell-active);
+}
+
+.contacts-page__quick-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.contacts-page__quick-icon.is-orange {
+  background: linear-gradient(160deg, #ffb057 0%, #fa9132 100%);
+}
+
+.contacts-page__quick-icon.is-green {
+  background: linear-gradient(160deg, #26d279 0%, #07c160 100%);
+}
+
+.contacts-page__quick-icon.is-blue {
+  background: linear-gradient(160deg, #4b90ff 0%, #2979ff 100%);
+}
+
+.contacts-page__quick-title {
+  flex: 1;
+  text-align: left;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.contacts-page__quick-badge {
+  min-width: 18px;
+  height: 18px;
+  border-radius: 10px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fa5151;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.contacts-page__status {
+  margin: 14px 12px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  padding: 22px 16px;
+  color: var(--text-secondary);
+  text-align: center;
+  border: 0.5px solid rgba(120, 132, 155, 0.2);
+}
+
+.contacts-page__status button {
+  border: none;
+  background: transparent;
+  color: var(--primary-color);
+  margin-left: 8px;
+}
+
+.contacts-page__group {
+  margin-bottom: 10px;
+}
+
+.contacts-page__group-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 7px 14px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--bg-body);
+}
+
+.contacts-page__group-list {
+  margin: 0 12px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--bg-card);
+  border: 0.5px solid rgba(120, 132, 155, 0.18);
+  box-shadow: 0 6px 20px rgba(24, 39, 62, 0.04);
+}
+
+.contacts-page__row {
+  width: 100%;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border-bottom: 0.5px solid var(--border-color);
+}
+
+.contacts-page__row:active {
+  background: var(--bg-cell-active);
+}
+
+.contacts-page__row.is-last {
+  border-bottom: none;
+}
+
+.contacts-page__selector {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid #b6c1d4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.contacts-page__selector.is-selected {
+  border-color: var(--primary-color);
+  background: var(--primary-color);
+}
+
+.contacts-page__row-name {
+  display: block;
+  width: 100%;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 500;
+  text-align: left;
+  line-height: 1.3;
+}
+
+.contacts-page__row-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.contacts-page__row-meta {
+  margin-top: 2px;
+  display: block;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-align: left;
+}
+
+.contacts-page__row-main .contacts-page__row-name {
+  color: var(--text-primary);
+  font-size: 15px;
+}
+
+.contacts-page__footer-count {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 13px;
+  padding: 12px 0;
+}
+
+.contacts-page__index-bar {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 2px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.64);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 0.5px solid rgba(122, 137, 164, 0.22);
+}
+
+.contacts-page__index-bar button {
+  border: none;
+  background: transparent;
+  width: 18px;
+  height: 15px;
+  font-size: 10px;
+  color: var(--text-secondary);
+  border-radius: 999px;
+  padding: 0;
+}
+
+.contacts-page__index-bar button.is-active {
+  background: rgba(41, 121, 255, 0.14);
+  color: #2979ff;
+  font-weight: 600;
+}
+
+.contacts-page__index-indicator {
+  position: absolute;
+  right: 40px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(24, 33, 50, 0.92);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 22;
+}

@@ -1,0 +1,17 @@
+export default {
+  home_title: 'OpenChat',
+  home_subtitle: '智能对话平台',
+  home_recent: '最近',
+  home_agents: '智能体',
+  home_no_messages: '暂无消息',
+  home_go_agents: '去发现智能体',
+  tab_chat: '聊天',
+  tab_agents: '智能体',
+  tab_creation: '创作',
+  tab_discover: '发现',
+  tab_me: '我的',
+  menu_group_chat: '发起群聊',
+  menu_add_friend: '添加朋友',
+  menu_scan: '扫一扫',
+  menu_money: '收付款',
+};

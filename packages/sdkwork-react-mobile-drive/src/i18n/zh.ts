@@ -1,0 +1,20 @@
+export default {
+  drive: {
+    title: '云盘',
+    files: '文件',
+    images: '图片',
+    videos: '视频',
+    documents: '文档',
+    upload: '上传',
+    download: '下载',
+    delete: '删除',
+    rename: '重命名',
+    move: '移动',
+    copy: '复制',
+    share: '分享',
+    storage: '存储空间',
+    used: '已用',
+    available: '可用',
+    noFiles: '暂无文件',
+  },
+};

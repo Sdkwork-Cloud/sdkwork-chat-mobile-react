@@ -1,0 +1,13 @@
+.oc-icon {
+  display: inline-block;
+  line-height: 1;
+  vertical-align: middle;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+@keyframes oc-icon-spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}

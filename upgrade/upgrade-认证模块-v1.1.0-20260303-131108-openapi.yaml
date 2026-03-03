@@ -1,0 +1,207 @@
+﻿openapi: 3.0.3
+info:
+  title: OpenChat Auth Upgrade API
+  version: 1.1.0
+  description: |
+    Upgrade contract for auth module to support one-step register-login,
+    explicit token refresh behavior, and stable user payload mapping.
+servers:
+  - url: https://api.example.com
+    description: Production placeholder
+  - url: https://staging-api.example.com
+    description: Staging placeholder
+tags:
+  - name: AuthUpgrade
+    description: Upgraded auth APIs
+paths:
+  /app/v3/api/auth/register-and-login:
+    post:
+      tags: [AuthUpgrade]
+      summary: Register and immediately return login token payload
+      operationId: registerAndLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterForm'
+      responses:
+        '200':
+          description: Registered and logged in successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultLoginVO'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiErrorResult'
+        '409':
+          description: Username already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiErrorResult'
+
+  /app/v3/api/auth/login:
+    post:
+      tags: [AuthUpgrade]
+      summary: Login and return token with user info
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginForm'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultLoginVO'
+
+  /app/v3/api/auth/refresh:
+    post:
+      tags: [AuthUpgrade]
+      summary: Refresh access token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshForm'
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultLoginVO'
+        '401':
+          description: Invalid refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiErrorResult'
+
+components:
+  schemas:
+    LoginForm:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        captcha:
+          type: string
+
+    RegisterForm:
+      type: object
+      required: [username, password, confirmPassword]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        confirmPassword:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+
+    TokenRefreshForm:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+
+    UserInfoVO:
+      type: object
+      required: [id, username]
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        nickname:
+          type: string
+        avatar:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        role:
+          type: string
+        status:
+          type: string
+
+    LoginVO:
+      type: object
+      required: [accessToken, userInfo]
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        tokenType:
+          type: string
+          default: Bearer
+        expiresIn:
+          type: integer
+          format: int32
+        tokenVersion:
+          type: string
+          description: Token contract version for rotation/audit
+        userInfo:
+          $ref: '#/components/schemas/UserInfoVO'
+
+    PlusApiResultLoginVO:
+      type: object
+      required: [code, msg, requestId, data]
+      properties:
+        code:
+          type: string
+          example: '2000'
+        msg:
+          type: string
+          example: ok
+        requestId:
+          type: string
+          example: req_auth_001
+        data:
+          $ref: '#/components/schemas/LoginVO'
+        errorName:
+          type: string
+          example: ''
+
+    PlusApiErrorResult:
+      type: object
+      required: [code, msg, requestId]
+      properties:
+        code:
+          type: string
+          example: '4001'
+        msg:
+          type: string
+          example: invalid request
+        requestId:
+          type: string
+          example: req_auth_error_001
+        errorName:
+          type: string
+          example: INVALID_ARGUMENT
+        details:
+          type: object
+          additionalProperties: true

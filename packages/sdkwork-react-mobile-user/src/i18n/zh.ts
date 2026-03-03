@@ -1,0 +1,48 @@
+export default {
+  user: {
+    profile: {
+      title: '个人信息',
+      avatar: '头像',
+      name: '名字',
+      wxid: '微信号',
+      qrcode: '二维码',
+      gender: '性别',
+      region: '地区',
+      signature: '个性签名',
+      address: '我的地址',
+      invoice: '发票抬头',
+    },
+    gender: {
+      male: '男',
+      female: '女',
+    },
+    address: {
+      title: '我的地址',
+      add: '添加地址',
+      edit: '编辑地址',
+      name: '姓名',
+      phone: '电话',
+      detail: '详细地址',
+      tag: '标签',
+      default: '默认',
+      setDefault: '设为默认',
+    },
+    invoice: {
+      title: '发票抬头',
+      add: '添加发票',
+      edit: '编辑发票',
+      type: '类型',
+      company: '公司',
+      personal: '个人',
+      invoiceTitle: '抬头',
+      taxNo: '税号',
+    },
+    actions: {
+      copied: '已复制',
+      save: '保存',
+      cancel: '取消',
+      delete: '删除',
+      edit: '编辑',
+    },
+  },
+};

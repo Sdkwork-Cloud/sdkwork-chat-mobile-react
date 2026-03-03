@@ -1,0 +1,92 @@
+.oc-navbar-quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.oc-navbar-quick-actions__btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--nav-text-primary, var(--text-primary));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.16s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.oc-navbar-quick-actions__btn:active {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="wechat-dark"] .oc-navbar-quick-actions__btn:active,
+[data-theme="dark"] .oc-navbar-quick-actions__btn:active,
+[data-theme="midnight-blue"] .oc-navbar-quick-actions__btn:active {
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.oc-navbar-quick-actions__btn.is-active {
+  background: rgba(0, 0, 0, 0.1);
+  color: var(--nav-text-primary, var(--text-primary));
+}
+
+.oc-navbar-quick-actions__menu {
+  position: fixed;
+  z-index: 1201;
+  min-width: 176px;
+  border-radius: 10px;
+  background: rgba(43, 43, 45, 0.98);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.3);
+  padding: 4px 0;
+  animation: oc-navbar-menu-enter 0.14s ease-out;
+}
+
+.oc-navbar-quick-actions__menu::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  right: 16px;
+  width: 12px;
+  height: 12px;
+  background: rgba(43, 43, 45, 0.98);
+  transform: rotate(45deg);
+}
+
+.oc-navbar-quick-actions__menu-item {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.96);
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  padding: 11px 14px;
+  cursor: pointer;
+}
+
+.oc-navbar-quick-actions__menu-item + .oc-navbar-quick-actions__menu-item {
+  border-top: 0.5px solid rgba(255, 255, 255, 0.1);
+}
+
+.oc-navbar-quick-actions__menu-item:active {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+@keyframes oc-navbar-menu-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-5px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

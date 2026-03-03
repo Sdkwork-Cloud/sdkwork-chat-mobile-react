@@ -1,0 +1,40 @@
+.discover-page {
+  min-height: 100%;
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+}
+
+.discover-page__content {
+  padding: 12px 0 0;
+}
+
+.discover-page__skeleton-wrap {
+  padding: 0 12px;
+}
+
+.discover-page__section-head {
+  margin: 18px 12px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.discover-page__section-head h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.discover-page__section-bar {
+  width: 4px;
+  height: 18px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #2e7bff 0%, #66a1ff 100%);
+}
+
+.discover-page__feed-grid {
+  padding: 0 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}

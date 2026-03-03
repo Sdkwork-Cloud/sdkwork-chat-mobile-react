@@ -1,0 +1,25 @@
+
+.mobile-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: var(--bg-body);
+  overflow: hidden;
+}
+
+.mobile-layout__content {
+  flex: 1;
+  overflow-y: auto;
+  /* iOS momentum scrolling */
+  -webkit-overflow-scrolling: touch; 
+  /* Safe area padding handled by individual pages if needed, or globally here */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  scroll-padding-bottom: env(safe-area-inset-bottom);
+  position: relative;
+}
+
+.mobile-layout__content--with-tabbar {
+  padding-bottom: calc(54px + env(safe-area-inset-bottom));
+  scroll-padding-bottom: calc(54px + env(safe-area-inset-bottom));
+}

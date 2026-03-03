@@ -1,0 +1,20 @@
+export default {
+  drive: {
+    title: 'Cloud Drive',
+    files: 'Files',
+    images: 'Images',
+    videos: 'Videos',
+    documents: 'Documents',
+    upload: 'Upload',
+    download: 'Download',
+    delete: 'Delete',
+    rename: 'Rename',
+    move: 'Move',
+    copy: 'Copy',
+    share: 'Share',
+    storage: 'Storage',
+    used: 'Used',
+    available: 'Available',
+    noFiles: 'No files',
+  },
+};

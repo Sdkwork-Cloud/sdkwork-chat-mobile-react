@@ -1,0 +1,192 @@
+:root {
+  --home-conv-title: #111827;
+  --home-conv-title-unread: #0f172a;
+  --home-conv-summary: #6b7280;
+  --home-conv-summary-unread: #374151;
+  --home-conv-time: #9ca3af;
+  --home-conv-time-unread: #667085;
+  --home-conv-tag: #6b7280;
+  --home-conv-divider: rgba(120, 132, 155, 0.24);
+}
+
+[data-theme="wechat-dark"],
+[data-theme="dark"],
+[data-theme="midnight-blue"] {
+  --home-conv-title: #f3f4f6;
+  --home-conv-title-unread: #ffffff;
+  --home-conv-summary: #9ca3af;
+  --home-conv-summary-unread: #d1d5db;
+  --home-conv-time: #8d99ad;
+  --home-conv-time-unread: #b5c2d8;
+  --home-conv-tag: #a8b3c6;
+  --home-conv-divider: rgba(138, 150, 173, 0.28);
+}
+
+.home-conversation-item {
+  width: 100%;
+  border: none;
+  background: var(--bg-card);
+  display: flex;
+  align-items: center;
+  padding: 11px 14px 11px 16px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.14s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.home-conversation-item.is-pinned {
+  background: rgba(41, 121, 255, 0.06);
+  background: color-mix(in srgb, var(--bg-card) 88%, var(--primary-color) 12%);
+}
+
+[data-theme="wechat-dark"] .home-conversation-item.is-pinned,
+[data-theme="dark"] .home-conversation-item.is-pinned,
+[data-theme="midnight-blue"] .home-conversation-item.is-pinned {
+  background: rgba(141, 164, 207, 0.08);
+  background: color-mix(in srgb, var(--bg-card) 94%, #8da4cf 6%);
+}
+
+.home-conversation-item:active {
+  background: var(--bg-cell-active);
+}
+
+.home-conversation-item__avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 11px;
+  margin-right: 12px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-conversation-item__avatar--agent {
+  background: linear-gradient(145deg, #2f7cff 0%, #596aff 100%);
+  box-shadow: 0 8px 16px rgba(47, 124, 255, 0.24);
+}
+
+.home-conversation-item__avatar--group {
+  background: linear-gradient(145deg, #22a06b 0%, #188d5a 100%);
+  box-shadow: 0 8px 16px rgba(34, 160, 107, 0.22);
+}
+
+.home-conversation-item__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.home-conversation-item__top,
+.home-conversation-item__bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.home-conversation-item__title-row {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.home-conversation-item__pin-icon {
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.home-conversation-item__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 520;
+  line-height: 1.25;
+  color: var(--home-conv-title);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-conversation-item.is-unread .home-conversation-item__title {
+  color: var(--home-conv-title-unread);
+  font-weight: 620;
+}
+
+.home-conversation-item__pinned-tag {
+  flex-shrink: 0;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--home-conv-tag);
+  border-radius: 999px;
+  border: 0.5px solid var(--home-conv-divider);
+  padding: 3px 6px;
+  letter-spacing: 0.1px;
+}
+
+.home-conversation-item__time {
+  flex-shrink: 0;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--home-conv-time);
+  font-weight: 460;
+}
+
+.home-conversation-item__time.is-unread {
+  color: var(--home-conv-time-unread);
+}
+
+.home-conversation-item__summary {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--home-conv-summary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-conversation-item__summary.is-unread {
+  color: var(--home-conv-summary-unread);
+}
+
+.home-conversation-item__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.home-conversation-item__mute-tag {
+  flex-shrink: 0;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--home-conv-tag);
+  border-radius: 999px;
+  border: 0.5px solid var(--home-conv-divider);
+  padding: 3px 6px;
+  letter-spacing: 0.1px;
+}
+
+.home-conversation-item__unread-badge {
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  box-shadow: 0 4px 10px rgba(250, 81, 81, 0.32);
+}

@@ -1,0 +1,62 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "module": "ESNext",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "skipLibCheck": true,
+    "types": [
+      "node"
+    ],
+    "moduleResolution": "bundler",
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "allowJs": true,
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": [
+        "./*"
+      ],
+      "@sdkwork/react-mobile-auth": ["./packages/sdkwork-react-mobile-auth/src/index.ts"],
+      "@sdkwork/react-mobile-chat": ["./packages/sdkwork-react-mobile-chat/src/index.ts"],
+      "@sdkwork/react-mobile-user": ["./packages/sdkwork-react-mobile-user/src/index.ts"],
+      "@sdkwork/react-mobile-settings": ["./packages/sdkwork-react-mobile-settings/src/index.ts"],
+      "@sdkwork/react-mobile-contacts": ["./packages/sdkwork-react-mobile-contacts/src/index.ts"],
+      "@sdkwork/react-mobile-agents": ["./packages/sdkwork-react-mobile-agents/src/index.ts"],
+      "@sdkwork/react-mobile-discover": ["./packages/sdkwork-react-mobile-discover/src/index.ts"],
+      "@sdkwork/react-mobile-notification": ["./packages/sdkwork-react-mobile-notification/src/index.ts"],
+      "@sdkwork/react-mobile-wallet": ["./packages/sdkwork-react-mobile-wallet/src/index.ts"],
+      "@sdkwork/react-mobile-drive": ["./packages/sdkwork-react-mobile-drive/src/index.ts"],
+      "@sdkwork/react-mobile-video": ["./packages/sdkwork-react-mobile-video/src/index.ts"],
+      "@sdkwork/react-mobile-search": ["./packages/sdkwork-react-mobile-search/src/index.ts"],
+      "@sdkwork/react-mobile-tools": ["./packages/sdkwork-react-mobile-tools/src/index.ts"],
+      "@sdkwork/react-mobile-social": ["./packages/sdkwork-react-mobile-social/src/index.ts"],
+      "@sdkwork/react-mobile-content": ["./packages/sdkwork-react-mobile-content/src/index.ts"],
+      "@sdkwork/react-mobile-communication": ["./packages/sdkwork-react-mobile-communication/src/index.ts"],
+      "@sdkwork/react-mobile-appointments": ["./packages/sdkwork-react-mobile-appointments/src/index.ts"],
+      "@sdkwork/react-mobile-commerce": ["./packages/sdkwork-react-mobile-commerce/src/index.ts"],
+      "@sdkwork/react-mobile-core/events": ["./packages/sdkwork-react-mobile-core/src/events/index.ts"],
+      "@sdkwork/react-mobile-core/platform": ["./packages/sdkwork-react-mobile-core/src/platform/index.ts"],
+      "@sdkwork/react-mobile-core/storage": ["./packages/sdkwork-react-mobile-core/src/storage/AbstractStorageService.ts"],
+      "@sdkwork/react-mobile-core/types": ["./packages/sdkwork-react-mobile-core/src/types/index.ts"],
+      "@sdkwork/react-mobile-core/hooks": ["./packages/sdkwork-react-mobile-core/src/hooks/index.ts"],
+      "@sdkwork/react-mobile-core/utils": ["./packages/sdkwork-react-mobile-core/src/utils/index.ts"],
+      "@sdkwork/react-mobile-core/constants": ["./packages/sdkwork-react-mobile-core/src/constants/index.ts"],
+      "@sdkwork/react-mobile-core": ["./packages/sdkwork-react-mobile-core/src/index.ts"],
+      "@sdkwork/react-mobile-commons": ["./packages/sdkwork-react-mobile-commons/src/index.ts"],
+      "@sdkwork/react-mobile-creation": ["./packages/sdkwork-react-mobile-creation/src/index.ts"]
+    },
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  },
+  "exclude": [
+    "backup",
+    "dist",
+    "node_modules"
+  ]
+}

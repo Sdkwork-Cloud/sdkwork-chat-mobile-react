@@ -1,0 +1,273 @@
+﻿openapi: 3.0.3
+info:
+  title: OpenChat Address Upgrade API
+  version: 1.1.0
+  description: |
+    Upgrade contract for user address module with normalized id type,
+    clear writable/display fields, and default-address consistency.
+servers:
+  - url: https://api.example.com
+    description: Production placeholder
+  - url: https://staging-api.example.com
+    description: Staging placeholder
+tags:
+  - name: AddressUpgrade
+    description: Upgraded address APIs
+paths:
+  /app/v3/api/user/address:
+    get:
+      tags: [AddressUpgrade]
+      summary: List user addresses
+      operationId: listAddresses
+      responses:
+        '200':
+          description: Address list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultListUserAddressVO'
+    post:
+      tags: [AddressUpgrade]
+      summary: Create user address
+      operationId: createAddress
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserAddressCreateForm'
+      responses:
+        '200':
+          description: Address created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultUserAddressVO'
+
+  /app/v3/api/user/address/{addressId}:
+    parameters:
+      - $ref: '#/components/parameters/AddressId'
+    get:
+      tags: [AddressUpgrade]
+      summary: Get address detail
+      operationId: getAddressDetail
+      responses:
+        '200':
+          description: Address detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultUserAddressVO'
+    put:
+      tags: [AddressUpgrade]
+      summary: Update address
+      operationId: updateAddress
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserAddressUpdateForm'
+      responses:
+        '200':
+          description: Address updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultUserAddressVO'
+    delete:
+      tags: [AddressUpgrade]
+      summary: Delete address
+      operationId: deleteAddress
+      responses:
+        '200':
+          description: Address deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultVoid'
+
+  /app/v3/api/user/address/{addressId}/default:
+    put:
+      tags: [AddressUpgrade]
+      summary: Set default address
+      operationId: setDefaultAddress
+      parameters:
+        - $ref: '#/components/parameters/AddressId'
+      responses:
+        '200':
+          description: Default address updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultUserAddressVO'
+
+components:
+  parameters:
+    AddressId:
+      name: addressId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Stable address identifier (string)
+
+  schemas:
+    UserAddressVO:
+      type: object
+      required: [id, name, phone, addressDetail]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        phone:
+          type: string
+        countryCode:
+          type: string
+        provinceCode:
+          type: string
+        cityCode:
+          type: string
+        districtCode:
+          type: string
+        provinceName:
+          type: string
+        cityName:
+          type: string
+        districtName:
+          type: string
+        addressDetail:
+          type: string
+          description: Writable detail field from client input
+        fullAddress:
+          type: string
+          readOnly: true
+          description: Server-derived full display address
+        postalCode:
+          type: string
+        isDefault:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UserAddressCreateForm:
+      type: object
+      required: [name, phone, addressDetail]
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        countryCode:
+          type: string
+        provinceCode:
+          type: string
+        cityCode:
+          type: string
+        districtCode:
+          type: string
+        provinceName:
+          type: string
+        cityName:
+          type: string
+        districtName:
+          type: string
+        addressDetail:
+          type: string
+        postalCode:
+          type: string
+        isDefault:
+          type: boolean
+
+    UserAddressUpdateForm:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        countryCode:
+          type: string
+        provinceCode:
+          type: string
+        cityCode:
+          type: string
+        districtCode:
+          type: string
+        provinceName:
+          type: string
+        cityName:
+          type: string
+        districtName:
+          type: string
+        addressDetail:
+          type: string
+        postalCode:
+          type: string
+        isDefault:
+          type: boolean
+
+    PlusApiResultUserAddressVO:
+      type: object
+      required: [code, msg, requestId, data]
+      properties:
+        code:
+          type: string
+          example: '2000'
+        msg:
+          type: string
+          example: ok
+        requestId:
+          type: string
+          example: req_addr_001
+        data:
+          $ref: '#/components/schemas/UserAddressVO'
+        errorName:
+          type: string
+          example: ''
+
+    PlusApiResultListUserAddressVO:
+      type: object
+      required: [code, msg, requestId, data]
+      properties:
+        code:
+          type: string
+          example: '2000'
+        msg:
+          type: string
+          example: ok
+        requestId:
+          type: string
+          example: req_addr_002
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserAddressVO'
+        errorName:
+          type: string
+          example: ''
+
+    PlusApiResultVoid:
+      type: object
+      required: [code, msg, requestId, data]
+      properties:
+        code:
+          type: string
+          example: '2000'
+        msg:
+          type: string
+          example: ok
+        requestId:
+          type: string
+          example: req_addr_003
+        data:
+          type: object
+          additionalProperties: true
+        errorName:
+          type: string
+          example: ''

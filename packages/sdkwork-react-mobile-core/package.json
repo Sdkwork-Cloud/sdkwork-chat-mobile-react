@@ -1,0 +1,98 @@
+{
+  "name": "@sdkwork/react-mobile-core",
+  "version": "1.0.0",
+  "description": "SDKWork React Mobile Core - Platform abstraction, types, and core services",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./platform": {
+      "types": "./dist/platform/index.d.ts",
+      "import": "./dist/platform/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/types/index.js"
+    },
+    "./utils": {
+      "types": "./dist/utils/index.d.ts",
+      "import": "./dist/utils/index.js"
+    },
+    "./events": {
+      "types": "./dist/events/index.d.ts",
+      "import": "./dist/events/index.js"
+    },
+    "./hooks": {
+      "types": "./dist/hooks/index.d.ts",
+      "import": "./dist/hooks/index.js"
+    },
+    "./i18n": {
+      "types": "./dist/i18n/index.d.ts",
+      "import": "./dist/i18n/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build && tsc --emitDeclarationOnly",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "lint:fix": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "peerDependencies": {
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "zustand": "catalog:",
+    "immer": "catalog:",
+    "date-fns": "catalog:",
+    "uuid": "catalog:",
+    "@capacitor/core": "catalog:",
+    "@capacitor/app": "catalog:",
+    "@capacitor/haptics": "catalog:",
+    "@capacitor/keyboard": "catalog:",
+    "@capacitor/status-bar": "catalog:",
+    "@capacitor/splash-screen": "catalog:",
+    "@capacitor/device": "catalog:",
+    "@capacitor/clipboard": "catalog:",
+    "@capacitor/camera": "catalog:",
+    "@capacitor/filesystem": "catalog:",
+    "@capacitor/share": "catalog:",
+    "@capacitor/network": "catalog:",
+    "@capacitor/preferences": "catalog:"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@types/uuid": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "sdkwork",
+    "react",
+    "mobile",
+    "core",
+    "capacitor"
+  ],
+  "license": "MIT"
+}

@@ -1,0 +1,30 @@
+export default {
+  wallet: {
+    title: 'Wallet',
+    balance: 'Balance',
+    balance_title: 'My Balance',
+    pay: 'Pay',
+    pay_desc: 'Scan to pay',
+    income_yesterday: "Yesterday's Income",
+    services_title: 'Services',
+    services: {
+      credit_card: 'Credit Card',
+      top_up: 'Top Up',
+      wealth: 'Wealth',
+      utilities: 'Utilities',
+      qb: 'Q Coins',
+      city: 'City Services',
+      orders: 'Orders',
+      charity: 'Charity',
+    },
+    bill: 'Transactions',
+    red_packet: {
+      title: 'Red Packet',
+      open: 'Open',
+      close: 'Close',
+      received: 'Received',
+      deposit: 'Deposited to balance',
+      withdraw: 'Withdraw',
+    },
+  },
+};

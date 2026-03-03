@@ -1,0 +1,296 @@
+openapi: 3.0.3
+info:
+  title: SDKWork Auth Upgrade - Error Semantics and Reset Ticket
+  version: 1.1.1
+  description: >
+    Additive auth contract upgrades for stable business error mapping and
+    password-reset lifecycle determinism.
+servers:
+  - url: /app/v3/api
+tags:
+  - name: auth
+    description: Auth upgrade proposals
+paths:
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Login with stable business error semantics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginForm'
+      responses:
+        '200':
+          description: Unified envelope with additive bizCode
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultLoginVO'
+  /auth/register:
+    post:
+      tags: [auth]
+      summary: Register with stable business error semantics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterForm'
+      responses:
+        '200':
+          description: Unified envelope with additive bizCode
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultUserInfoVO'
+  /auth/password/reset/request:
+    post:
+      tags: [auth]
+      summary: Request password reset challenge with cooldown metadata
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestForm'
+      responses:
+        '200':
+          description: Challenge accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultPasswordResetChallengeVO'
+  /auth/sms/verify:
+    post:
+      tags: [auth]
+      summary: Verify code and return verification ticket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyCodeCheckForm'
+      responses:
+        '200':
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultVerifyCodeCheckResultVO'
+  /auth/password/reset:
+    post:
+      tags: [auth]
+      summary: Reset password with optional verifyTicket binding
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetForm'
+      responses:
+        '200':
+          description: Password reset result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlusApiResultVoid'
+
+components:
+  schemas:
+    PlusApiResultBase:
+      type: object
+      required: [code, msg]
+      properties:
+        code:
+          type: string
+          description: Transport/business status code. Existing behavior keeps using 2000 for success.
+          example: '2000'
+        msg:
+          type: string
+          example: success
+        requestId:
+          type: string
+        errorName:
+          type: string
+        bizCode:
+          $ref: '#/components/schemas/AuthBizCode'
+          description: Additive stable business code for app-side branching.
+
+    AuthBizCode:
+      type: string
+      enum:
+        - AUTH_INVALID_CREDENTIALS
+        - AUTH_ACCOUNT_NOT_FOUND
+        - AUTH_ACCOUNT_ALREADY_EXISTS
+        - AUTH_VERIFY_CODE_INVALID
+        - AUTH_VERIFY_CODE_EXPIRED
+        - AUTH_REQUEST_TOO_FREQUENT
+        - AUTH_PASSWORD_POLICY_VIOLATION
+        - AUTH_VERIFY_TICKET_INVALID
+        - AUTH_VERIFY_TICKET_EXPIRED
+        - AUTH_TOKEN_EXPIRED
+
+    LoginForm:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    RegisterForm:
+      type: object
+      required: [username, password, confirmPassword]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        confirmPassword:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+
+    PasswordResetRequestForm:
+      type: object
+      required: [account, channel]
+      properties:
+        account:
+          type: string
+        channel:
+          type: string
+          enum: [EMAIL, SMS]
+        deviceId:
+          type: string
+        locale:
+          type: string
+        redirectUri:
+          type: string
+
+    VerifyCodeCheckForm:
+      type: object
+      required: [target, type, code]
+      properties:
+        target:
+          type: string
+        type:
+          type: string
+          enum: [REGISTER, LOGIN, RESET_PASSWORD, BIND_EMAIL, BIND_PHONE]
+        verifyType:
+          type: string
+          description: Recommended values EMAIL or SMS for reset flow.
+        code:
+          type: string
+
+    PasswordResetForm:
+      type: object
+      required: [account, code, newPassword, confirmPassword]
+      properties:
+        account:
+          type: string
+        code:
+          type: string
+        newPassword:
+          type: string
+        confirmPassword:
+          type: string
+        verifyTicket:
+          type: string
+          description: Optional additive binding from /auth/sms/verify.
+
+    LoginVO:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        userInfo:
+          $ref: '#/components/schemas/UserInfoVO'
+
+    UserInfoVO:
+      type: object
+      properties:
+        id:
+          oneOf:
+            - type: string
+            - type: integer
+        username:
+          type: string
+        nickname:
+          type: string
+        avatar:
+          type: string
+
+    PasswordResetChallengeVO:
+      type: object
+      required: [challengeId, cooldownSeconds, channel]
+      properties:
+        challengeId:
+          type: string
+        cooldownSeconds:
+          type: integer
+          minimum: 0
+        expireAt:
+          type: string
+          format: date-time
+        channel:
+          type: string
+          enum: [EMAIL, SMS]
+        targetMasked:
+          type: string
+
+    VerifyCodeCheckResultVO:
+      type: object
+      required: [verifyTicket, expiresAt]
+      properties:
+        verifyTicket:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+
+    PlusApiResultLoginVO:
+      allOf:
+        - $ref: '#/components/schemas/PlusApiResultBase'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/LoginVO'
+
+    PlusApiResultUserInfoVO:
+      allOf:
+        - $ref: '#/components/schemas/PlusApiResultBase'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/UserInfoVO'
+
+    PlusApiResultPasswordResetChallengeVO:
+      allOf:
+        - $ref: '#/components/schemas/PlusApiResultBase'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/PasswordResetChallengeVO'
+
+    PlusApiResultVerifyCodeCheckResultVO:
+      allOf:
+        - $ref: '#/components/schemas/PlusApiResultBase'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/VerifyCodeCheckResultVO'
+
+    PlusApiResultVoid:
+      allOf:
+        - $ref: '#/components/schemas/PlusApiResultBase'
+        - type: object
+          properties:
+            data:
+              nullable: true

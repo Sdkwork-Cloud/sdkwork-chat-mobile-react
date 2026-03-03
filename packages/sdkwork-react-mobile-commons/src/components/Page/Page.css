@@ -1,0 +1,12 @@
+.page-container {
+  /* CSS variables are expected to be defined by the consuming application */
+}
+
+.page-scroll-content {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.page-scroll-content::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
