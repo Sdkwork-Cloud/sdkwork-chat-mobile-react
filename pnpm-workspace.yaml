@@ -40,6 +40,9 @@ catalog:
   '@capacitor/camera': ^6.1.3
   '@capawesome/capacitor-file-picker': ^6.2.0
   '@capacitor-mlkit/barcode-scanning': ^6.2.0
+  '@aparajita/capacitor-secure-storage': ^6.0.1
+  '@aparajita/capacitor-biometric-auth': ^8.0.2
+  '@capawesome/capacitor-app-update': ^6.1.0
   '@capacitor/filesystem': ^6.0.4
   '@capacitor/share': ^6.0.4
   '@capacitor/network': ^6.0.4

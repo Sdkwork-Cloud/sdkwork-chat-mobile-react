@@ -30,6 +30,8 @@ import type {
   PaymentChannel,
   PaymentLaunchRequest,
   PaymentLaunchResult,
+  AppListenerEvent,
+  AppListenerPayloadMap,
 } from './types';
 
 class WebDevice implements IDevice {
@@ -405,13 +407,33 @@ class WebApp implements IApp {
     // Not supported on web
   }
 
-  async addListener(_event: 'appStateChange', callback: (state: { isActive: boolean }) => void): Promise<() => void> {
-    const handleVisibility = () => {
-      callback({ isActive: document.visibilityState === 'visible' });
+  async getLaunchUrl(): Promise<{ url?: string | null }> {
+    return { url: window.location.href };
+  }
+
+  async addListener<E extends AppListenerEvent>(
+    event: E,
+    callback: (payload: AppListenerPayloadMap[E]) => void,
+  ): Promise<() => void> {
+    if (event === 'appStateChange') {
+      const handleVisibility = () => {
+        callback({ isActive: document.visibilityState === 'visible' } as AppListenerPayloadMap[E]);
+      };
+
+      document.addEventListener('visibilitychange', handleVisibility);
+      return () => document.removeEventListener('visibilitychange', handleVisibility);
+    }
+
+    const handleRouteChange = () => {
+      callback({ url: window.location.href } as AppListenerPayloadMap[E]);
     };
 
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('popstate', handleRouteChange);
+    window.addEventListener('hashchange', handleRouteChange);
+    return () => {
+      window.removeEventListener('popstate', handleRouteChange);
+      window.removeEventListener('hashchange', handleRouteChange);
+    };
   }
 }
 

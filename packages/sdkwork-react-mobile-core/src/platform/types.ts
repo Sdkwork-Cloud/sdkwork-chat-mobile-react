@@ -162,10 +162,33 @@ export interface ISplashScreen {
   hide(): Promise<void>;
 }
 
+export interface AppStateChangePayload {
+  isActive: boolean;
+}
+
+export interface AppUrlOpenPayload {
+  url: string;
+}
+
+export interface AppLaunchUrlResult {
+  url?: string | null;
+}
+
+export type AppListenerEvent = 'appStateChange' | 'appUrlOpen';
+
+export interface AppListenerPayloadMap {
+  appStateChange: AppStateChangePayload;
+  appUrlOpen: AppUrlOpenPayload;
+}
+
 export interface IApp {
   exit(): Promise<void>;
   minimize(): Promise<void>;
-  addListener(event: 'appStateChange', callback: (state: { isActive: boolean }) => void): Promise<() => void>;
+  getLaunchUrl?(): Promise<AppLaunchUrlResult>;
+  addListener<E extends AppListenerEvent>(
+    event: E,
+    callback: (payload: AppListenerPayloadMap[E]) => void,
+  ): Promise<() => void>;
 }
 
 export interface IPlatform {

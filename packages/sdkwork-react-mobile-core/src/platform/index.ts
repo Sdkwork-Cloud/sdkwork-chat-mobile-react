@@ -7,6 +7,13 @@ import type { IPlatform, PlatformType } from './types';
 export type * from './types';
 export { inspectPlatformCapabilities } from './capabilities';
 export type { PlatformCapabilityReport, CapabilityCheckItem, PaymentCapabilityCheck } from './capabilities';
+export {
+  PLATFORM_RUNTIME_EVENTS,
+  parsePaymentCallbackUrl,
+  attachPlatformRuntime,
+  initializePlatformRuntime,
+} from './runtime';
+export type { PlatformRuntimeOptions, PaymentCallbackPayload } from './runtime';
 
 let platformInstance: IPlatform | null = null;
 let initializationPromise: Promise<void> | null = null;

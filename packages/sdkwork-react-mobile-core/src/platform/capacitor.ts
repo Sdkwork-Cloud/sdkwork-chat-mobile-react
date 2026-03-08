@@ -12,6 +12,9 @@ import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Clipboard } from '@capacitor/clipboard';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { BarcodeFormat, BarcodeScanner, type PermissionStatus } from '@capacitor-mlkit/barcode-scanning';
+import { SecureStorage } from '@aparajita/capacitor-secure-storage';
+import { BiometricAuth, type CheckBiometryResult } from '@aparajita/capacitor-biometric-auth';
+import { AppUpdate, AppUpdateAvailability, type AppUpdateInfo } from '@capawesome/capacitor-app-update';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { Network } from '@capacitor/network';
@@ -55,6 +58,7 @@ import type {
   AppListenerPayloadMap,
 } from './types';
 import { normalizePickedFiles, toFilePickerTypes } from './filePicker';
+import { isSensitiveStorageKey, resolveBiometricRequirement } from './securityPolicy';
 
 const PAYMENT_SUPPORTED_CHANNELS: ReadonlySet<PaymentChannel> = new Set([
   'wechat_pay',
@@ -119,26 +123,72 @@ class CapacitorDevice implements IDevice {
 }
 
 class CapacitorStorage implements IStorage {
+  private async getSecureItem<T>(key: string): Promise<T | null> {
+    try {
+      const value = await SecureStorage.getItem(key);
+      return value ? (JSON.parse(value) as T) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private async setSecureItem<T>(key: string, value: T): Promise<void> {
+    await SecureStorage.setItem(key, JSON.stringify(value));
+  }
+
   async get<T>(key: string): Promise<T | null> {
+    if (isSensitiveStorageKey(key)) {
+      const secureValue = await this.getSecureItem<T>(key);
+      if (secureValue !== null) {
+        return secureValue;
+      }
+    }
     const { value } = await Preferences.get({ key });
     return value ? JSON.parse(value) : null;
   }
 
   async set<T>(key: string, value: T): Promise<void> {
+    if (isSensitiveStorageKey(key)) {
+      try {
+        await this.setSecureItem(key, value);
+        await Preferences.remove({ key });
+        return;
+      } catch (error) {
+        console.warn('[Platform] Secure storage write failed, fallback to preferences', error);
+      }
+    }
     await Preferences.set({ key, value: JSON.stringify(value) });
   }
 
   async remove(key: string): Promise<void> {
+    if (isSensitiveStorageKey(key)) {
+      try {
+        await SecureStorage.removeItem(key);
+      } catch {
+        // Ignore secure storage missing key errors and continue fallback cleanup.
+      }
+    }
     await Preferences.remove({ key });
   }
 
   async clear(): Promise<void> {
+    try {
+      await SecureStorage.clear();
+    } catch {
+      // Ignore secure storage clear failures and continue preferences clear.
+    }
     await Preferences.clear();
   }
 
   async keys(): Promise<string[]> {
-    const { keys } = await Preferences.keys();
-    return keys;
+    const { keys: preferenceKeys } = await Preferences.keys();
+    let secureKeys: string[] = [];
+    try {
+      secureKeys = await SecureStorage.keys();
+    } catch {
+      // Ignore secure storage key listing failures.
+    }
+    return Array.from(new Set([...preferenceKeys, ...secureKeys]));
   }
 }
 
@@ -454,6 +504,32 @@ class CapacitorPush implements IPush {
 }
 
 class CapacitorPayment implements IPayment {
+  private async authenticateBiometricOrThrow(reason?: string): Promise<void> {
+    let biometry: CheckBiometryResult;
+    try {
+      biometry = await BiometricAuth.checkBiometry();
+    } catch (error) {
+      throw new Error(
+        `Biometric capability check failed: ${error instanceof Error ? error.message : 'unknown error'}`,
+      );
+    }
+
+    if (!biometry.isAvailable) {
+      throw new Error(biometry.reason || 'Biometric authentication is not available');
+    }
+
+    try {
+      await BiometricAuth.authenticate({
+        reason: reason || 'Please verify your identity to continue payment',
+        allowDeviceCredential: true,
+      });
+    } catch (error) {
+      throw new Error(
+        `Biometric authentication failed: ${error instanceof Error ? error.message : 'unknown error'}`,
+      );
+    }
+  }
+
   isSupported(channel?: PaymentChannel): boolean {
     if (!channel) {
       return true;
@@ -484,6 +560,11 @@ class CapacitorPayment implements IPayment {
     }
 
     try {
+      const biometricRequirement = resolveBiometricRequirement(request.metadata);
+      if (biometricRequirement.required) {
+        await this.authenticateBiometricOrThrow(biometricRequirement.reason);
+      }
+
       if (/^https?:\/\//i.test(paymentUrl)) {
         await Browser.open({
           url: paymentUrl,
@@ -613,6 +694,15 @@ class CapacitorApp implements IApp {
     await App.exitApp();
   }
 
+  async getLaunchUrl(): Promise<{ url?: string | null }> {
+    try {
+      const launch = await App.getLaunchUrl();
+      return launch ? { url: launch.url ?? null } : { url: null };
+    } catch {
+      return { url: null };
+    }
+  }
+
   async addListener<E extends AppListenerEvent>(
     event: E,
     callback: (payload: AppListenerPayloadMap[E]) => void,
@@ -660,6 +750,19 @@ export class CapacitorPlatform implements IPlatform {
     this.type = this.isIOS ? 'ios' : this.isAndroid ? 'android' : 'web';
   }
 
+  private async preflightAppUpdate(): Promise<void> {
+    try {
+      const info: AppUpdateInfo = await AppUpdate.getAppUpdateInfo();
+      if (info.updateAvailability === AppUpdateAvailability.UPDATE_AVAILABLE) {
+        console.log(
+          `[Platform] App update available: current=${info.currentVersionName} latest=${info.availableVersionName || info.availableVersionCode || 'unknown'}`,
+        );
+      }
+    } catch (error) {
+      console.warn('[Platform] Failed to preflight app update capability', error);
+    }
+  }
+
   async initialize(): Promise<void> {
     await Camera.requestPermissions();
     try {
@@ -668,6 +771,7 @@ export class CapacitorPlatform implements IPlatform {
     } catch (error) {
       console.warn('[Platform] Failed to preflight notification permissions', error);
     }
+    await this.preflightAppUpdate();
     console.log(`[Platform] Capacitor platform initialized (${this.type})`);
   }
 }

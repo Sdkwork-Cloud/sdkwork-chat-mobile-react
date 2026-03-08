@@ -6,6 +6,12 @@ settings:
 
 catalogs:
   default:
+    '@aparajita/capacitor-biometric-auth':
+      specifier: ^8.0.2
+      version: 8.0.2
+    '@aparajita/capacitor-secure-storage':
+      specifier: ^6.0.1
+      version: 6.0.1
     '@capacitor-mlkit/barcode-scanning':
       specifier: ^6.2.0
       version: 6.2.0
@@ -72,6 +78,9 @@ catalogs:
     '@capacitor/status-bar':
       specifier: ^6.0.3
       version: 6.0.3
+    '@capawesome/capacitor-app-update':
+      specifier: ^6.1.0
+      version: 6.1.0
     '@capawesome/capacitor-file-picker':
       specifier: ^6.2.0
       version: 6.2.0
@@ -164,6 +173,12 @@ importers:
 
   .:
     dependencies:
+      '@aparajita/capacitor-biometric-auth':
+        specifier: 'catalog:'
+        version: 8.0.2
+      '@aparajita/capacitor-secure-storage':
+        specifier: 'catalog:'
+        version: 6.0.1
       '@capacitor-mlkit/barcode-scanning':
         specifier: 'catalog:'
         version: 6.2.0(@capacitor/core@6.2.1)
@@ -221,6 +236,9 @@ importers:
       '@capacitor/status-bar':
         specifier: 'catalog:'
         version: 6.0.3(@capacitor/core@6.2.1)
+      '@capawesome/capacitor-app-update':
+        specifier: 'catalog:'
+        version: 6.1.0(@capacitor/core@6.2.1)
       '@capawesome/capacitor-file-picker':
         specifier: 'catalog:'
         version: 6.2.0(@capacitor/core@6.2.1)
@@ -725,6 +743,12 @@ importers:
 
   packages/sdkwork-react-mobile-core:
     dependencies:
+      '@aparajita/capacitor-biometric-auth':
+        specifier: 'catalog:'
+        version: 8.0.2
+      '@aparajita/capacitor-secure-storage':
+        specifier: 'catalog:'
+        version: 6.0.1
       '@capacitor-mlkit/barcode-scanning':
         specifier: 'catalog:'
         version: 6.2.0(@capacitor/core@6.2.1)
@@ -779,6 +803,9 @@ importers:
       '@capacitor/status-bar':
         specifier: 'catalog:'
         version: 6.0.3(@capacitor/core@6.2.1)
+      '@capawesome/capacitor-app-update':
+        specifier: 'catalog:'
+        version: 6.1.0(@capacitor/core@6.2.1)
       '@capawesome/capacitor-file-picker':
         specifier: 'catalog:'
         version: 6.2.0(@capacitor/core@6.2.1)
@@ -1459,6 +1486,14 @@ importers:
 
 packages:
 
+  '@aparajita/capacitor-biometric-auth@8.0.2':
+    resolution: {integrity: sha512-f5EHwJYkwQDM/FmoZoyOTmBs/3XEcYURZDUNyps9+Fn7WrgojtJuZP8GhfW7KrQGqCok+ctDd369nEAmNiTxfw==}
+    engines: {node: '>=18'}
+
+  '@aparajita/capacitor-secure-storage@6.0.1':
+    resolution: {integrity: sha512-3enXCck7Uumg3xCvzh4EHHo4mqYAMMhVWQ1db35xDsuRCSKEGFTJVVdOMpwnrOlS6RqzmZEoGB7n5wftbRHRqQ==}
+    engines: {node: '>=16.15.1'}
+
   '@apideck/better-ajv-errors@0.3.6':
     resolution: {integrity: sha512-P+ZygBLZtkp0qqOAJJVX4oX/sFo5JR3eBWwwuqHHhK0GIgQOKWrAfiAaWX0aArHkRWHMuggFEgAZNxVPwPZYaA==}
     engines: {node: '>=10'}
@@ -2077,6 +2112,11 @@ packages:
 
   '@capacitor/status-bar@6.0.3':
     resolution: {integrity: sha512-nFlgSmtx6Zwaw0tEvZgQsWHBeOfWWB/AvEoCApopLT4mHkBVoSrwkLvy2PjZs5wxCbsmqvQczr3XCyTwaDZVQg==}
+    peerDependencies:
+      '@capacitor/core': ^6.0.0
+
+  '@capawesome/capacitor-app-update@6.1.0':
+    resolution: {integrity: sha512-3b3WD7q8Ht+ffj6IgdXdGCkZEaTlqf5U7Ov+3ZKKs7Kf3fWugBewiuQFUl726Pk3SqQJo9t24O9YG8KQCPxeoA==}
     peerDependencies:
       '@capacitor/core': ^6.0.0
 
@@ -5579,6 +5619,20 @@ packages:
 
 snapshots:
 
+  '@aparajita/capacitor-biometric-auth@8.0.2':
+    dependencies:
+      '@capacitor/android': 6.2.1(@capacitor/core@6.2.1)
+      '@capacitor/app': 6.0.3(@capacitor/core@6.2.1)
+      '@capacitor/core': 6.2.1
+      '@capacitor/ios': 6.2.1(@capacitor/core@6.2.1)
+
+  '@aparajita/capacitor-secure-storage@6.0.1':
+    dependencies:
+      '@capacitor/android': 6.2.1(@capacitor/core@6.2.1)
+      '@capacitor/app': 6.0.3(@capacitor/core@6.2.1)
+      '@capacitor/core': 6.2.1
+      '@capacitor/ios': 6.2.1(@capacitor/core@6.2.1)
+
   '@apideck/better-ajv-errors@0.3.6(ajv@8.18.0)':
     dependencies:
       ajv: 8.18.0
@@ -6353,6 +6407,10 @@ snapshots:
       '@capacitor/core': 6.2.1
 
   '@capacitor/status-bar@6.0.3(@capacitor/core@6.2.1)':
+    dependencies:
+      '@capacitor/core': 6.2.1
+
+  '@capawesome/capacitor-app-update@6.1.0(@capacitor/core@6.2.1)':
     dependencies:
       '@capacitor/core': 6.2.1
 

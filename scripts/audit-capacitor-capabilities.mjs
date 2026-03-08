@@ -164,7 +164,11 @@ const capabilityChecks = [
     tier: 'P2',
     capability: 'Secure Storage (Token/Secrets)',
     plugins: ['@aparajita/capacitor-secure-storage'],
-    integrationChecks: [coreCapacitorSource.includes("from '@aparajita/capacitor-secure-storage'")],
+    integrationChecks: [
+      coreCapacitorSource.includes("from '@aparajita/capacitor-secure-storage'"),
+      coreCapacitorSource.includes('SecureStorage.setItem'),
+      coreCapacitorSource.includes('isSensitiveStorageKey'),
+    ],
     installHint: 'pnpm add @aparajita/capacitor-secure-storage',
   },
   {
@@ -172,7 +176,11 @@ const capabilityChecks = [
     tier: 'P2',
     capability: 'Biometric Auth',
     plugins: ['@aparajita/capacitor-biometric-auth'],
-    integrationChecks: [coreCapacitorSource.includes("from '@aparajita/capacitor-biometric-auth'")],
+    integrationChecks: [
+      coreCapacitorSource.includes("from '@aparajita/capacitor-biometric-auth'"),
+      coreCapacitorSource.includes('BiometricAuth.checkBiometry'),
+      coreCapacitorSource.includes('BiometricAuth.authenticate'),
+    ],
     installHint: 'pnpm add @aparajita/capacitor-biometric-auth',
   },
   {
@@ -180,7 +188,11 @@ const capabilityChecks = [
     tier: 'P2',
     capability: 'In-App Update',
     plugins: ['@capawesome/capacitor-app-update'],
-    integrationChecks: [coreCapacitorSource.includes("from '@capawesome/capacitor-app-update'")],
+    integrationChecks: [
+      coreCapacitorSource.includes("from '@capawesome/capacitor-app-update'"),
+      coreCapacitorSource.includes('AppUpdate.getAppUpdateInfo'),
+      coreCapacitorSource.includes('AppUpdateAvailability.UPDATE_AVAILABLE'),
+    ],
     installHint: 'pnpm add @capawesome/capacitor-app-update',
   },
 ];
