@@ -50,8 +50,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     let disposeRuntime: (() => void) | null = null;
-    let onlineListener: (() => void) | null = null;
-    let visibilityListener: (() => void) | null = null;
+    let flushInFlight: Promise<void> | null = null;
 
     const initApp = async () => {
       // Initialize app platform abstraction (delegates to core platform adapter).
@@ -64,23 +63,24 @@ const App: React.FC = () => {
         };
         const runtimeHooks = createDefaultPlatformRuntimeHooks(runtimeHookOptions);
         const flushRetryQueue = () => {
-          void flushDefaultPlatformRuntimeHookQueue(runtimeHookOptions).catch((error) => {
-            console.warn('[App] Failed to flush runtime retry queue:', error);
-          });
-        };
-
-        disposeRuntime = await initializePlatformRuntime(runtimeHooks);
-        flushRetryQueue();
-
-        onlineListener = () => flushRetryQueue();
-        window.addEventListener('online', onlineListener);
-
-        visibilityListener = () => {
-          if (document.visibilityState === 'visible') {
-            flushRetryQueue();
+          if (!flushInFlight) {
+            flushInFlight = flushDefaultPlatformRuntimeHookQueue(runtimeHookOptions)
+              .catch((error) => {
+                console.warn('[App] Failed to flush runtime retry queue:', error);
+              })
+              .finally(() => {
+                flushInFlight = null;
+              });
           }
+          return flushInFlight;
         };
-        document.addEventListener('visibilitychange', visibilityListener);
+
+        disposeRuntime = await initializePlatformRuntime({
+          ...runtimeHooks,
+          onNetworkOnline: () => flushRetryQueue(),
+          onAppForeground: () => flushRetryQueue(),
+        });
+        void flushRetryQueue();
       } catch (error) {
         console.error('[App] Failed to initialize platform runtime listeners:', error);
       }
@@ -96,12 +96,6 @@ const App: React.FC = () => {
 
     return () => {
       disposeRuntime?.();
-      if (onlineListener) {
-        window.removeEventListener('online', onlineListener);
-      }
-      if (visibilityListener) {
-        document.removeEventListener('visibilitychange', visibilityListener);
-      }
     };
   }, []);
 

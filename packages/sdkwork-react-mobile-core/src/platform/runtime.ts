@@ -30,6 +30,8 @@ export interface PlatformRuntimeOptions {
   emit?: (event: string, payload?: unknown) => void;
   syncPushToken?: (payload: PushTokenUpdatedPayload) => Promise<void> | void;
   handlePaymentCallback?: (payload: PaymentCallbackPayload) => Promise<void> | void;
+  onNetworkOnline?: (status: { connected: boolean; connectionType: string }) => Promise<void> | void;
+  onAppForeground?: (payload: { isActive: boolean }) => Promise<void> | void;
 }
 
 const DEFAULT_PUSH_TOKEN_STORAGE_KEY = 'sys_push_token_v1';
@@ -186,10 +188,17 @@ export async function attachPlatformRuntime(
   const pushTokenStorageKey = options.pushTokenStorageKey || DEFAULT_PUSH_TOKEN_STORAGE_KEY;
   const syncPushToken = options.syncPushToken;
   const handlePaymentCallback = options.handlePaymentCallback;
+  const onNetworkOnline = options.onNetworkOnline;
+  const onAppForeground = options.onAppForeground;
   const cleanups: Array<() => void> = [];
 
   const appStateCleanup = await platform.app.addListener('appStateChange', ({ isActive }) => {
     emit(isActive ? AppEvents.APP_FOREGROUND : AppEvents.APP_BACKGROUND, { isActive });
+    if (isActive && onAppForeground) {
+      void Promise.resolve(onAppForeground({ isActive: true })).catch((error) => {
+        console.warn('[PlatformRuntime] onAppForeground callback failed:', error);
+      });
+    }
   });
   cleanups.push(appStateCleanup);
 
@@ -204,6 +213,11 @@ export async function attachPlatformRuntime(
 
   const networkCleanup = await platform.network.addListener((status) => {
     emit(status.connected ? AppEvents.NETWORK_ONLINE : AppEvents.NETWORK_OFFLINE, status);
+    if (status.connected && onNetworkOnline) {
+      void Promise.resolve(onNetworkOnline(status)).catch((error) => {
+        console.warn('[PlatformRuntime] onNetworkOnline callback failed:', error);
+      });
+    }
   });
   cleanups.push(networkCleanup);
   try {
@@ -212,6 +226,11 @@ export async function attachPlatformRuntime(
       initialNetworkStatus.connected ? AppEvents.NETWORK_ONLINE : AppEvents.NETWORK_OFFLINE,
       initialNetworkStatus,
     );
+    if (initialNetworkStatus.connected && onNetworkOnline) {
+      void Promise.resolve(onNetworkOnline(initialNetworkStatus)).catch((error) => {
+        console.warn('[PlatformRuntime] onNetworkOnline callback failed:', error);
+      });
+    }
   } catch {
     // Ignore initial network status read failures and continue runtime setup.
   }

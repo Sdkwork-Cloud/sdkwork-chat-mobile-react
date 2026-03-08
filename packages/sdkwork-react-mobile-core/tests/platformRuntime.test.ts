@@ -222,6 +222,47 @@ describe('platform runtime', () => {
     cleanup();
   });
 
+  it('triggers onNetworkOnline callback for initial and subsequent online status', async () => {
+    const context = createPlatformForRuntime();
+    const onNetworkOnline = vi.fn();
+
+    const cleanup = await attachPlatformRuntime(context.platform, {
+      onNetworkOnline,
+    });
+
+    expect(onNetworkOnline).toHaveBeenCalledTimes(1);
+    expect(onNetworkOnline).toHaveBeenCalledWith(
+      expect.objectContaining({
+        connected: true,
+      }),
+    );
+
+    const networkListener = context.getNetworkListener();
+    networkListener?.({ connected: false, connectionType: 'none' });
+    networkListener?.({ connected: true, connectionType: 'wifi' });
+
+    expect(onNetworkOnline).toHaveBeenCalledTimes(2);
+
+    cleanup();
+  });
+
+  it('triggers onAppForeground callback when app becomes active', async () => {
+    const context = createPlatformForRuntime();
+    const onAppForeground = vi.fn();
+
+    const cleanup = await attachPlatformRuntime(context.platform, {
+      onAppForeground,
+    });
+
+    context.appListeners.appStateChange?.({ isActive: false });
+    context.appListeners.appStateChange?.({ isActive: true });
+
+    expect(onAppForeground).toHaveBeenCalledTimes(1);
+    expect(onAppForeground).toHaveBeenCalledWith({ isActive: true });
+
+    cleanup();
+  });
+
   it('emits payment callback from launch URL on cold start when supported', async () => {
     const context = createPlatformForRuntime({
       launchUrl: 'openchat://payment/callback?orderId=SO-3&status=success&channel=alipay',
