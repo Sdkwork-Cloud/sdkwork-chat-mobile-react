@@ -206,6 +206,15 @@ export async function attachPlatformRuntime(
     emit(status.connected ? AppEvents.NETWORK_ONLINE : AppEvents.NETWORK_OFFLINE, status);
   });
   cleanups.push(networkCleanup);
+  try {
+    const initialNetworkStatus = await platform.network.getStatus();
+    emit(
+      initialNetworkStatus.connected ? AppEvents.NETWORK_ONLINE : AppEvents.NETWORK_OFFLINE,
+      initialNetworkStatus,
+    );
+  } catch {
+    // Ignore initial network status read failures and continue runtime setup.
+  }
 
   try {
     const appUrlCleanup = await platform.app.addListener('appUrlOpen', ({ url }) => {

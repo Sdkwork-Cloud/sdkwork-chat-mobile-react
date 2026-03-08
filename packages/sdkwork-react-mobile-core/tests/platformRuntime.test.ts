@@ -209,6 +209,19 @@ describe('platform runtime', () => {
     cleanup();
   });
 
+  it('emits initial network status when runtime attaches', async () => {
+    const context = createPlatformForRuntime();
+    const emitted: Array<{ event: string; payload: unknown }> = [];
+
+    const cleanup = await attachPlatformRuntime(context.platform, {
+      emit: (event, payload) => emitted.push({ event, payload }),
+    });
+
+    expect(emitted.some((item) => item.event === AppEvents.NETWORK_ONLINE)).toBe(true);
+
+    cleanup();
+  });
+
   it('emits payment callback from launch URL on cold start when supported', async () => {
     const context = createPlatformForRuntime({
       launchUrl: 'openchat://payment/callback?orderId=SO-3&status=success&channel=alipay',
