@@ -231,6 +231,72 @@ describe('platform runtime', () => {
     cleanup();
   });
 
+  it('runs payment callback handler and emits handled/failed events', async () => {
+    const context = createPlatformForRuntime({
+      launchUrl: 'openchat://payment/callback?orderId=SO-4&status=success&channel=wechat_pay',
+    });
+    const emitted: Array<{ event: string; payload: unknown }> = [];
+    const handlePaymentCallback = vi
+      .fn()
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('apply payment state failed'));
+
+    const cleanup = await attachPlatformRuntime(context.platform, {
+      emit: (event, payload) => emitted.push({ event, payload }),
+      handlePaymentCallback,
+    });
+
+    expect(handlePaymentCallback).toHaveBeenCalledTimes(1);
+    expect(
+      emitted.some((item) => item.event === PLATFORM_RUNTIME_EVENTS.PAYMENT_CALLBACK_HANDLED),
+    ).toBe(true);
+
+    context.appListeners.appUrlOpen?.({
+      url: 'openchat://payment/callback?orderId=SO-5&status=paid&channel=alipay',
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(handlePaymentCallback).toHaveBeenCalledTimes(2);
+    const failedEvent = emitted.find((item) => item.event === PLATFORM_RUNTIME_EVENTS.PAYMENT_CALLBACK_HANDLE_FAILED);
+    expect(failedEvent).toBeTruthy();
+    expect(failedEvent?.payload).toMatchObject({
+      error: 'apply payment state failed',
+    });
+
+    cleanup();
+  });
+
+  it('runs push token sync hook and emits sync failure event', async () => {
+    const context = createPlatformForRuntime();
+    const emitted: Array<{ event: string; payload: unknown }> = [];
+    const syncPushToken = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('sync push token failed'))
+      .mockResolvedValueOnce(undefined);
+
+    const cleanup = await attachPlatformRuntime(context.platform, {
+      emit: (event, payload) => emitted.push({ event, payload }),
+      syncPushToken,
+      pushTokenStorageKey: 'push-token',
+    });
+
+    expect(syncPushToken).toHaveBeenCalledTimes(1);
+    expect(
+      emitted.some((item) => item.event === PLATFORM_RUNTIME_EVENTS.PUSH_TOKEN_SYNC_FAILED),
+    ).toBe(true);
+
+    context.pushListeners.registration?.({ value: 'token-refreshed' });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(syncPushToken).toHaveBeenCalledTimes(2);
+    expect(
+      emitted.some((item) => item.event === PLATFORM_RUNTIME_EVENTS.PUSH_TOKEN_SYNCED),
+    ).toBe(true);
+
+    cleanup();
+  });
+
   it('skips push registration workflow when push is unsupported', async () => {
     const context = createPlatformForRuntime({ native: false, pushSupported: false });
     const emitted: Array<{ event: string; payload: unknown }> = [];

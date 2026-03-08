@@ -4,11 +4,15 @@ import type { IPlatform, PaymentChannel } from './types';
 
 export const PLATFORM_RUNTIME_EVENTS = {
   PUSH_TOKEN_UPDATED: 'platform:push:token_updated',
+  PUSH_TOKEN_SYNCED: 'platform:push:token_synced',
+  PUSH_TOKEN_SYNC_FAILED: 'platform:push:token_sync_failed',
   PUSH_REGISTRATION_FAILED: 'platform:push:registration_failed',
   PUSH_NOTIFICATION_RECEIVED: 'platform:push:notification_received',
   PUSH_NOTIFICATION_ACTION: 'platform:push:notification_action',
   PUSH_REGISTRATION_EVENT: 'platform:push:registration_event',
   PAYMENT_CALLBACK: 'platform:payment:callback',
+  PAYMENT_CALLBACK_HANDLED: 'platform:payment:callback_handled',
+  PAYMENT_CALLBACK_HANDLE_FAILED: 'platform:payment:callback_handle_failed',
 } as const;
 
 export interface PaymentCallbackPayload {
@@ -24,12 +28,21 @@ export interface PaymentCallbackPayload {
 export interface PlatformRuntimeOptions {
   pushTokenStorageKey?: string;
   emit?: (event: string, payload?: unknown) => void;
+  syncPushToken?: (payload: PushTokenUpdatedPayload) => Promise<void> | void;
+  handlePaymentCallback?: (payload: PaymentCallbackPayload) => Promise<void> | void;
 }
 
 const DEFAULT_PUSH_TOKEN_STORAGE_KEY = 'sys_push_token_v1';
 const SUCCESS_STATUSES = new Set(['success', 'succeeded', 'paid', 'ok', '1', 'true']);
 
 let runtimeCleanup: (() => void) | null = null;
+type PushTokenUpdateSource = 'registration' | 'listener';
+
+export interface PushTokenUpdatedPayload {
+  token: string;
+  previousToken: string | null;
+  source: PushTokenUpdateSource;
+}
 
 function normalizeStatus(value: string | null): string {
   return (value || '').trim().toLowerCase();
@@ -64,6 +77,10 @@ async function persistPushToken(
   token: string,
   key: string,
   emit: (event: string, payload?: unknown) => void,
+  options?: {
+    source: PushTokenUpdateSource;
+    syncPushToken?: (payload: PushTokenUpdatedPayload) => Promise<void> | void;
+  },
 ): Promise<void> {
   const previousToken = await platform.storage.get<string>(key);
   if (previousToken === token) {
@@ -71,18 +88,52 @@ async function persistPushToken(
   }
 
   await platform.storage.set<string>(key, token);
-  emit(PLATFORM_RUNTIME_EVENTS.PUSH_TOKEN_UPDATED, {
+  const payload: PushTokenUpdatedPayload = {
     token,
     previousToken: previousToken || null,
-  });
+    source: options?.source || 'registration',
+  };
+  emit(PLATFORM_RUNTIME_EVENTS.PUSH_TOKEN_UPDATED, payload);
+
+  if (!options?.syncPushToken) {
+    return;
+  }
+
+  try {
+    await options.syncPushToken(payload);
+    emit(PLATFORM_RUNTIME_EVENTS.PUSH_TOKEN_SYNCED, payload);
+  } catch (error) {
+    emit(PLATFORM_RUNTIME_EVENTS.PUSH_TOKEN_SYNC_FAILED, {
+      ...payload,
+      error: error instanceof Error ? error.message : 'unknown error',
+    });
+  }
 }
 
-function emitPaymentCallbackIfMatched(url: string | null | undefined, emit: (event: string, payload?: unknown) => void) {
+async function emitPaymentCallbackIfMatched(
+  url: string | null | undefined,
+  emit: (event: string, payload?: unknown) => void,
+  handlePaymentCallback?: (payload: PaymentCallbackPayload) => Promise<void> | void,
+): Promise<void> {
   const rawUrl = typeof url === 'string' ? url.trim() : '';
   if (!rawUrl) return;
   const paymentPayload = parsePaymentCallbackUrl(rawUrl);
   if (paymentPayload) {
     emit(PLATFORM_RUNTIME_EVENTS.PAYMENT_CALLBACK, paymentPayload);
+
+    if (!handlePaymentCallback) {
+      return;
+    }
+
+    try {
+      await handlePaymentCallback(paymentPayload);
+      emit(PLATFORM_RUNTIME_EVENTS.PAYMENT_CALLBACK_HANDLED, paymentPayload);
+    } catch (error) {
+      emit(PLATFORM_RUNTIME_EVENTS.PAYMENT_CALLBACK_HANDLE_FAILED, {
+        payment: paymentPayload,
+        error: error instanceof Error ? error.message : 'unknown error',
+      });
+    }
   }
 }
 
@@ -133,6 +184,8 @@ export async function attachPlatformRuntime(
 ): Promise<() => void> {
   const emit = options.emit || ((event: string, payload?: unknown) => eventBus.emit(event, payload));
   const pushTokenStorageKey = options.pushTokenStorageKey || DEFAULT_PUSH_TOKEN_STORAGE_KEY;
+  const syncPushToken = options.syncPushToken;
+  const handlePaymentCallback = options.handlePaymentCallback;
   const cleanups: Array<() => void> = [];
 
   const appStateCleanup = await platform.app.addListener('appStateChange', ({ isActive }) => {
@@ -143,7 +196,7 @@ export async function attachPlatformRuntime(
   if (typeof platform.app.getLaunchUrl === 'function') {
     try {
       const launchResult = await platform.app.getLaunchUrl();
-      emitPaymentCallbackIfMatched(launchResult?.url, emit);
+      await emitPaymentCallbackIfMatched(launchResult?.url, emit, handlePaymentCallback);
     } catch {
       // Some runtimes may throw for unsupported launch URL APIs.
     }
@@ -156,7 +209,7 @@ export async function attachPlatformRuntime(
 
   try {
     const appUrlCleanup = await platform.app.addListener('appUrlOpen', ({ url }) => {
-      emitPaymentCallbackIfMatched(url, emit);
+      void emitPaymentCallbackIfMatched(url, emit, handlePaymentCallback);
     });
     cleanups.push(appUrlCleanup);
   } catch {
@@ -168,7 +221,10 @@ export async function attachPlatformRuntime(
       emit(PLATFORM_RUNTIME_EVENTS.PUSH_REGISTRATION_EVENT, payload);
       const token = extractPushToken(payload);
       if (token) {
-        void persistPushToken(platform, token, pushTokenStorageKey, emit);
+        void persistPushToken(platform, token, pushTokenStorageKey, emit, {
+          source: 'listener',
+          syncPushToken,
+        });
       }
     });
     cleanups.push(registrationCleanup);
@@ -194,7 +250,10 @@ export async function attachPlatformRuntime(
         error: registrationResult.error || 'Push registration failed',
       });
     } else if (registrationResult.token) {
-      await persistPushToken(platform, registrationResult.token, pushTokenStorageKey, emit);
+      await persistPushToken(platform, registrationResult.token, pushTokenStorageKey, emit, {
+        source: 'registration',
+        syncPushToken,
+      });
     }
   }
 
