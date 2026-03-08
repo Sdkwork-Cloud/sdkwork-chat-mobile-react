@@ -8,10 +8,6 @@ import { ActionSheetContainer as CommonsActionSheetContainer } from '@sdkwork/re
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { getThemeMetaColor, useTheme } from '../theme/themeContext';
 import { SplashScreen } from '../components/SplashScreen/SplashScreen';
-import {
-  initializePlatform as initializeCorePlatform,
-  isPlatformInitialized as isCorePlatformInitialized,
-} from '@sdkwork/react-mobile-core/platform';
 
 const InitToast = lazy(() => import('../components/Toast').then((m) => ({ default: m.InitToast })));
 const InitImageViewer = lazy(() => import('../components/ImageViewer/ImageViewer').then((m) => ({ default: m.InitImageViewer })));
@@ -48,17 +44,8 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const initApp = async () => {
-      // 1. Initialize app platform abstraction.
+      // Initialize app platform abstraction (delegates to core platform adapter).
       await Platform.initialize();
-
-      // 2. Initialize core package platform once to avoid memory-storage fallback.
-      if (!isCorePlatformInitialized()) {
-        try {
-          await initializeCorePlatform();
-        } catch (error) {
-          console.error('[App] Failed to initialize core platform:', error);
-        }
-      }
 
       console.log(`Running on platform: ${Platform.type}`);
       setInitialized(true);
