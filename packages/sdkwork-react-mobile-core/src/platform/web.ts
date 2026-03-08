@@ -12,6 +12,8 @@ import type {
   ICamera,
   IFileSystem,
   INotifications,
+  IPush,
+  IPayment,
   IShare,
   INetwork,
   IKeyboard,
@@ -22,6 +24,12 @@ import type {
   OpenDialogOptions,
   SaveDialogOptions,
   NotificationOptions,
+  PushPermissionState,
+  PushRegistrationResult,
+  PushListenerEvent,
+  PaymentChannel,
+  PaymentLaunchRequest,
+  PaymentLaunchResult,
 } from './types';
 
 class WebDevice implements IDevice {
@@ -214,6 +222,94 @@ class WebNotifications implements INotifications {
   }
 }
 
+class WebPush implements IPush {
+  isSupported(): boolean {
+    return false;
+  }
+
+  async requestPermission(): Promise<PushPermissionState> {
+    if (!('Notification' in window)) {
+      return 'denied';
+    }
+
+    if (Notification.permission === 'default') {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') return 'granted';
+      if (permission === 'denied') return 'denied';
+      return 'prompt';
+    }
+
+    return Notification.permission === 'granted' ? 'granted' : 'denied';
+  }
+
+  async register(): Promise<PushRegistrationResult> {
+    return {
+      success: false,
+      error: 'Push notifications require native runtime and @capacitor/push-notifications',
+    };
+  }
+
+  async unregister(): Promise<void> {
+    // No-op on web.
+  }
+
+  async addListener(_event: PushListenerEvent, _callback: (payload: unknown) => void): Promise<() => void> {
+    // No-op on web.
+    return () => {};
+  }
+}
+
+class WebPayment implements IPayment {
+  isSupported(channel?: PaymentChannel): boolean {
+    if (channel === 'apple_pay' || channel === 'google_pay' || channel === 'web') {
+      return typeof window !== 'undefined' && 'PaymentRequest' in window;
+    }
+    return typeof window !== 'undefined';
+  }
+
+  async launch(request: PaymentLaunchRequest): Promise<PaymentLaunchResult> {
+    const paymentUrl = request.paymentUrl.trim();
+
+    if (!paymentUrl) {
+      return {
+        success: false,
+        status: 'failed',
+        channel: request.channel,
+        orderId: request.orderId,
+        error: 'paymentUrl is required for payment launch',
+      };
+    }
+
+    if (!this.isSupported(request.channel)) {
+      return {
+        success: false,
+        status: 'unsupported',
+        channel: request.channel,
+        orderId: request.orderId,
+        error: `${request.channel} is not supported on current web runtime`,
+      };
+    }
+
+    try {
+      window.location.assign(paymentUrl);
+      return {
+        success: true,
+        status: 'launched',
+        channel: request.channel,
+        orderId: request.orderId,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        status: 'failed',
+        channel: request.channel,
+        orderId: request.orderId,
+        error: error instanceof Error ? error.message : 'Failed to launch payment URL',
+      };
+    }
+  }
+}
+
 class WebShare implements IShare {
   async share(content: { title?: string; text?: string; url?: string; files?: string[] }): Promise<void> {
     if (navigator.share) {
@@ -333,6 +429,8 @@ export class WebPlatform implements IPlatform {
   camera = new WebCamera();
   fileSystem = new WebFileSystem();
   notifications = new WebNotifications();
+  push = new WebPush();
+  payment = new WebPayment();
   share = new WebShare();
   network = new WebNetwork();
   keyboard = new WebKeyboard();

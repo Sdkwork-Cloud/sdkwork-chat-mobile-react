@@ -34,6 +34,21 @@ If upgrading to Capacitor 7+, update the catalog first, then all docs and script
 4. Release builds must not set `CAP_SERVER_URL`.
 5. Plugin defaults should remain deterministic across platforms.
 
+## Core Capability Baseline
+
+The following baseline capabilities are required for production mobile builds:
+
+- Local notifications: `@capacitor/local-notifications`
+- Push notifications: `@capacitor/push-notifications`
+- Payment bridge launch: unified payment URL launcher through platform abstraction
+
+Implementation contract:
+
+1. `packages/sdkwork-react-mobile-core/src/platform/capacitor.ts` must use real Capacitor plugins for local and push notifications.
+2. `packages/sdkwork-react-mobile-core/src/platform/web.ts` must provide safe degradation behavior for web runtime.
+3. Payment flow is provider-agnostic in core: backend returns payment URL/scheme, app launches it through platform payment bridge.
+4. Capability health must be auditable via `inspectPlatformCapabilities(...)` in core platform module.
+
 ## Required Commands
 
 - `pnpm cap:add:android`

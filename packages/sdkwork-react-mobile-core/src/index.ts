@@ -7,8 +7,12 @@ export {
   isMobile,
   isNative,
   getPlatformType,
+  inspectPlatformCapabilities,
   type Platform,
   type PlatformType,
+  type PlatformCapabilityReport,
+  type CapabilityCheckItem,
+  type PaymentCapabilityCheck,
 } from './platform';
 
 export { platformService } from './platform/platformService';

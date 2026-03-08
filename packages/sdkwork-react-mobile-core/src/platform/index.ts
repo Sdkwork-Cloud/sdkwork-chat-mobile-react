@@ -5,6 +5,8 @@
 
 import type { IPlatform, PlatformType } from './types';
 export type * from './types';
+export { inspectPlatformCapabilities } from './capabilities';
+export type { PlatformCapabilityReport, CapabilityCheckItem, PaymentCapabilityCheck } from './capabilities';
 
 let platformInstance: IPlatform | null = null;
 let initializationPromise: Promise<void> | null = null;

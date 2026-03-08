@@ -11,6 +11,9 @@ export interface ChatMessageLayout {
   bubbleContainerWidth: string;
   bubbleWidth: string;
   preferFullReplyWidth: boolean;
+  avatarSlotSize: number;
+  avatarRenderSize: number;
+  avatarGap: number;
 }
 
 export const resolveChatMessageLayout = ({
@@ -26,6 +29,9 @@ export const resolveChatMessageLayout = ({
       bubbleContainerWidth: '100%',
       bubbleWidth: 'auto',
       preferFullReplyWidth: hasReply,
+      avatarSlotSize: 0,
+      avatarRenderSize: 0,
+      avatarGap: 0,
     };
   }
 
@@ -36,6 +42,8 @@ export const resolveChatMessageLayout = ({
     bubbleContainerWidth: 'auto',
     bubbleWidth: 'auto',
     preferFullReplyWidth: false,
+    avatarSlotSize: 40,
+    avatarRenderSize: 40,
+    avatarGap: 10,
   };
 };
-

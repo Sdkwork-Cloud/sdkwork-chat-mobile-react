@@ -225,11 +225,11 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = React.memo(
           {showAvatar ? (
             <div
               style={{
-                width: 36,
-                height: 36,
+                width: layout.avatarSlotSize,
+                height: layout.avatarSlotSize,
                 flexShrink: 0,
-                marginLeft: isUser ? '8px' : 0,
-                marginRight: isUser ? 0 : '8px',
+                marginLeft: isUser ? `${layout.avatarGap}px` : 0,
+                marginRight: isUser ? 0 : `${layout.avatarGap}px`,
                 position: 'relative',
                 zIndex: 1,
                 marginTop: 'auto',
@@ -238,7 +238,11 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = React.memo(
               <Avatar
                 src={isUser ? 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix' : undefined}
                 name={isUser ? 'User' : 'Bot'}
-                size="lg"
+                size="md"
+                style={{
+                  width: layout.avatarRenderSize,
+                  height: layout.avatarRenderSize,
+                }}
               />
             </div>
           ) : null}

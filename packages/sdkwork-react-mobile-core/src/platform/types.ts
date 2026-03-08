@@ -43,7 +43,7 @@ export interface NotificationOptions {
   title: string;
   body: string;
   icon?: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
 }
 
 export interface IDevice {
@@ -86,6 +86,53 @@ export interface INotifications {
   show(options: NotificationOptions): Promise<void>;
   schedule(options: NotificationOptions & { at: Date }): Promise<string>;
   cancel(id: string): Promise<void>;
+}
+
+export type PushPermissionState = 'granted' | 'denied' | 'prompt';
+export type PushListenerEvent =
+  | 'registration'
+  | 'registrationError'
+  | 'pushNotificationReceived'
+  | 'pushNotificationActionPerformed';
+
+export interface PushRegistrationResult {
+  success: boolean;
+  token?: string;
+  error?: string;
+}
+
+export interface IPush {
+  isSupported(): boolean;
+  requestPermission(): Promise<PushPermissionState>;
+  register(): Promise<PushRegistrationResult>;
+  unregister(): Promise<void>;
+  addListener(event: PushListenerEvent, callback: (payload: unknown) => void): Promise<() => void>;
+}
+
+export type PaymentChannel = 'wechat_pay' | 'alipay' | 'apple_pay' | 'google_pay' | 'web' | 'custom';
+export type PaymentLaunchStatus = 'launched' | 'failed' | 'unsupported';
+
+export interface PaymentLaunchRequest {
+  channel: PaymentChannel;
+  orderId: string;
+  amount: number;
+  paymentUrl: string;
+  currency?: string;
+  returnUrl?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface PaymentLaunchResult {
+  success: boolean;
+  status: PaymentLaunchStatus;
+  channel: PaymentChannel;
+  orderId: string;
+  error?: string;
+}
+
+export interface IPayment {
+  isSupported(channel?: PaymentChannel): boolean;
+  launch(request: PaymentLaunchRequest): Promise<PaymentLaunchResult>;
 }
 
 export interface IShare {
@@ -137,6 +184,8 @@ export interface IPlatform {
   camera: ICamera;
   fileSystem: IFileSystem;
   notifications: INotifications;
+  push: IPush;
+  payment: IPayment;
   share: IShare;
   network: INetwork;
   keyboard: IKeyboard;

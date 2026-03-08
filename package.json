@@ -69,6 +69,7 @@
   },
   "dependencies": {
     "@capacitor/app": "catalog:",
+    "@capacitor/app-launcher": "catalog:",
     "@capacitor/camera": "catalog:",
     "@capacitor/clipboard": "catalog:",
     "@capacitor/core": "catalog:",
@@ -76,8 +77,10 @@
     "@capacitor/filesystem": "catalog:",
     "@capacitor/haptics": "catalog:",
     "@capacitor/keyboard": "catalog:",
+    "@capacitor/local-notifications": "catalog:",
     "@capacitor/network": "catalog:",
     "@capacitor/preferences": "catalog:",
+    "@capacitor/push-notifications": "catalog:",
     "@capacitor/share": "catalog:",
     "@capacitor/splash-screen": "catalog:",
     "@capacitor/status-bar": "catalog:",

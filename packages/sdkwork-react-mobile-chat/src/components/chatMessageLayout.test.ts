@@ -14,6 +14,9 @@ describe('resolveChatMessageLayout', () => {
     expect(layout.bubbleContainerFlex).toBe('1 1 auto');
     expect(layout.bubbleContainerWidth).toBe('100%');
     expect(layout.preferFullReplyWidth).toBe(true);
+    expect(layout.avatarSlotSize).toBe(0);
+    expect(layout.avatarRenderSize).toBe(0);
+    expect(layout.avatarGap).toBe(0);
   });
 
   it('keeps limited max-width rules when current message shows avatar', () => {
@@ -32,6 +35,9 @@ describe('resolveChatMessageLayout', () => {
     expect(mediaLayout.bubbleContainerMaxWidth).toBe('80%');
     expect(textLayout.bubbleContainerFlex).toBe('none');
     expect(textLayout.preferFullReplyWidth).toBe(false);
+    expect(textLayout.avatarGap).toBe(10);
+    expect(textLayout.avatarSlotSize).toBe(40);
+    expect(textLayout.avatarRenderSize).toBe(40);
+    expect(textLayout.avatarSlotSize).toBeGreaterThanOrEqual(textLayout.avatarRenderSize);
   });
 });
-
