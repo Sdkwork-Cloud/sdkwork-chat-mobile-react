@@ -14,6 +14,7 @@ export {
   attachPlatformRuntime,
   initializePlatformRuntime,
   createDefaultPlatformRuntimeHooks,
+  flushDefaultPlatformRuntimeHookQueue,
   type Platform,
   type PlatformType,
   type PlatformCapabilityReport,
@@ -23,6 +24,7 @@ export {
   type PaymentCallbackPayload,
   type PushTokenUpdatedPayload,
   type DefaultPlatformRuntimeHooksOptions,
+  type RuntimeRetryFlushResult,
 } from './platform';
 
 export { platformService } from './platform/platformService';

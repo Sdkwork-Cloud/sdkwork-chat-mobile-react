@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   createDefaultPlatformRuntimeHooks,
+  flushDefaultPlatformRuntimeHookQueue,
   PLATFORM_RUNTIME_HOOK_EVENTS,
 } from '../src/platform/runtimeHooks';
 import type { PaymentCallbackPayload, PushTokenUpdatedPayload } from '../src/platform/runtime';
@@ -149,5 +150,97 @@ describe('platform runtime hooks', () => {
       emitted.some((item) => item.event === PLATFORM_RUNTIME_HOOK_EVENTS.PAYMENT_ORDER_STATUS_SYNCED),
     ).toBe(true);
   });
-});
 
+  it('queues failed push sync and flushes retry queue successfully', async () => {
+    const { platform } = createRuntimeHookPlatform('auth-token');
+    const emitted: Array<{ event: string; payload: unknown }> = [];
+    const registerDevice = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('network timeout'))
+      .mockResolvedValueOnce({ data: { id: 'device-record-2' } });
+    const clientResolver = vi.fn().mockResolvedValue({
+      notification: { registerDevice },
+      orders: { getOrderStatus: vi.fn() },
+    });
+
+    const hooks = createDefaultPlatformRuntimeHooks({
+      platform,
+      clientResolver,
+      emit: (event, payload) => emitted.push({ event, payload }),
+    });
+
+    await expect(
+      hooks.syncPushToken?.({
+        token: 'push-token-retry',
+        previousToken: null,
+        source: 'registration',
+      }),
+    ).rejects.toThrow('network timeout');
+
+    const flushResult = await flushDefaultPlatformRuntimeHookQueue({
+      platform,
+      clientResolver,
+      emit: (event, payload) => emitted.push({ event, payload }),
+    });
+
+    expect(registerDevice).toHaveBeenCalledTimes(2);
+    expect(flushResult.push).toBe(1);
+    expect(flushResult.payment).toBe(0);
+    expect(
+      emitted.some((item) => item.event === PLATFORM_RUNTIME_HOOK_EVENTS.PUSH_RETRY_ENQUEUED),
+    ).toBe(true);
+    expect(
+      emitted.some((item) => item.event === PLATFORM_RUNTIME_HOOK_EVENTS.RETRY_QUEUE_FLUSHED),
+    ).toBe(true);
+  });
+
+  it('queues failed payment status sync and flushes retry queue successfully', async () => {
+    const { platform } = createRuntimeHookPlatform('auth-token');
+    const emitted: Array<{ event: string; payload: unknown }> = [];
+    const getOrderStatus = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('gateway unavailable'))
+      .mockResolvedValueOnce({
+        data: {
+          orderId: 'SO-2002',
+          status: 'paid',
+          statusName: 'Paid',
+        },
+      });
+    const clientResolver = vi.fn().mockResolvedValue({
+      notification: { registerDevice: vi.fn() },
+      orders: { getOrderStatus },
+    });
+
+    const hooks = createDefaultPlatformRuntimeHooks({
+      platform,
+      clientResolver,
+      emit: (event, payload) => emitted.push({ event, payload }),
+    });
+
+    await expect(
+      hooks.handlePaymentCallback?.({
+        rawUrl: 'openchat://payment/callback?orderId=SO-2002&status=paid',
+        orderId: 'SO-2002',
+        success: true,
+        status: 'paid',
+      }),
+    ).rejects.toThrow('gateway unavailable');
+
+    const flushResult = await flushDefaultPlatformRuntimeHookQueue({
+      platform,
+      clientResolver,
+      emit: (event, payload) => emitted.push({ event, payload }),
+    });
+
+    expect(getOrderStatus).toHaveBeenCalledTimes(2);
+    expect(flushResult.push).toBe(0);
+    expect(flushResult.payment).toBe(1);
+    expect(
+      emitted.some((item) => item.event === PLATFORM_RUNTIME_HOOK_EVENTS.PAYMENT_RETRY_ENQUEUED),
+    ).toBe(true);
+    expect(
+      emitted.some((item) => item.event === PLATFORM_RUNTIME_HOOK_EVENTS.RETRY_QUEUE_FLUSHED),
+    ).toBe(true);
+  });
+});

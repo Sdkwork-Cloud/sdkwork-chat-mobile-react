@@ -8,7 +8,12 @@ import { ActionSheetContainer as CommonsActionSheetContainer } from '@sdkwork/re
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { getThemeMetaColor, useTheme } from '../theme/themeContext';
 import { SplashScreen } from '../components/SplashScreen/SplashScreen';
-import { createDefaultPlatformRuntimeHooks, getPlatform as getCorePlatform, initializePlatformRuntime } from '@sdkwork/react-mobile-core/platform';
+import {
+  createDefaultPlatformRuntimeHooks,
+  flushDefaultPlatformRuntimeHookQueue,
+  getPlatform as getCorePlatform,
+  initializePlatformRuntime,
+} from '@sdkwork/react-mobile-core/platform';
 
 const InitToast = lazy(() => import('../components/Toast').then((m) => ({ default: m.InitToast })));
 const InitImageViewer = lazy(() => import('../components/ImageViewer/ImageViewer').then((m) => ({ default: m.InitImageViewer })));
@@ -45,6 +50,8 @@ const App: React.FC = () => {
 
   useEffect(() => {
     let disposeRuntime: (() => void) | null = null;
+    let onlineListener: (() => void) | null = null;
+    let visibilityListener: (() => void) | null = null;
 
     const initApp = async () => {
       // Initialize app platform abstraction (delegates to core platform adapter).
@@ -52,10 +59,28 @@ const App: React.FC = () => {
 
       // Bind native runtime listeners: push registration refresh, appUrlOpen payment callbacks, and network/app state events.
       try {
-        const runtimeHooks = createDefaultPlatformRuntimeHooks({
+        const runtimeHookOptions = {
           platform: getCorePlatform(),
-        });
+        };
+        const runtimeHooks = createDefaultPlatformRuntimeHooks(runtimeHookOptions);
+        const flushRetryQueue = () => {
+          void flushDefaultPlatformRuntimeHookQueue(runtimeHookOptions).catch((error) => {
+            console.warn('[App] Failed to flush runtime retry queue:', error);
+          });
+        };
+
         disposeRuntime = await initializePlatformRuntime(runtimeHooks);
+        flushRetryQueue();
+
+        onlineListener = () => flushRetryQueue();
+        window.addEventListener('online', onlineListener);
+
+        visibilityListener = () => {
+          if (document.visibilityState === 'visible') {
+            flushRetryQueue();
+          }
+        };
+        document.addEventListener('visibilitychange', visibilityListener);
       } catch (error) {
         console.error('[App] Failed to initialize platform runtime listeners:', error);
       }
@@ -71,6 +96,12 @@ const App: React.FC = () => {
 
     return () => {
       disposeRuntime?.();
+      if (onlineListener) {
+        window.removeEventListener('online', onlineListener);
+      }
+      if (visibilityListener) {
+        document.removeEventListener('visibilitychange', visibilityListener);
+      }
     };
   }, []);
 

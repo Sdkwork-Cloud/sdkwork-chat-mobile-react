@@ -14,8 +14,12 @@ export {
   initializePlatformRuntime,
 } from './runtime';
 export type { PlatformRuntimeOptions, PaymentCallbackPayload, PushTokenUpdatedPayload } from './runtime';
-export { PLATFORM_RUNTIME_HOOK_EVENTS, createDefaultPlatformRuntimeHooks } from './runtimeHooks';
-export type { DefaultPlatformRuntimeHooksOptions } from './runtimeHooks';
+export {
+  PLATFORM_RUNTIME_HOOK_EVENTS,
+  createDefaultPlatformRuntimeHooks,
+  flushDefaultPlatformRuntimeHookQueue,
+} from './runtimeHooks';
+export type { DefaultPlatformRuntimeHooksOptions, RuntimeRetryFlushResult } from './runtimeHooks';
 
 let platformInstance: IPlatform | null = null;
 let initializationPromise: Promise<void> | null = null;
