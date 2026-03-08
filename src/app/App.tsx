@@ -8,7 +8,7 @@ import { ActionSheetContainer as CommonsActionSheetContainer } from '@sdkwork/re
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { getThemeMetaColor, useTheme } from '../theme/themeContext';
 import { SplashScreen } from '../components/SplashScreen/SplashScreen';
-import { initializePlatformRuntime } from '@sdkwork/react-mobile-core/platform';
+import { createDefaultPlatformRuntimeHooks, getPlatform as getCorePlatform, initializePlatformRuntime } from '@sdkwork/react-mobile-core/platform';
 
 const InitToast = lazy(() => import('../components/Toast').then((m) => ({ default: m.InitToast })));
 const InitImageViewer = lazy(() => import('../components/ImageViewer/ImageViewer').then((m) => ({ default: m.InitImageViewer })));
@@ -52,7 +52,10 @@ const App: React.FC = () => {
 
       // Bind native runtime listeners: push registration refresh, appUrlOpen payment callbacks, and network/app state events.
       try {
-        disposeRuntime = await initializePlatformRuntime();
+        const runtimeHooks = createDefaultPlatformRuntimeHooks({
+          platform: getCorePlatform(),
+        });
+        disposeRuntime = await initializePlatformRuntime(runtimeHooks);
       } catch (error) {
         console.error('[App] Failed to initialize platform runtime listeners:', error);
       }

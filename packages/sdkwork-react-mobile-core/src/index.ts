@@ -8,11 +8,21 @@ export {
   isNative,
   getPlatformType,
   inspectPlatformCapabilities,
+  PLATFORM_RUNTIME_EVENTS,
+  PLATFORM_RUNTIME_HOOK_EVENTS,
+  parsePaymentCallbackUrl,
+  attachPlatformRuntime,
+  initializePlatformRuntime,
+  createDefaultPlatformRuntimeHooks,
   type Platform,
   type PlatformType,
   type PlatformCapabilityReport,
   type CapabilityCheckItem,
   type PaymentCapabilityCheck,
+  type PlatformRuntimeOptions,
+  type PaymentCallbackPayload,
+  type PushTokenUpdatedPayload,
+  type DefaultPlatformRuntimeHooksOptions,
 } from './platform';
 
 export { platformService } from './platform/platformService';
@@ -76,6 +86,10 @@ export {
   throttle,
   deepClone,
   deepMerge,
+  buildOpenChatQrLink,
+  parseOpenChatQrLink,
+  OPENCHAT_QR_LINK_VERSION,
+  OPENCHAT_QR_LINK_ROUTE,
 } from './utils';
 
 export { logger } from './utils/logger';
