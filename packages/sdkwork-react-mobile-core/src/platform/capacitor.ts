@@ -11,6 +11,7 @@ import { Device } from '@capacitor/device';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Clipboard } from '@capacitor/clipboard';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { BarcodeFormat, BarcodeScanner, type PermissionStatus } from '@capacitor-mlkit/barcode-scanning';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { Network } from '@capacitor/network';
@@ -41,6 +42,7 @@ import type {
   ISplashScreen,
   IApp,
   DeviceInfo,
+  OpenDialogOptions,
   SaveDialogOptions,
   NotificationOptions,
   PushPermissionState,
@@ -52,6 +54,7 @@ import type {
   AppListenerEvent,
   AppListenerPayloadMap,
 } from './types';
+import { normalizePickedFiles, toFilePickerTypes } from './filePicker';
 
 const PAYMENT_SUPPORTED_CHANNELS: ReadonlySet<PaymentChannel> = new Set([
   'wechat_pay',
@@ -72,22 +75,22 @@ function createNotificationId(): number {
   return Number(String(Date.now()).slice(-9));
 }
 
-interface BarcodeScannerPermissionResult {
-  granted?: boolean;
-  denied?: boolean;
-  restricted?: boolean;
+interface FilePickerPickedFile {
+  path?: string | null;
+  uri?: string | null;
+  name?: string | null;
 }
 
-interface BarcodeScannerScanResult {
-  content?: string | null;
+interface FilePickerResult {
+  files?: FilePickerPickedFile[];
 }
 
-interface BarcodeScannerPluginLike {
-  checkPermission(options?: { force?: boolean }): Promise<BarcodeScannerPermissionResult>;
-  startScan(options?: Record<string, unknown>): Promise<BarcodeScannerScanResult>;
-  stopScan(): Promise<void>;
-  hideBackground(): Promise<void>;
-  showBackground(): Promise<void>;
+interface FilePickerPluginLike {
+  pickFiles(options?: {
+    types?: string[];
+    multiple?: boolean;
+    readData?: boolean;
+  }): Promise<FilePickerResult>;
 }
 
 class CapacitorDevice implements IDevice {
@@ -151,13 +154,23 @@ class CapacitorClipboard implements IClipboard {
 }
 
 class CapacitorCamera implements ICamera {
-  private async loadBarcodeScanner(): Promise<BarcodeScannerPluginLike> {
-    const module = await import('@capacitor-community/barcode-scanner').catch(() => null);
-    const scanner = (module as { BarcodeScanner?: BarcodeScannerPluginLike } | null)?.BarcodeScanner;
-    if (!scanner) {
-      throw new Error('QR scanner plugin is missing. Install @capacitor-community/barcode-scanner and sync native.');
+  private async ensureScannerSupported(): Promise<void> {
+    const support = await BarcodeScanner.isSupported();
+    if (!support.supported) {
+      throw new Error('QR scanner not supported on this device');
     }
-    return scanner;
+  }
+
+  private async ensureScannerPermission(): Promise<void> {
+    const current: PermissionStatus = await BarcodeScanner.checkPermissions();
+    if (current.camera === 'granted') {
+      return;
+    }
+
+    const requested: PermissionStatus = await BarcodeScanner.requestPermissions();
+    if (requested.camera !== 'granted') {
+      throw new Error('Camera permission denied for QR scanning');
+    }
   }
 
   async takePhoto(): Promise<string> {
@@ -181,41 +194,46 @@ class CapacitorCamera implements ICamera {
   }
 
   async scanQRCode(): Promise<string> {
-    const scanner = await this.loadBarcodeScanner();
-    const permission = await scanner.checkPermission({ force: true });
-    if (!permission.granted || permission.denied || permission.restricted) {
-      throw new Error('Camera permission denied for QR scanning');
-    }
-
-    let backgroundHidden = false;
     try {
-      await scanner.hideBackground();
-      backgroundHidden = true;
+      await this.ensureScannerSupported();
+      await this.ensureScannerPermission();
 
-      const result = await scanner.startScan();
-      const content = (result?.content || '').trim();
+      const result = await BarcodeScanner.scan({
+        formats: [BarcodeFormat.QrCode],
+      });
+
+      const firstBarcode = result.barcodes?.[0];
+      const content = (firstBarcode?.rawValue || firstBarcode?.displayValue || '').trim();
       if (!content) {
         throw new Error('No QR content detected');
       }
       return content;
-    } finally {
-      try {
-        await scanner.stopScan();
-      } catch {
-        // Ignore cleanup failures from scanner runtime.
+    } catch (error) {
+      const message = error instanceof Error ? error.message.toLowerCase() : '';
+      if (
+        message.includes('not implemented')
+        || message.includes('plugin is not implemented')
+        || message.includes('missing')
+      ) {
+        throw new Error('QR scanner plugin is missing. Install @capacitor-mlkit/barcode-scanning and sync native.');
       }
-      if (backgroundHidden) {
-        try {
-          await scanner.showBackground();
-        } catch {
-          // Ignore cleanup failures from scanner runtime.
-        }
-      }
+      throw error;
     }
   }
 }
 
 class CapacitorFileSystem implements IFileSystem {
+  private async loadFilePicker(): Promise<FilePickerPluginLike> {
+    const module = await import('@capawesome/capacitor-file-picker').catch(() => null);
+    const filePicker = (module as { FilePicker?: FilePickerPluginLike } | null)?.FilePicker;
+    if (!filePicker) {
+      throw new Error(
+        'File picker plugin is missing. Install @capawesome/capacitor-file-picker and sync native.',
+      );
+    }
+    return filePicker;
+  }
+
   async readFile(path: string): Promise<string> {
     const result = await Filesystem.readFile({
       path,
@@ -258,8 +276,14 @@ class CapacitorFileSystem implements IFileSystem {
     return Directory.Documents;
   }
 
-  async showOpenDialog(): Promise<string[] | null> {
-    throw new Error('File picker requires @capawesome/capacitor-file-picker');
+  async showOpenDialog(options: OpenDialogOptions): Promise<string[] | null> {
+    const filePicker = await this.loadFilePicker();
+    const result = await filePicker.pickFiles({
+      multiple: options.multiple ?? false,
+      types: toFilePickerTypes(options.filters),
+      readData: false,
+    });
+    return normalizePickedFiles(result.files);
   }
 
   async showSaveDialog(options: SaveDialogOptions): Promise<string | null> {

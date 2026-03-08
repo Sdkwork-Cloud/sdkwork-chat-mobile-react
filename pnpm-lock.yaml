@@ -6,9 +6,9 @@ settings:
 
 catalogs:
   default:
-    '@capacitor-community/barcode-scanner':
-      specifier: ^4.0.1
-      version: 4.0.1
+    '@capacitor-mlkit/barcode-scanning':
+      specifier: ^6.2.0
+      version: 6.2.0
     '@capacitor/android':
       specifier: ^6.2.1
       version: 6.2.1
@@ -72,6 +72,9 @@ catalogs:
     '@capacitor/status-bar':
       specifier: ^6.0.3
       version: 6.0.3
+    '@capawesome/capacitor-file-picker':
+      specifier: ^6.2.0
+      version: 6.2.0
     '@testing-library/react':
       specifier: ^16.3.2
       version: 16.3.2
@@ -161,9 +164,9 @@ importers:
 
   .:
     dependencies:
-      '@capacitor-community/barcode-scanner':
+      '@capacitor-mlkit/barcode-scanning':
         specifier: 'catalog:'
-        version: 4.0.1(@capacitor/core@6.2.1)
+        version: 6.2.0(@capacitor/core@6.2.1)
       '@capacitor/app':
         specifier: 'catalog:'
         version: 6.0.3(@capacitor/core@6.2.1)
@@ -218,6 +221,9 @@ importers:
       '@capacitor/status-bar':
         specifier: 'catalog:'
         version: 6.0.3(@capacitor/core@6.2.1)
+      '@capawesome/capacitor-file-picker':
+        specifier: 'catalog:'
+        version: 6.2.0(@capacitor/core@6.2.1)
       '@google/genai':
         specifier: ^1.43.0
         version: 1.43.0
@@ -719,9 +725,9 @@ importers:
 
   packages/sdkwork-react-mobile-core:
     dependencies:
-      '@capacitor-community/barcode-scanner':
+      '@capacitor-mlkit/barcode-scanning':
         specifier: 'catalog:'
-        version: 4.0.1(@capacitor/core@6.2.1)
+        version: 6.2.0(@capacitor/core@6.2.1)
       '@capacitor/app':
         specifier: 'catalog:'
         version: 6.0.3(@capacitor/core@6.2.1)
@@ -773,6 +779,9 @@ importers:
       '@capacitor/status-bar':
         specifier: 'catalog:'
         version: 6.0.3(@capacitor/core@6.2.1)
+      '@capawesome/capacitor-file-picker':
+        specifier: 'catalog:'
+        version: 6.2.0(@capacitor/core@6.2.1)
       '@sdkwork/app-sdk':
         specifier: workspace:*
         version: link:../../../../spring-ai-plus-app-api/sdkwork-sdk-app/sdkwork-app-sdk-typescript
@@ -1963,10 +1972,10 @@ packages:
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
 
-  '@capacitor-community/barcode-scanner@4.0.1':
-    resolution: {integrity: sha512-acuhDU2mqskSeCIQMc5TGNnDszXXs4IqEES+3C2JDiq+MkJMTr+B2Dhq4k55hlkRFMOumMhlnbr2R9G6qyFPhw==}
+  '@capacitor-mlkit/barcode-scanning@6.2.0':
+    resolution: {integrity: sha512-XnnErDabpCUty9flugqB646ERejCxrtKcKOJrdoh9ZVLTQXUnyjxUDWOlqHVxrBHy+e86ZgpZX7D5zcaNvS0lQ==}
     peerDependencies:
-      '@capacitor/core': ^5.0.0
+      '@capacitor/core': ^6.0.0
 
   '@capacitor/android@6.2.1':
     resolution: {integrity: sha512-8gd4CIiQO5LAIlPIfd5mCuodBRxMMdZZEdj8qG8m+dQ1sQ2xyemVpzHmRK8qSCHorsBUCg3D62j2cp6bEBAkdw==}
@@ -2068,6 +2077,11 @@ packages:
 
   '@capacitor/status-bar@6.0.3':
     resolution: {integrity: sha512-nFlgSmtx6Zwaw0tEvZgQsWHBeOfWWB/AvEoCApopLT4mHkBVoSrwkLvy2PjZs5wxCbsmqvQczr3XCyTwaDZVQg==}
+    peerDependencies:
+      '@capacitor/core': ^6.0.0
+
+  '@capawesome/capacitor-file-picker@6.2.0':
+    resolution: {integrity: sha512-ZgXbC3qOyKJrQh2bQIOLcjAYOdS8+ii1V0zaV56pMAw2i/pitdayvdBs7Da3tTw/eMdUNZ0lBYZcLN6NPQMIvA==}
     peerDependencies:
       '@capacitor/core': ^6.0.0
 
@@ -3140,18 +3154,6 @@ packages:
   '@xmldom/xmldom@0.8.11':
     resolution: {integrity: sha512-cQzWCtO6C8TQiYl1ruKNn2U6Ao4o4WBBcbL61yJl84x+j5sOWWFU9X7DpND8XZG3daDppSsigMdfAIl2upQBRw==}
     engines: {node: '>=10.0.0'}
-
-  '@zxing/browser@0.1.5':
-    resolution: {integrity: sha512-4Lmrn/il4+UNb87Gk8h1iWnhj39TASEHpd91CwwSJtY5u+wa0iH9qS0wNLAWbNVYXR66WmT5uiMhZ7oVTrKfxw==}
-    peerDependencies:
-      '@zxing/library': ^0.21.0
-
-  '@zxing/library@0.20.0':
-    resolution: {integrity: sha512-6Ev6rcqVjMakZFIDvbUf0dtpPGeZMTfyxYg4HkVWioWeN7cRcnUWT3bU6sdohc82O1nPXcjq6WiGfXX2Pnit6A==}
-    engines: {node: '>= 10.4.0'}
-
-  '@zxing/text-encoding@0.9.0':
-    resolution: {integrity: sha512-U/4aVJ2mxI0aDNI8Uq0wEhMgY+u4CNtEb0om3+y3+niDAsoTCOB33UF0sxpzqzdqXLqmvc+vZyAt4O8pPdfkwA==}
 
   acorn-jsx@5.3.2:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
@@ -5168,10 +5170,6 @@ packages:
     resolution: {integrity: sha512-L0Orpi8qGpRG//Nd+H90vFB+3iHnue1zSSGmNOOCh1GLJ7rUKVwV2HvijphGQS2UmhUZewS9VgvxYIdgr+fG1A==}
     hasBin: true
 
-  ts-custom-error@3.3.1:
-    resolution: {integrity: sha512-5OX1tzOjxWEgsr/YEUWSuPrQ00deKLh6D7OTWcvNHm12/7QPyRh8SYpyWvA4IZv8H/+GQWQEh/kwo95Q9OVW1A==}
-    engines: {node: '>=14.0.0'}
-
   ts-interface-checker@0.1.13:
     resolution: {integrity: sha512-Y/arvbn+rrz3JCKl9C4kVNfTfSm2/mEp5FSz5EsZSANGPSlQrpRI5M4PKF+mJnE52jOO90PnPSc3Ur3bTQw0gA==}
 
@@ -6252,11 +6250,9 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
 
-  '@capacitor-community/barcode-scanner@4.0.1(@capacitor/core@6.2.1)':
+  '@capacitor-mlkit/barcode-scanning@6.2.0(@capacitor/core@6.2.1)':
     dependencies:
       '@capacitor/core': 6.2.1
-      '@zxing/browser': 0.1.5(@zxing/library@0.20.0)
-      '@zxing/library': 0.20.0
 
   '@capacitor/android@6.2.1(@capacitor/core@6.2.1)':
     dependencies:
@@ -6357,6 +6353,10 @@ snapshots:
       '@capacitor/core': 6.2.1
 
   '@capacitor/status-bar@6.0.3(@capacitor/core@6.2.1)':
+    dependencies:
+      '@capacitor/core': 6.2.1
+
+  '@capawesome/capacitor-file-picker@6.2.0(@capacitor/core@6.2.1)':
     dependencies:
       '@capacitor/core': 6.2.1
 
@@ -7580,21 +7580,6 @@ snapshots:
   '@vue/shared@3.5.29': {}
 
   '@xmldom/xmldom@0.8.11': {}
-
-  '@zxing/browser@0.1.5(@zxing/library@0.20.0)':
-    dependencies:
-      '@zxing/library': 0.20.0
-    optionalDependencies:
-      '@zxing/text-encoding': 0.9.0
-
-  '@zxing/library@0.20.0':
-    dependencies:
-      ts-custom-error: 3.3.1
-    optionalDependencies:
-      '@zxing/text-encoding': 0.9.0
-
-  '@zxing/text-encoding@0.9.0':
-    optional: true
 
   acorn-jsx@5.3.2(acorn@8.16.0):
     dependencies:
@@ -9674,8 +9659,6 @@ snapshots:
       punycode: 2.3.1
 
   tree-kill@1.2.2: {}
-
-  ts-custom-error@3.3.1: {}
 
   ts-interface-checker@0.1.13: {}
 

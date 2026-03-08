@@ -138,20 +138,26 @@ const capabilityChecks = [
     tier: 'P1',
     capability: 'File Picker',
     plugins: ['@capawesome/capacitor-file-picker'],
-    integrationChecks: [coreCapacitorSource.includes("from '@capawesome/capacitor-file-picker'")],
+    integrationChecks: [
+      coreCapacitorSource.includes("from '@capawesome/capacitor-file-picker'") ||
+        coreCapacitorSource.includes("import('@capawesome/capacitor-file-picker')"),
+      coreCapacitorSource.includes('showOpenDialog(options: OpenDialogOptions)'),
+      coreCapacitorSource.includes('.pickFiles('),
+    ],
     installHint: 'pnpm add @capawesome/capacitor-file-picker',
   },
   {
     id: 'barcode_scan',
     tier: 'P1',
     capability: 'Barcode/QR Scanner',
-    plugins: ['@capacitor-community/barcode-scanner'],
+    plugins: ['@capacitor-mlkit/barcode-scanning'],
     integrationChecks: [
-      coreCapacitorSource.includes("from '@capacitor-community/barcode-scanner'") ||
-        coreCapacitorSource.includes("import('@capacitor-community/barcode-scanner')"),
+      coreCapacitorSource.includes("from '@capacitor-mlkit/barcode-scanning'") ||
+        coreCapacitorSource.includes("import('@capacitor-mlkit/barcode-scanning')"),
       coreCapacitorSource.includes('scanQRCode'),
+      coreCapacitorSource.includes('BarcodeScanner.scan'),
     ],
-    installHint: 'pnpm add @capacitor-community/barcode-scanner',
+    installHint: 'pnpm add @capacitor-mlkit/barcode-scanning',
   },
   {
     id: 'secure_storage',
