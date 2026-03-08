@@ -107,6 +107,32 @@ const capabilityChecks = [
     installHint: 'pnpm add @capacitor/app',
   },
   {
+    id: 'network_status',
+    tier: 'P0',
+    capability: 'Network Status Bridge',
+    plugins: ['@capacitor/network'],
+    integrationChecks: [
+      coreCapacitorSource.includes("from '@capacitor/network'"),
+      coreCapacitorSource.includes('class CapacitorNetwork'),
+      coreRuntimeSource.includes('NETWORK_ONLINE'),
+      coreRuntimeSource.includes('platform.network.addListener'),
+    ],
+    installHint: 'pnpm add @capacitor/network',
+  },
+  {
+    id: 'app_lifecycle',
+    tier: 'P0',
+    capability: 'App Lifecycle Bridge',
+    plugins: ['@capacitor/app'],
+    integrationChecks: [
+      coreCapacitorSource.includes("from '@capacitor/app'"),
+      coreCapacitorSource.includes('class CapacitorApp'),
+      coreRuntimeSource.includes('APP_FOREGROUND'),
+      coreTypesSource.includes("AppListenerEvent = 'appStateChange' | 'appUrlOpen'"),
+    ],
+    installHint: 'pnpm add @capacitor/app',
+  },
+  {
     id: 'geolocation',
     tier: 'P1',
     capability: 'Geolocation',
