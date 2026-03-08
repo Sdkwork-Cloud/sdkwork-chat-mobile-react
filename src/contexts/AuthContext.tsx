@@ -26,8 +26,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      await authLogin(username, password);
-      return true;
+      return await authLogin(username, password);
     } catch (error) {
       return false;
     }
@@ -35,8 +34,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const register = async (username: string, password: string): Promise<boolean> => {
     try {
-      await authRegister(username, password, password);
-      return true;
+      return await authRegister(username, password, password);
     } catch (error) {
       return false;
     }

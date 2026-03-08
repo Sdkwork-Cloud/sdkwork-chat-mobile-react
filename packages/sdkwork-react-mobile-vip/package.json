@@ -1,0 +1,26 @@
+{
+  "name": "@sdkwork/react-mobile-vip",
+  "version": "1.0.0",
+  "description": "VIP module for OpenChat React Mobile",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch"
+  },
+  "devDependencies": {
+    "@sdkwork/react-mobile-commons": "workspace:*",
+    "@sdkwork/react-mobile-core": "workspace:*",
+    "@types/react": "catalog:",
+    "typescript": "catalog:",
+    "tsup": "catalog:"
+  },
+  "peerDependencies": {
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "lucide-react": "catalog:",
+    "@sdkwork/react-mobile-core": "workspace:*",
+    "@sdkwork/react-mobile-commons": "workspace:*"
+  }
+}

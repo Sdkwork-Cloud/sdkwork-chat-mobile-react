@@ -1,5 +1,6 @@
-import { resolveServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
+import { APP_SDK_AUTH_TOKEN_STORAGE_KEY, createAppSdkCoreConfig, getAppSdkCoreClientWithSession, resolveServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
 import type { ServiceFactoryDeps, ServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
+import type { SdkworkAppClient } from '@sdkwork/app-sdk';
 import type {
   Cart,
   CartItem,
@@ -15,8 +16,6 @@ import type {
 } from '../types';
 
 const TAG = 'CommerceSdkService';
-const APP_API_PREFIX = '/app/v3/api';
-const AUTH_TOKEN_STORAGE_KEY = 'sys_auth_token';
 
 interface SdkApiResult<T> {
   data: T;
@@ -62,17 +61,15 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
     this.deps = resolveServiceFactoryRuntimeDeps(deps);
   }
 
-  private resolveEnv(name: string): string | undefined {
-    const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env;
-    return env?.[name];
-  }
-
-  private resolveBaseUrl(): string {
-    return (this.resolveEnv('VITE_API_BASE_URL') || '').trim().replace(/\/+$/g, '');
+  private async getClient(): Promise<SdkworkAppClient> {
+    return getAppSdkCoreClientWithSession({
+      storage: this.deps.storage,
+      authStorageKey: APP_SDK_AUTH_TOKEN_STORAGE_KEY,
+    });
   }
 
   hasSdkBaseUrl(): boolean {
-    return this.resolveBaseUrl().length > 0;
+    return (createAppSdkCoreConfig().baseUrl || '').trim().length > 0;
   }
 
   getLastError(): CommerceSdkError | null {
@@ -83,67 +80,8 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
     this.lastError = error;
   }
 
-  private buildAppApiPath(path: string): string {
-    const prefixRaw = APP_API_PREFIX.trim();
-    const prefix = prefixRaw ? `/${prefixRaw.replace(/^\/+|\/+$/g, '')}` : '';
-    const normalized = path.startsWith('/') ? path : `/${path}`;
-    if (!prefix || prefix === '/') return normalized;
-    if (normalized === prefix || normalized.startsWith(`${prefix}/`)) return normalized;
-    return `${prefix}${normalized}`;
-  }
-
-  private appendQuery(path: string, query?: Record<string, unknown>): string {
-    if (!query) return path;
-    const params = new URLSearchParams();
-    Object.entries(query).forEach(([key, value]) => {
-      if (value === undefined || value === null || value === '') return;
-      if (Array.isArray(value)) {
-        value.forEach((item) => {
-          if (item !== undefined && item !== null && item !== '') params.append(key, String(item));
-        });
-        return;
-      }
-      params.append(key, String(value));
-    });
-    const qs = params.toString();
-    return qs ? `${path}?${qs}` : path;
-  }
-
-  private buildUrl(path: string, query?: Record<string, unknown>): string {
-    return `${this.resolveBaseUrl()}${this.appendQuery(this.buildAppApiPath(path), query)}`;
-  }
-
-  private async resolveAuthHeaders(options?: { includeContentType?: boolean }): Promise<Record<string, string>> {
-    const headers: Record<string, string> = {};
-    if (options?.includeContentType !== false) headers['Content-Type'] = 'application/json';
-
-    const envToken = this.resolveEnv('VITE_ACCESS_TOKEN');
-    const storageToken = await Promise.resolve(this.deps.storage.get<string>(AUTH_TOKEN_STORAGE_KEY));
-    const token = (envToken || storageToken || '').trim();
-    if (token) headers.Authorization = `Bearer ${token}`;
-    return headers;
-  }
-
   private isSuccessCode(code: string | undefined): boolean {
     return code === '2000';
-  }
-
-  private async requestJson<T>(
-    path: string,
-    init: RequestInit,
-    options?: { includeContentType?: boolean; query?: Record<string, unknown> }
-  ): Promise<T> {
-    if (typeof fetch !== 'function') throw new Error('Global fetch is not available');
-    const headers = await this.resolveAuthHeaders(options);
-    const response = await fetch(this.buildUrl(path, options?.query), {
-      ...init,
-      headers: {
-        ...headers,
-        ...(init.headers || {}),
-      },
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
-    return (await response.json()) as T;
   }
 
   private toNumber(value: unknown, fallback = 0): number {
@@ -397,12 +335,17 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
     };
   }
 
-  private async mutateCart(path: string, init: RequestInit, options?: { query?: Record<string, unknown>; includeContentType?: boolean }): Promise<Cart | null> {
+  private asRecord(value: unknown): Record<string, unknown> {
+    if (value && typeof value === 'object') {
+      return value as Record<string, unknown>;
+    }
+    return {};
+  }
+
+  private async mutateCart(action: (client: SdkworkAppClient) => Promise<SdkApiResult<unknown>>): Promise<Cart | null> {
     try {
-      const result = await this.requestJson<SdkApiResult<unknown>>(path, init, {
-        query: options?.query,
-        includeContentType: options?.includeContentType,
-      });
+      const client = await this.getClient();
+      const result = await action(client);
       if (!this.isSuccessCode(result.code)) return this.failBusiness(result, 'Cart mutation failed');
       return this.getCart();
     } catch (error) {
@@ -413,22 +356,24 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
   async listProducts(params?: ProductQueryParams): Promise<{ products: Product[]; total: number } | null> {
     if (!this.hasSdkBaseUrl()) return null;
     this.setLastError(null);
-    const endpoint = params?.keyword ? '/products/search' : params?.categoryId ? `/products/category/${params.categoryId}` : '/products';
+    const query = {
+      page: params?.page,
+      pageNo: params?.page,
+      pageSize: params?.pageSize,
+      size: params?.pageSize,
+      keyword: params?.keyword,
+      minPrice: params?.minPrice,
+      maxPrice: params?.maxPrice,
+      sortBy: params?.sortBy,
+      sortOrder: params?.sortOrder,
+    };
     try {
-      const result = await this.requestJson<SdkApiResult<unknown>>(endpoint, { method: 'GET' }, {
-        includeContentType: false,
-        query: {
-          page: params?.page,
-          pageNo: params?.page,
-          pageSize: params?.pageSize,
-          size: params?.pageSize,
-          keyword: params?.keyword,
-          minPrice: params?.minPrice,
-          maxPrice: params?.maxPrice,
-          sortBy: params?.sortBy,
-          sortOrder: params?.sortOrder,
-        },
-      });
+      const client = await this.getClient();
+      const result = params?.keyword
+        ? await client.products.search(query) as SdkApiResult<unknown>
+        : params?.categoryId
+          ? await client.products.getProductsByCategory(params.categoryId, query) as SdkApiResult<unknown>
+          : await client.products.getProducts(query) as SdkApiResult<unknown>;
       if (!this.isSuccessCode(result.code)) return this.failBusiness(result, 'Fetch products failed');
       const page = this.extractPage<Record<string, unknown>>(result.data);
       return { products: page.list.map((item) => this.mapProduct(item)).filter((item): item is Product => item !== null), total: page.total };
@@ -441,9 +386,10 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
     if (!this.hasSdkBaseUrl()) return null;
     this.setLastError(null);
     try {
-      const result = await this.requestJson<SdkApiResult<Record<string, unknown>>>(`/products/${id}`, { method: 'GET' }, { includeContentType: false });
+      const client = await this.getClient();
+      const result = await client.products.getProductDetail(id) as SdkApiResult<unknown>;
       if (!this.isSuccessCode(result.code)) return this.failBusiness(result, 'Fetch product detail failed');
-      return this.mapProduct(result.data);
+      return this.mapProduct(this.asRecord(result.data));
     } catch (error) {
       return this.failRequest(error, 'Fetch product detail failed');
     }
@@ -453,7 +399,8 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
     if (!this.hasSdkBaseUrl()) return null;
     this.setLastError(null);
     try {
-      const result = await this.requestJson<SdkApiResult<unknown>>('/category', { method: 'GET' }, { includeContentType: false });
+      const client = await this.getClient();
+      const result = await client.category.listCategories() as SdkApiResult<unknown>;
       if (!this.isSuccessCode(result.code)) return this.failBusiness(result, 'Fetch categories failed');
       return this.extractList<Record<string, unknown>>(result.data).map((item) => ({
         id: this.toId(item.id, `cat_${String(item.name || 'general').toLowerCase().replace(/[^a-z0-9]+/g, '_')}`),
@@ -470,9 +417,11 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
     if (!this.hasSdkBaseUrl()) return null;
     this.setLastError(null);
     try {
-      const result = await this.requestJson<SdkApiResult<Record<string, unknown>>>('/cart', { method: 'GET' }, { includeContentType: false });
+      const client = await this.getClient();
+      const result = await client.cart.getMy() as SdkApiResult<unknown>;
       if (!this.isSuccessCode(result.code)) return this.failBusiness(result, 'Fetch cart failed');
-      const groups = Array.isArray(result.data.groups) ? result.data.groups as Array<Record<string, unknown>> : [];
+      const data = this.asRecord(result.data);
+      const groups = Array.isArray(data.groups) ? data.groups as Array<Record<string, unknown>> : [];
       const items: CartItem[] = [];
       groups.forEach((group, groupIndex) => {
         const shopId = this.toId(group.uuid, `shop_group_${groupIndex + 1}`);
@@ -486,10 +435,10 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
       const cart = this.buildCart(items);
       return {
         ...cart,
-        totalCount: this.toNumber(result.data.totalQuantity, cart.totalCount),
-        selectedCount: this.toNumber(result.data.selectedQuantity, cart.selectedCount),
-        totalAmount: this.toNumber(result.data.totalPrice, cart.totalAmount),
-        selectedAmount: this.toNumber(result.data.selectedPrice, cart.selectedAmount),
+        totalCount: this.toNumber(data.totalQuantity, cart.totalCount),
+        selectedCount: this.toNumber(data.selectedQuantity, cart.selectedCount),
+        totalAmount: this.toNumber(data.totalPrice, cart.totalAmount),
+        selectedAmount: this.toNumber(data.selectedPrice, cart.selectedAmount),
       };
     } catch (error) {
       return this.failRequest(error, 'Fetch cart failed');
@@ -505,55 +454,44 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
       return null;
     }
     const skuId = this.toPositiveInt(item.selectedVariants?.skuId ?? item.productId) || productId;
-    return this.mutateCart('/cart/items', {
-      method: 'POST',
-      body: JSON.stringify({
-        productId,
-        skuId,
-        quantity: Math.max(1, this.toNumber(item.quantity, 1)),
-      }),
-    });
+    return this.mutateCart((client) => client.cart.addItem({
+      productId,
+      skuId,
+      quantity: Math.max(1, this.toNumber(item.quantity, 1)),
+    } as any) as Promise<SdkApiResult<unknown>>);
   }
 
   async updateCartItemQuantity(itemId: string, quantity: number): Promise<Cart | null> {
     if (quantity <= 0) return this.removeCartItem(itemId);
-    return this.mutateCart(`/cart/items/${itemId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ quantity }),
-    });
+    return this.mutateCart((client) => client.cart.updateItemQuantity(itemId, { quantity }) as Promise<SdkApiResult<unknown>>);
   }
 
   async removeCartItem(itemId: string): Promise<Cart | null> {
-    return this.mutateCart(`/cart/items/${itemId}`, { method: 'DELETE' }, { includeContentType: false });
+    return this.mutateCart((client) => client.cart.removeItem(itemId) as Promise<SdkApiResult<unknown>>);
   }
 
   async updateCartItemSelection(itemId: string, selected: boolean): Promise<Cart | null> {
-    return this.mutateCart(`/cart/items/${itemId}/select`, { method: 'PUT' }, {
-      includeContentType: false,
-      query: { selected },
-    });
+    return this.mutateCart((client) => client.cart.updateItemSelection(itemId, { selected }) as Promise<SdkApiResult<unknown>>);
   }
 
   async batchUpdateCartSelection(itemIds: string[] | undefined, selected: boolean): Promise<Cart | null> {
     const numericIds = (itemIds || []).map((id) => this.toPositiveInt(id)).filter((id): id is number => id !== null);
-    return this.mutateCart('/cart/items/select', {
-      method: 'PUT',
-      body: JSON.stringify({
-        itemIds: numericIds.length > 0 ? numericIds : undefined,
-        selected,
-      }),
-    });
+    return this.mutateCart((client) => client.cart.batchUpdateSelection({
+      itemIds: numericIds.length > 0 ? numericIds : undefined,
+      selected,
+    } as any) as Promise<SdkApiResult<unknown>>);
   }
 
   async clearCart(): Promise<Cart | null> {
-    return this.mutateCart('/cart', { method: 'DELETE' }, { includeContentType: false });
+    return this.mutateCart((client) => client.cart.clear() as Promise<SdkApiResult<unknown>>);
   }
 
   async getSelectedCartItems(): Promise<CartItem[] | null> {
     if (!this.hasSdkBaseUrl()) return null;
     this.setLastError(null);
     try {
-      const result = await this.requestJson<SdkApiResult<unknown>>('/cart/items/selected', { method: 'GET' }, { includeContentType: false });
+      const client = await this.getClient();
+      const result = await client.cart.getSelectedItems() as SdkApiResult<unknown>;
       if (!this.isSuccessCode(result.code)) return this.failBusiness(result, 'Fetch selected cart items failed');
       return this.extractList<Record<string, unknown>>(result.data)
         .map((item) => this.mapCartItem(item, this.toId(item.cartGroupUuid, 'selected_group'), 'Selected Items'))
@@ -567,19 +505,17 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
     if (!this.hasSdkBaseUrl()) return null;
     this.setLastError(null);
     try {
-      const result = await this.requestJson<SdkApiResult<unknown>>('/orders', { method: 'GET' }, {
-        includeContentType: false,
-        query: {
-          page: params?.page,
-          pageNo: params?.page,
-          pageSize: params?.pageSize,
-          size: params?.pageSize,
-          status: params?.status,
-          keyword: params?.keyword,
-          startDate: params?.startDate,
-          endDate: params?.endDate,
-        },
-      });
+      const client = await this.getClient();
+      const result = await client.orders.listOrders({
+        page: params?.page,
+        pageNo: params?.page,
+        pageSize: params?.pageSize,
+        size: params?.pageSize,
+        status: params?.status,
+        keyword: params?.keyword,
+        startDate: params?.startDate,
+        endDate: params?.endDate,
+      }) as SdkApiResult<unknown>;
       if (!this.isSuccessCode(result.code)) return this.failBusiness(result, 'Fetch orders failed');
       const page = this.extractPage<Record<string, unknown>>(result.data);
       let orders = page.list.map((item) => this.mapOrder(item)).filter((item): item is Order => item !== null);
@@ -603,28 +539,27 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
       return null;
     }
     try {
-      const result = await this.requestJson<SdkApiResult<Record<string, unknown>>>('/orders', {
-        method: 'POST',
-        body: JSON.stringify({
-          orderType: 'NORMAL',
-          productId: String(first.productId),
-          quantity: params.items.reduce((sum, item) => sum + Math.max(1, this.toNumber(item.quantity, 1)), 0),
-          items: params.items.map((item) => ({
-            productId: String(item.productId),
-            quantity: Math.max(1, this.toNumber(item.quantity, 1)),
-            price: String(this.toNumber(item.price, 0)),
-            productName: item.productName,
-          })),
-          addressId: params.shippingAddress.id || undefined,
-          paymentMethod: this.toSdkPaymentMethod(params.paymentMethod),
-          remark: params.remark,
-          sourceChannel: 'openchat-react-mobile',
-        }),
-      });
+      const client = await this.getClient();
+      const result = await client.orders.createOrder({
+        orderType: 'NORMAL',
+        productId: String(first.productId),
+        quantity: params.items.reduce((sum, item) => sum + Math.max(1, this.toNumber(item.quantity, 1)), 0),
+        items: params.items.map((item) => ({
+          productId: String(item.productId),
+          quantity: Math.max(1, this.toNumber(item.quantity, 1)),
+          price: String(this.toNumber(item.price, 0)),
+          productName: item.productName,
+        })),
+        addressId: params.shippingAddress.id || undefined,
+        paymentMethod: this.toSdkPaymentMethod(params.paymentMethod),
+        remark: params.remark,
+        sourceChannel: 'openchat-react-mobile',
+      } as any) as SdkApiResult<unknown>;
       if (!this.isSuccessCode(result.code)) return this.failBusiness(result, 'Create order failed');
-      const orderId = this.toId(result.data?.orderId);
+      const data = this.asRecord(result.data);
+      const orderId = this.toId(data.orderId);
       if (orderId) return this.getOrderDetail(orderId);
-      return this.mapOrder(result.data);
+      return this.mapOrder(data);
     } catch (error) {
       return this.failRequest(error, 'Create order failed');
     }
@@ -634,9 +569,10 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
     if (!this.hasSdkBaseUrl()) return null;
     this.setLastError(null);
     try {
-      const result = await this.requestJson<SdkApiResult<Record<string, unknown>>>(`/orders/${orderId}`, { method: 'GET' }, { includeContentType: false });
+      const client = await this.getClient();
+      const result = await client.orders.getOrderDetail(orderId) as SdkApiResult<unknown>;
       if (!this.isSuccessCode(result.code)) return this.failBusiness(result, 'Fetch order detail failed');
-      return this.mapOrder(result.data);
+      return this.mapOrder(this.asRecord(result.data));
     } catch (error) {
       return this.failRequest(error, 'Fetch order detail failed');
     }
@@ -646,10 +582,8 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
     if (!this.hasSdkBaseUrl()) return null;
     this.setLastError(null);
     try {
-      const result = await this.requestJson<SdkApiResult<unknown>>(`/orders/${orderId}/pay`, {
-        method: 'POST',
-        body: JSON.stringify({ paymentMethod: this.toSdkPaymentMethod(method) }),
-      });
+      const client = await this.getClient();
+      const result = await client.orders.payOrder(orderId, { paymentMethod: this.toSdkPaymentMethod(method) }) as SdkApiResult<unknown>;
       if (!this.isSuccessCode(result.code)) return this.failBusiness(result, 'Pay order failed');
       return this.getOrderDetail(orderId);
     } catch (error) {
@@ -658,30 +592,39 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
   }
 
   async cancelOrder(orderId: string, reason?: string): Promise<Order | null> {
-    return this.simpleOrderMutation(orderId, '/cancel', { reason: reason || 'user_cancelled' }, 'Cancel order failed');
+    return this.simpleOrderMutation(
+      orderId,
+      (client) => client.orders.cancelOrder(orderId, { reason: reason || 'user_cancelled' }) as Promise<SdkApiResult<unknown>>,
+      'Cancel order failed',
+    );
   }
 
   async confirmOrder(orderId: string): Promise<Order | null> {
-    return this.simpleOrderMutation(orderId, '/confirm', undefined, 'Confirm order failed');
+    return this.simpleOrderMutation(
+      orderId,
+      (client) => client.orders.confirmReceipt(orderId) as Promise<SdkApiResult<unknown>>,
+      'Confirm order failed',
+    );
   }
 
   async refundOrder(orderId: string, reason: string): Promise<Order | null> {
-    return this.simpleOrderMutation(orderId, '/refund', { reason: reason || 'user_refund_request' }, 'Refund order failed');
+    return this.simpleOrderMutation(
+      orderId,
+      (client) => client.orders.applyRefund(orderId, { reason: reason || 'user_refund_request' }) as Promise<SdkApiResult<unknown>>,
+      'Refund order failed',
+    );
   }
 
   private async simpleOrderMutation(
     orderId: string,
-    suffix: string,
-    body: Record<string, unknown> | undefined,
+    action: (client: SdkworkAppClient) => Promise<SdkApiResult<unknown>>,
     failureMessage: string
   ): Promise<Order | null> {
     if (!this.hasSdkBaseUrl()) return null;
     this.setLastError(null);
     try {
-      const result = await this.requestJson<SdkApiResult<unknown>>(`/orders/${orderId}${suffix}`, {
-        method: 'POST',
-        body: body ? JSON.stringify(body) : undefined,
-      });
+      const client = await this.getClient();
+      const result = await action(client);
       if (!this.isSuccessCode(result.code)) return this.failBusiness(result, failureMessage);
       return this.getOrderDetail(orderId);
     } catch (error) {
@@ -693,15 +636,17 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
     if (!this.hasSdkBaseUrl()) return null;
     this.setLastError(null);
     try {
-      const result = await this.requestJson<SdkApiResult<Record<string, unknown>>>('/orders/statistics', { method: 'GET' }, { includeContentType: false });
+      const client = await this.getClient();
+      const result = await client.orders.getOrderStatistics() as SdkApiResult<unknown>;
       if (!this.isSuccessCode(result.code)) return this.failBusiness(result, 'Fetch order statistics failed');
+      const data = this.asRecord(result.data);
       return {
-        pending_payment: this.toNumber(result.data.pendingPayment, 0),
+        pending_payment: this.toNumber(data.pendingPayment, 0),
         paid: 0,
-        processing: this.toNumber(result.data.pendingShipment, 0),
+        processing: this.toNumber(data.pendingShipment, 0),
         shipped: 0,
-        delivered: this.toNumber(result.data.pendingReceipt, 0),
-        completed: this.toNumber(result.data.completed, 0),
+        delivered: this.toNumber(data.pendingReceipt, 0),
+        completed: this.toNumber(data.completed, 0),
         cancelled: 0,
         refunding: 0,
         refunded: 0,

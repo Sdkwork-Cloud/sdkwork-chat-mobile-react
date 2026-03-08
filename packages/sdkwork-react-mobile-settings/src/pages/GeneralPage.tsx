@@ -1,20 +1,32 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActionSheet, Navbar, Toast } from '@sdkwork/react-mobile-commons';
+import { ActionSheet, CellGroup, CellItem, Navbar, Switch, Toast } from '@sdkwork/react-mobile-commons';
 import { useSettings } from '../hooks/useSettings';
+import { settingsService } from '../services/SettingsService';
 
 type GeneralSection =
   | 'general'
   | 'notifications'
   | 'about'
+  | 'storage'
   | 'cards'
   | 'favorite-detail'
   | 'generic'
   | string;
 
+const formatBytes = (bytes: number): string => {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const base = 1024;
+  const index = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(base)));
+  const value = bytes / Math.pow(base, index);
+  return `${value.toFixed(index === 0 ? 0 : 2)} ${units[index]}`;
+};
+
 interface GeneralPageProps {
   t?: (key: string) => string;
   section?: GeneralSection;
   title?: string;
+  source?: string;
   onBack?: () => void;
   onNavigate?: (path: string, params?: Record<string, string>) => void;
   onSetLocale?: (locale: 'zh-CN' | 'en-US') => void;
@@ -29,6 +41,7 @@ export const GeneralPage: React.FC<GeneralPageProps> = ({
   t,
   section,
   title = '',
+  source,
   onBack,
   onNavigate,
   onSetLocale,
@@ -41,8 +54,14 @@ export const GeneralPage: React.FC<GeneralPageProps> = ({
   const { t: settingsT, config, updateConfig, language, setLanguage } = useSettings();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [autoPlayVideo, setAutoPlayVideo] = useState(true);
+  const [landscapeModeEnabled, setLandscapeModeEnabled] = useState(false);
   const [doNotDisturb, setDoNotDisturb] = useState(false);
   const [personalizedRecommendation, setPersonalizedRecommendation] = useState(true);
+  const [notificationDetailVisible, setNotificationDetailVisible] = useState(true);
+  const [notificationSoundEnabled, setNotificationSoundEnabled] = useState(true);
+  const [notificationVibrationEnabled, setNotificationVibrationEnabled] = useState(true);
+  const [storageUsage, setStorageUsage] = useState('...');
+  const [isStorageLoading, setIsStorageLoading] = useState(false);
 
   const tr = React.useCallback(
     (key: string, fallback: string) => {
@@ -59,19 +78,27 @@ export const GeneralPage: React.FC<GeneralPageProps> = ({
     if (!config) return;
     setNotificationsEnabled(config.notificationsEnabled ?? true);
     setAutoPlayVideo(config.autoPlayVideo ?? true);
+    setLandscapeModeEnabled(config.landscapeModeEnabled ?? false);
+    setNotificationDetailVisible(config.notificationDetailVisible ?? true);
+    setNotificationSoundEnabled(config.notificationSoundEnabled ?? true);
+    setNotificationVibrationEnabled(config.notificationVibrationEnabled ?? true);
   }, [config]);
 
   const resolvedSection = useMemo(() => {
     if (section) return section;
     const normalizedTitle = (title || '').trim().toLowerCase();
 
-    if (normalizedTitle === '通用' || normalizedTitle === 'general') return 'general';
-    if (normalizedTitle === '新消息通知' || normalizedTitle === 'notifications') return 'notifications';
-    if (normalizedTitle === '关于' || normalizedTitle === '关于 openchat' || normalizedTitle === 'about') return 'about';
-    if (normalizedTitle === '卡包' || normalizedTitle === 'cards') return 'cards';
-    if (normalizedTitle === '收藏详情' || normalizedTitle === 'favorite detail') return 'favorite-detail';
+    const titleAliases: Array<{ section: GeneralSection; aliases: string[] }> = [
+      { section: 'general', aliases: ['general', '\u901a\u7528'] },
+      { section: 'notifications', aliases: ['notifications', '\u901a\u77e5'] },
+      { section: 'about', aliases: ['about', '\u5173\u4e8e'] },
+      { section: 'storage', aliases: ['storage', '\u5b58\u50a8\u7a7a\u95f4'] },
+      { section: 'cards', aliases: ['cards', '\u5361\u5305'] },
+      { section: 'favorite-detail', aliases: ['favorite detail', '\u6536\u85cf\u8be6\u60c5'] },
+    ];
 
-    return 'generic';
+    const matched = titleAliases.find((item) => item.aliases.includes(normalizedTitle));
+    return matched?.section || 'generic';
   }, [section, title]);
 
   const handleLanguageChange = () => {
@@ -94,153 +121,179 @@ export const GeneralPage: React.FC<GeneralPageProps> = ({
     });
   };
 
-  const toggleNotifications = () => {
-    const next = !notificationsEnabled;
-    setNotificationsEnabled(next);
-    void updateConfig({ notificationsEnabled: next });
+  const toggleNotifications = (checked: boolean) => {
+    setNotificationsEnabled(checked);
+    void updateConfig({ notificationsEnabled: checked });
   };
 
-  const toggleAutoPlayVideo = () => {
-    const next = !autoPlayVideo;
-    setAutoPlayVideo(next);
-    void updateConfig({ autoPlayVideo: next });
+  const toggleAutoPlayVideo = (checked: boolean) => {
+    setAutoPlayVideo(checked);
+    void updateConfig({ autoPlayVideo: checked });
+  };
+
+  const toggleLandscapeMode = (checked: boolean) => {
+    setLandscapeModeEnabled(checked);
+    void updateConfig({ landscapeModeEnabled: checked });
+  };
+
+  const toggleNotificationDetail = (checked: boolean) => {
+    setNotificationDetailVisible(checked);
+    void updateConfig({ notificationDetailVisible: checked });
+  };
+
+  const toggleNotificationSound = (checked: boolean) => {
+    setNotificationSoundEnabled(checked);
+    void updateConfig({ notificationSoundEnabled: checked });
+  };
+
+  const toggleNotificationVibration = (checked: boolean) => {
+    setNotificationVibrationEnabled(checked);
+    void updateConfig({ notificationVibrationEnabled: checked });
+  };
+
+  const loadStorageUsage = React.useCallback(async () => {
+    setIsStorageLoading(true);
+    try {
+      const usage = await settingsService.estimateStorageUsage();
+      setStorageUsage(formatBytes(usage));
+    } finally {
+      setIsStorageLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (resolvedSection !== 'storage' && resolvedSection !== 'generic') return;
+    void loadStorageUsage();
+  }, [loadStorageUsage, resolvedSection]);
+
+  const navigateToStorageSection = () => {
+    onNavigate?.('/general', {
+      section: 'storage',
+      title: tr('settings.storage', 'Storage'),
+      ...(source ? { from: source } : {}),
+    });
+  };
+
+  const navigateToNotificationsSection = () => {
+    onNavigate?.('/general', {
+      section: 'notifications',
+      title: tr('settings.notifications', 'Notifications'),
+      ...(source ? { from: source } : {}),
+    });
+  };
+
+  const openThemeConfig = () => {
+    const query = new URLSearchParams({
+      section: 'general',
+      title: tr('settings.general', 'General'),
+      ...(source ? { from: source } : {}),
+    }).toString();
+    onNavigate?.('/theme', { back: `/general?${query}` });
   };
 
   const renderCell = (
     label: string,
     options?: {
       description?: string;
-      value?: string;
+      value?: React.ReactNode;
       isLink?: boolean;
       toggle?: boolean;
       checked?: boolean;
-      onToggle?: () => void;
+      onToggle?: (checked: boolean) => void;
       onClick?: () => void;
+      noBorder?: boolean;
     }
-  ) => (
-    <div
-      onClick={options?.toggle ? undefined : options?.onClick}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        padding: '14px 16px',
-        background: 'var(--bg-card)',
-        cursor: options?.onClick ? 'pointer' : 'default',
-        borderBottom: '0.5px solid var(--border-color)',
-      }}
-    >
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: '16px', color: 'var(--text-primary)' }}>{label}</div>
-        {options?.description ? (
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>{options.description}</div>
-        ) : null}
-      </div>
-      {options?.toggle ? (
-        <div
-          onClick={options.onToggle}
-          style={{
-            width: '44px',
-            height: '24px',
-            borderRadius: '12px',
-            background: options.checked ? 'var(--primary-color)' : 'var(--border-color)',
-            position: 'relative',
-            cursor: 'pointer',
-            transition: 'background 0.2s',
-          }}
-        >
-          <div
-            style={{
-              position: 'absolute',
-              top: '2px',
-              left: options.checked ? '22px' : '2px',
-              width: '20px',
-              height: '20px',
-              borderRadius: '50%',
-              background: 'white',
-              transition: 'left 0.2s',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-            }}
-          />
-        </div>
-      ) : null}
-      {options?.value && !options.toggle ? (
-        <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginRight: options.isLink ? '4px' : 0 }}>
-          {options.value}
-        </div>
-      ) : null}
-      {options?.isLink && !options.toggle ? (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2" style={{ opacity: 0.5 }}>
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-      ) : null}
-    </div>
-  );
+  ) => {
+    const rightValue = options?.toggle ? (
+      <Switch checked={!!options.checked} onChange={(next) => options.onToggle?.(next)} />
+    ) : (
+      options?.value
+    );
 
-  const sectionHeader = (text: string) => (
-    <div style={{ padding: '8px 16px', fontSize: '13px', color: 'var(--text-secondary)', background: 'var(--bg-body)' }}>{text}</div>
-  );
+    return (
+      <CellItem
+        title={label}
+        description={options?.description}
+        value={rightValue}
+        isLink={Boolean(options?.isLink && !options?.toggle)}
+        onClick={options?.toggle ? undefined : options?.onClick}
+        noBorder={options?.noBorder}
+      />
+    );
+  };
 
   const renderGeneralSection = () => (
     <>
-      {sectionHeader(tr('settings.general_sections.appearance', 'Appearance'))}
-      <div style={{ background: 'var(--bg-card)' }}>
+      <CellGroup title={tr('settings.general_sections.appearance', 'Appearance')}>
         {renderCell(tr('settings.chat_background', 'Chat Background'), { isLink: true, onClick: () => onNavigate?.('/settings/background') })}
-        {renderCell(tr('settings.font_size', 'Font Size'), { value: tr('settings.font_size_standard', 'Standard'), isLink: true })}
+        {renderCell(tr('settings.font_size', 'Font Size'), {
+          value: tr('settings.font_size_standard', 'Standard'),
+          isLink: true,
+          onClick: openThemeConfig,
+        })}
         {renderCell(tr('settings.landscape_mode', 'Landscape Mode'), {
           toggle: true,
-          checked: false,
-          onToggle: () => Toast.info(tr('settings.rotate_device', 'Please rotate your device')),
+          checked: landscapeModeEnabled,
+          onToggle: toggleLandscapeMode,
+          noBorder: true,
         })}
-      </div>
+      </CellGroup>
 
-      {sectionHeader(tr('settings.general_sections.media', 'Media'))}
-      <div style={{ background: 'var(--bg-card)' }}>
+      <CellGroup title={tr('settings.general_sections.media', 'Media')}>
         {renderCell(tr('settings.autoplay_moments_video', 'Auto-play moments video'), {
           toggle: true,
           checked: autoPlayVideo,
           onToggle: toggleAutoPlayVideo,
         })}
-        {renderCell(tr('settings.media_storage', 'Photos, videos, files and calls'), { isLink: true })}
-      </div>
+        {renderCell(tr('settings.media_storage', 'Photos, videos, files and calls'), {
+          isLink: true,
+          onClick: navigateToStorageSection,
+          noBorder: true,
+        })}
+      </CellGroup>
 
-      {sectionHeader(tr('settings.general_sections.system', 'System'))}
-      <div style={{ background: 'var(--bg-card)' }}>
+      <CellGroup title={tr('settings.general_sections.system', 'System')}>
         {renderCell(tr('settings.language', 'Language'), {
           value: language === 'zh-CN' ? tr('settings.language_zh', 'Simplified Chinese') : tr('settings.language_en', 'English'),
           isLink: true,
           onClick: handleLanguageChange,
+          noBorder: true,
         })}
-      </div>
+      </CellGroup>
     </>
   );
 
   const renderNotificationsSection = () => (
     <>
-      {sectionHeader(tr('settings.notifications_sections.system', 'System Notifications'))}
-      <div style={{ background: 'var(--bg-card)' }}>
+      <CellGroup title={tr('settings.notifications_sections.system', 'System Notifications')}>
         {renderCell(tr('settings.receive_notifications', 'Receive notifications'), {
           toggle: true,
           checked: notificationsEnabled,
           onToggle: toggleNotifications,
+          noBorder: true,
         })}
-      </div>
+      </CellGroup>
 
       {notificationsEnabled ? (
-        <>
-          {sectionHeader(tr('settings.notifications_sections.methods', 'Notification Methods'))}
-          <div style={{ background: 'var(--bg-card)' }}>
-            {renderCell(tr('settings.notifications_show_detail', 'Show details in notifications'), {
-              description: tr(
-                'settings.notifications_show_detail_desc',
-                'When disabled, sender and message preview will be hidden.'
-              ),
-              toggle: true,
-              checked: true,
-            })}
-            {renderCell(tr('settings.notifications_sound', 'Sound'), { toggle: true, checked: true })}
-            {renderCell(tr('settings.notifications_vibration', 'Vibration'), { toggle: true, checked: true })}
-          </div>
-        </>
+        <CellGroup title={tr('settings.notifications_sections.methods', 'Notification Methods')}>
+          {renderCell(tr('settings.notifications_show_detail', 'Show details in notifications'), {
+            description: tr('settings.notifications_show_detail_desc', 'When disabled, sender and message preview will be hidden.'),
+            toggle: true,
+            checked: notificationDetailVisible,
+            onToggle: toggleNotificationDetail,
+          })}
+          {renderCell(tr('settings.notifications_sound', 'Sound'), {
+            toggle: true,
+            checked: notificationSoundEnabled,
+            onToggle: toggleNotificationSound,
+          })}
+          {renderCell(tr('settings.notifications_vibration', 'Vibration'), {
+            toggle: true,
+            checked: notificationVibrationEnabled,
+            onToggle: toggleNotificationVibration,
+            noBorder: true,
+          })}
+        </CellGroup>
       ) : null}
     </>
   );
@@ -251,7 +304,6 @@ export const GeneralPage: React.FC<GeneralPageProps> = ({
         style={{
           width: '72px',
           height: '72px',
-          borderRadius: '14px',
           background: 'linear-gradient(135deg, #2979FF 0%, #0050E6 100%)',
           display: 'flex',
           alignItems: 'center',
@@ -269,30 +321,30 @@ export const GeneralPage: React.FC<GeneralPageProps> = ({
         {tr('settings.version', 'v3.0.0 Stable')}
       </div>
 
-      <div style={{ width: '100%', marginTop: '24px', background: 'var(--bg-card)', borderRadius: '12px' }}>
-        {renderCell(tr('settings.about_check_update', 'Check updates'), {
-          isLink: true,
-          onClick: () => {
-            Toast.loading(tr('settings.about_checking', 'Checking...'));
-            window.setTimeout(() => {
-              Toast.success(tr('settings.about_latest', 'Already on latest version'));
-            }, 900);
-          },
-        })}
+      <div style={{ width: '100%', marginTop: '24px' }}>
+        <CellGroup>
+          {renderCell(tr('settings.about_check_update', 'Check updates'), {
+            isLink: true,
+            noBorder: true,
+            onClick: () => {
+              Toast.loading(tr('settings.about_checking', 'Checking...'));
+              window.setTimeout(() => {
+                Toast.success(tr('settings.about_latest', 'Already on latest version'));
+              }, 900);
+            },
+          })}
+        </CellGroup>
       </div>
 
       <div style={{ marginTop: '40px', fontSize: '12px', color: 'var(--text-placeholder)', textAlign: 'center' }}>
-        {tr('settings.about_copyright', 'Copyright © 2024 OpenChat Inc. All Rights Reserved.')}
+        {tr('settings.about_copyright', 'Copyright 2024 OpenChat Inc. All Rights Reserved.')}
       </div>
     </div>
   );
 
   const renderCardsSection = () => (
     <>
-      <div style={{ padding: '10px 16px 6px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-        {tr('settings.cards.my_coupons', 'My Coupons')}
-      </div>
-      <div style={{ background: 'var(--bg-card)' }}>
+      <CellGroup title={tr('settings.cards.my_coupons', 'My Coupons')}>
         {renderCell(tr('settings.cards.member_trial', 'Membership Trial Card'), {
           value: tr('settings.cards.member_trial_value', '23 days left'),
           isLink: true,
@@ -301,27 +353,47 @@ export const GeneralPage: React.FC<GeneralPageProps> = ({
         {renderCell(tr('settings.cards.shipping_coupon', 'Shipping Coupon'), {
           value: tr('settings.cards.shipping_coupon_value', '2 available'),
           isLink: true,
-          onClick: () => onNavigate?.('/commerce/mall'),
+          onClick: () => onNavigate?.('/shopping'),
         })}
         {renderCell(tr('settings.cards.mall_coupon', 'Mall Discount Coupon'), {
           value: tr('settings.cards.mall_coupon_value', 'Save 20 on 199'),
           isLink: true,
-          onClick: () => onNavigate?.('/commerce/mall'),
+          onClick: () => onNavigate?.('/shopping'),
         })}
         {renderCell(tr('settings.cards.appointment_coupon', 'Appointment Service Coupon'), {
           value: tr('settings.cards.appointment_coupon_value', '1 available'),
           isLink: true,
           onClick: () => onNavigate?.('/appointments'),
+          noBorder: true,
         })}
-      </div>
+      </CellGroup>
 
-      <div style={{ padding: '10px 16px 6px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-        {tr('settings.cards.member_points', 'Membership & Points')}
-      </div>
-      <div style={{ background: 'var(--bg-card)' }}>
+      <CellGroup title={tr('settings.cards.member_points', 'Membership & Points')}>
         {renderCell(tr('settings.cards.growth', 'Growth Score'), { value: '1260', isLink: true })}
-        {renderCell(tr('settings.cards.points', 'Available Points'), { value: '780', isLink: true })}
-      </div>
+        {renderCell(tr('settings.cards.points', 'Available Points'), { value: '780', isLink: true, noBorder: true })}
+      </CellGroup>
+    </>
+  );
+
+  const renderStorageSection = () => (
+    <>
+      <CellGroup title={tr('settings.storage', 'Storage')}>
+        {renderCell(tr('settings.storage_usage', 'Local usage'), {
+          value: isStorageLoading ? tr('common.loading', 'Loading...') : storageUsage,
+          isLink: true,
+          onClick: () => {
+            void loadStorageUsage();
+          },
+        })}
+        {renderCell(tr('settings.storage_clean', 'Refresh estimate'), {
+          description: tr('settings.storage_clean_desc', 'Scan current local cache and media usage'),
+          isLink: true,
+          onClick: () => {
+            void loadStorageUsage();
+          },
+          noBorder: true,
+        })}
+      </CellGroup>
     </>
   );
 
@@ -339,14 +411,7 @@ export const GeneralPage: React.FC<GeneralPageProps> = ({
 
     return (
       <div style={{ padding: '16px' }}>
-        <div
-          style={{
-            background: 'var(--bg-card)',
-            border: '0.5px solid var(--border-color)',
-            borderRadius: '14px',
-            overflow: 'hidden',
-          }}
-        >
+        <div style={{ background: 'var(--bg-card)', border: '0.5px solid var(--border-color)', overflow: 'hidden' }}>
           <div style={{ padding: '16px', borderBottom: '0.5px solid var(--border-color)' }}>
             <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>{typeLabel}</div>
             <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.45 }}>
@@ -371,36 +436,36 @@ export const GeneralPage: React.FC<GeneralPageProps> = ({
 
   const renderGenericSection = () => (
     <>
-      {sectionHeader(tr('settings.generic.common', 'Common Settings'))}
-      <div style={{ background: 'var(--bg-card)' }}>
+      <CellGroup title={tr('settings.generic.common', 'Common Settings')}>
         {renderCell(tr('settings.generic.do_not_disturb', 'Do Not Disturb'), {
           toggle: true,
           checked: doNotDisturb,
-          onToggle: () => setDoNotDisturb((prev) => !prev),
+          onToggle: setDoNotDisturb,
         })}
         {renderCell(tr('settings.generic.account_security', 'Device and Account Security'), {
           isLink: true,
-          onClick: () => Toast.info(tr('settings.generic.account_security_toast', 'Configure this in Account & Security')),
+          onClick: () => onNavigate?.('/account-security'),
         })}
         {renderCell(tr('settings.generic.storage_management', 'Storage Management'), {
-          value: '2.3 GB',
+          value: isStorageLoading ? tr('common.loading', 'Loading...') : storageUsage,
           isLink: true,
-          onClick: () => Toast.info(tr('settings.generic.storage_toast', 'Local storage scan completed')),
+          onClick: navigateToStorageSection,
+          noBorder: true,
         })}
-      </div>
+      </CellGroup>
 
-      {sectionHeader(tr('settings.generic.privacy', 'Content and Privacy'))}
-      <div style={{ background: 'var(--bg-card)' }}>
+      <CellGroup title={tr('settings.generic.privacy', 'Content and Privacy')}>
         {renderCell(tr('settings.generic.privacy_permissions', 'Privacy Permissions'), {
           isLink: true,
-          onClick: () => Toast.info(tr('settings.generic.privacy_toast', 'Privacy controls enabled')),
+          onClick: navigateToNotificationsSection,
         })}
         {renderCell(tr('settings.generic.personalized_recommendation', 'Personalized Recommendation'), {
           toggle: true,
           checked: personalizedRecommendation,
-          onToggle: () => setPersonalizedRecommendation((prev) => !prev),
+          onToggle: setPersonalizedRecommendation,
+          noBorder: true,
         })}
-      </div>
+      </CellGroup>
     </>
   );
 
@@ -408,32 +473,28 @@ export const GeneralPage: React.FC<GeneralPageProps> = ({
     if (resolvedSection === 'general') return tr('settings.general', 'General');
     if (resolvedSection === 'notifications') return tr('settings.notifications', 'Notifications');
     if (resolvedSection === 'about') return tr('settings.about', 'About OpenChat');
+    if (resolvedSection === 'storage') return tr('settings.storage', 'Storage');
     if (resolvedSection === 'cards') return tr('settings.cards.title', 'Cards');
     if (resolvedSection === 'favorite-detail') return tr('settings.favorite_detail_title', 'Favorite Detail');
     return title || tr('settings.general', 'General');
   }, [resolvedSection, title, tr]);
 
-  const content = useMemo(() => {
-    if (resolvedSection === 'general') return renderGeneralSection();
-    if (resolvedSection === 'notifications') return renderNotificationsSection();
-    if (resolvedSection === 'about') return renderAboutSection();
-    if (resolvedSection === 'cards') return renderCardsSection();
-    if (resolvedSection === 'favorite-detail') return renderFavoriteDetailSection();
-    return renderGenericSection();
-  }, [
-    autoPlayVideo,
-    detailContent,
-    detailSource,
-    detailTime,
-    detailTitle,
-    detailType,
-    doNotDisturb,
-    language,
-    notificationsEnabled,
-    personalizedRecommendation,
-    resolvedSection,
-    tr,
-  ]);
+  let content: React.ReactNode;
+  if (resolvedSection === 'general') {
+    content = renderGeneralSection();
+  } else if (resolvedSection === 'notifications') {
+    content = renderNotificationsSection();
+  } else if (resolvedSection === 'about') {
+    content = renderAboutSection();
+  } else if (resolvedSection === 'storage') {
+    content = renderStorageSection();
+  } else if (resolvedSection === 'cards') {
+    content = renderCardsSection();
+  } else if (resolvedSection === 'favorite-detail') {
+    content = renderFavoriteDetailSection();
+  } else {
+    content = renderGenericSection();
+  }
 
   return (
     <div style={{ minHeight: '100%', background: 'var(--bg-body)', display: 'flex', flexDirection: 'column' }}>
@@ -444,3 +505,4 @@ export const GeneralPage: React.FC<GeneralPageProps> = ({
 };
 
 export default GeneralPage;
+

@@ -21,17 +21,19 @@ const AgentCard: React.FC<{
   onClick: () => void;
   disabled?: boolean;
   busy?: boolean;
+  highlighted?: boolean;
   enteringLabel: string;
 }> = ({
   agent,
   onClick,
   disabled = false,
   busy = false,
+  highlighted = false,
   enteringLabel,
 }) => (
   <button
     type="button"
-    className={`agents-page__card ${disabled ? 'agents-page__card--disabled' : ''}`}
+    className={`agents-page__card ${disabled ? 'agents-page__card--disabled' : ''}${highlighted ? ' agents-page__card--highlighted' : ''}`}
     onClick={onClick}
     disabled={disabled}
   >
@@ -39,7 +41,7 @@ const AgentCard: React.FC<{
       {isImageAvatar(agent.avatar) ? (
         <img src={agent.avatar} alt={agent.name} className="agents-page__card-avatar-img" />
       ) : (
-        <span className="agents-page__card-avatar-fallback">🤖</span>
+        <span className="agents-page__card-avatar-fallback">AI</span>
       )}
     </div>
 
@@ -78,6 +80,8 @@ const AgentsSkeleton: React.FC = () => (
 
 interface AgentsPageProps {
   onAgentClick?: (agentId: string) => void | Promise<void>;
+  scannedAgent?: { id?: string; name?: string };
+  onOpenScannedAgent?: (agentId: string) => void | Promise<void>;
   onSearchClick?: () => void;
   onCreateAgentClick?: () => void;
   showBack?: boolean;
@@ -123,13 +127,17 @@ const matchesCategory = (agent: Agent, categoryId: string) => {
 
 const AgentsPage: React.FC<AgentsPageProps> = ({
   onAgentClick,
+  scannedAgent,
+  onOpenScannedAgent,
   onSearchClick,
-  onCreateAgentClick,
 }) => {
   const { t } = useAgentsI18n();
   const { agents, isLoading } = useAgents();
   const [activeCategory, setActiveCategory] = useState('all');
   const [pendingAgentId, setPendingAgentId] = useState<string | null>(null);
+  const scanAgentId = (scannedAgent?.id || '').trim();
+  const scanAgentName = (scannedAgent?.name || '').trim();
+
   const categoryTabs = useMemo<TopTabItem[]>(
     () =>
       categories.map((cat) => ({
@@ -168,6 +176,25 @@ const AgentsPage: React.FC<AgentsPageProps> = ({
     await HapticBridge.selection();
   }, []);
 
+  const handleOpenScannedAgent = useCallback(async () => {
+    if (!scanAgentId || pendingAgentId) return;
+
+    if (onOpenScannedAgent) {
+      setPendingAgentId(scanAgentId);
+      try {
+        await onOpenScannedAgent(scanAgentId);
+      } catch (error) {
+        console.error('[AgentsPage] Failed to open scanned agent:', error);
+        Toast.error(t('pages.agents.open_failed'));
+      } finally {
+        setPendingAgentId(null);
+      }
+      return;
+    }
+
+    await handleAgentClick(scanAgentId);
+  }, [handleAgentClick, onOpenScannedAgent, pendingAgentId, scanAgentId, t]);
+
   return (
     <Page noNavbar noPadding background="var(--bg-body)">
       <div className="agents-page">
@@ -186,39 +213,50 @@ const AgentsPage: React.FC<AgentsPageProps> = ({
         />
 
         <div className="agents-page__content">
-        <button
-          type="button"
-          onClick={onCreateAgentClick}
-          className="agents-page__hero"
-        >
-          <span className="agents-page__hero-watermark" aria-hidden="true">AI</span>
-          <span className="agents-page__hero-title">{t('pages.agents.hero_title')}</span>
-          <span className="agents-page__hero-desc">{t('pages.agents.hero_desc')}</span>
-        </button>
+          {(scanAgentId || scanAgentName) ? (
+            <div className="agents-page__scan-banner">
+              <div className="agents-page__scan-main">
+                <div className="agents-page__scan-title">{t('pages.agents.scan.title') || 'Recognized Agent'}</div>
+                <div className="agents-page__scan-desc">
+                  {scanAgentName || scanAgentId}
+                  {scanAgentId && scanAgentName ? ` (${scanAgentId})` : ''}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="agents-page__scan-btn"
+                onClick={() => void handleOpenScannedAgent()}
+                disabled={!scanAgentId || !!pendingAgentId}
+              >
+                {t('pages.agents.scan.open') || 'Open'}
+              </button>
+            </div>
+          ) : null}
 
-        {isLoading ? (
-          <AgentsSkeleton />
-        ) : (
-          <div className="agents-page__list">
-            {filteredAgents.map((agent) => (
-              <AgentCard
-                key={agent.id}
-                agent={agent}
-                enteringLabel={t('pages.agents.entering')}
-                onClick={() => handleAgentClick(agent.id)}
-                disabled={!!pendingAgentId}
-                busy={pendingAgentId === agent.id}
-              />
-            ))}
-          </div>
-        )}
+          {isLoading ? (
+            <AgentsSkeleton />
+          ) : (
+            <div className="agents-page__list">
+              {filteredAgents.map((agent) => (
+                <AgentCard
+                  key={agent.id}
+                  agent={agent}
+                  enteringLabel={t('pages.agents.entering')}
+                  onClick={() => handleAgentClick(agent.id)}
+                  disabled={!!pendingAgentId}
+                  busy={pendingAgentId === agent.id}
+                  highlighted={!!scanAgentId && scanAgentId === agent.id}
+                />
+              ))}
+            </div>
+          )}
 
-        {!isLoading && filteredAgents.length === 0 && (
-          <div className="agents-page__empty">
-            <div className="agents-page__empty-icon">🤖</div>
-            <div className="agents-page__empty-text">{t('pages.agents.empty')}</div>
-          </div>
-        )}
+          {!isLoading && filteredAgents.length === 0 && (
+            <div className="agents-page__empty">
+              <div className="agents-page__empty-icon">AI</div>
+              <div className="agents-page__empty-text">{t('pages.agents.empty')}</div>
+            </div>
+          )}
         </div>
       </div>
     </Page>

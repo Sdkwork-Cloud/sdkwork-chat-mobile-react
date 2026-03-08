@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Input } from '@sdkwork/react-mobile-commons/components';
+import { Button, Input } from '@sdkwork/react-mobile-commons';
 import { useAuth } from '../../hooks';
 import type { LoginCredentials } from '../../types';
 import './LoginForm.css';
@@ -16,7 +16,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 }) => {
   const { login, isLoading, error, clearError } = useAuth();
   const [credentials, setCredentials] = useState<LoginCredentials>({
-    email: '',
+    username: '',
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -26,8 +26,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     clearError();
 
     try {
-      await login(credentials);
-      onSuccess?.();
+      const success = await login(credentials.username.trim(), credentials.password);
+      if (success) {
+        onSuccess?.();
+        return;
+      }
+      onError?.(new Error('Login failed'));
     } catch (error) {
       onError?.(error as Error);
     }
@@ -49,14 +53,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
       <div className="auth-login-form__fields">
         <Input
-          type="email"
-          label="Email"
-          placeholder="Enter your email"
-          value={credentials.email}
-          onChange={handleChange('email')}
+          type="text"
+          label="Username"
+          placeholder="Enter your username"
+          value={credentials.username}
+          onChange={handleChange('username')}
           fullWidth
           required
-          autoComplete="email"
+          autoComplete="username"
         />
 
         <Input

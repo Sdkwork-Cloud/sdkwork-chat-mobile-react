@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChatPanelContainer } from './ChatPanelContainer';
+import './ChatEmojiPanel.css';
 
 interface ChatEmojiPanelProps {
   t?: (key: string) => string;
@@ -44,62 +45,33 @@ export const ChatEmojiPanel: React.FC<ChatEmojiPanelProps> = ({ t, visible, onSe
   };
 
   return (
-    <ChatPanelContainer visible={visible} height={260}>
-      <div style={{ display: 'flex', borderBottom: '0.5px solid var(--border-color)' }}>
-        {EMOJI_CATEGORIES.map((category, idx) => (
-          <div
-            key={category.id}
-            onClick={() => setActiveCategory(idx)}
-            style={{
-              flex: 1,
-              padding: '12px',
-              textAlign: 'center',
-              fontSize: '13px',
-              color: activeCategory === idx ? 'var(--primary-color)' : 'var(--text-secondary)',
-              fontWeight: activeCategory === idx ? 600 : 400,
-              cursor: 'pointer',
-              borderBottom: activeCategory === idx ? '2px solid var(--primary-color)' : '2px solid transparent',
-            }}
-          >
-            {tr(category.nameKey, category.fallback)}
-          </div>
-        ))}
-      </div>
+    <ChatPanelContainer visible={visible} height={272} className="chat-input-panel chat-input-panel--emoji">
+      <div className="chat-emoji-panel">
+        <div className="chat-emoji-panel__tabs">
+          {EMOJI_CATEGORIES.map((category, idx) => (
+            <button
+              key={category.id}
+              type="button"
+              className={`chat-emoji-panel__tab${activeCategory === idx ? ' is-active' : ''}`}
+              onClick={() => setActiveCategory(idx)}
+            >
+              {tr(category.nameKey, category.fallback)}
+            </button>
+          ))}
+        </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(8, 1fr)',
-          gap: '4px',
-          padding: '12px',
-          maxHeight: '188px',
-          overflowY: 'auto',
-        }}
-      >
-        {EMOJI_CATEGORIES[activeCategory].emojis.map((emoji) => (
-          <div
-            key={`${EMOJI_CATEGORIES[activeCategory].id}-${emoji}`}
-            onClick={() => onSelect(emoji)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '24px',
-              padding: '8px',
-              cursor: 'pointer',
-              borderRadius: '8px',
-              transition: 'background 0.15s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--bg-body)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-            }}
-          >
-            {emoji}
-          </div>
-        ))}
+        <div className="chat-emoji-panel__grid">
+          {EMOJI_CATEGORIES[activeCategory].emojis.map((emoji) => (
+            <button
+              type="button"
+              key={`${EMOJI_CATEGORIES[activeCategory].id}-${emoji}`}
+              onClick={() => onSelect(emoji)}
+              className="chat-emoji-panel__item"
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
       </div>
     </ChatPanelContainer>
   );

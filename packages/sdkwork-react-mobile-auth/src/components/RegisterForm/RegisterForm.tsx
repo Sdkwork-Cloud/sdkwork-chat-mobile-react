@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Button, Input } from '@sdkwork/react-mobile-commons/components';
+import { Button, Input } from '@sdkwork/react-mobile-commons';
 import { useAuth } from '../../hooks';
-import type { RegisterData } from '../../types';
+import type { RegisterInfo } from '../../types';
 import './RegisterForm.css';
 
 export interface RegisterFormProps {
@@ -14,7 +14,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   onError,
 }) => {
   const { register, isLoading, error, clearError } = useAuth();
-  const [formData, setFormData] = useState<RegisterData & { confirmPassword: string }>({
+  const [formData, setFormData] = useState<RegisterInfo & { displayName: string }>({
     email: '',
     username: '',
     displayName: '',
@@ -22,10 +22,11 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     confirmPassword: '',
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  type RegisterField = keyof typeof formData;
+  const [validationErrors, setValidationErrors] = useState<Partial<Record<RegisterField, string>>>({});
 
   const validate = (): boolean => {
-    const errors: Record<string, string> = {};
+    const errors: Partial<Record<RegisterField, string>> = {};
 
     if (!formData.email) {
       errors.email = 'Email is required';
@@ -63,17 +64,23 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 
     if (!validate()) return;
 
-    const { confirmPassword, ...registerData } = formData;
-
     try {
-      await register(registerData);
-      onSuccess?.();
+      const success = await register(
+        formData.username.trim() || formData.email.trim(),
+        formData.password,
+        formData.confirmPassword
+      );
+      if (success) {
+        onSuccess?.();
+        return;
+      }
+      onError?.(new Error('Registration failed'));
     } catch (error) {
       onError?.(error as Error);
     }
   };
 
-  const handleChange = (field: keyof typeof formData) => (
+  const handleChange = (field: RegisterField) => (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     setFormData((prev) => ({ ...prev, [field]: e.target.value }));

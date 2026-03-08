@@ -1,10 +1,9 @@
-import { resolveServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
+import { APP_SDK_AUTH_TOKEN_STORAGE_KEY, createAppSdkCoreConfig, getAppSdkCoreClientWithSession, resolveServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
 import type { ServiceFactoryDeps, ServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
+import type { SdkworkAppClient } from '@sdkwork/app-sdk';
 import type { Address } from '../types';
 
 const TAG = 'AddressSdkService';
-const APP_API_PREFIX = '/app/v3/api';
-const AUTH_TOKEN_STORAGE_KEY = 'sys_auth_token';
 
 interface SdkApiResult<T> {
   data: T;
@@ -47,69 +46,19 @@ class AddressSdkServiceImpl implements IAddressSdkService {
     this.deps = resolveServiceFactoryRuntimeDeps(deps);
   }
 
-  private resolveEnv(name: string): string | undefined {
-    const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env;
-    return env?.[name];
-  }
-
-  private resolveBaseUrl(): string {
-    return (this.resolveEnv('VITE_API_BASE_URL') || '').trim().replace(/\/+$/g, '');
+  private async getClient(): Promise<SdkworkAppClient> {
+    return getAppSdkCoreClientWithSession({
+      storage: this.deps.storage,
+      authStorageKey: APP_SDK_AUTH_TOKEN_STORAGE_KEY,
+    });
   }
 
   hasSdkBaseUrl(): boolean {
-    return this.resolveBaseUrl().length > 0;
-  }
-
-  private buildAppApiPath(path: string): string {
-    const normalizedPrefixRaw = APP_API_PREFIX.trim();
-    const normalizedPrefix = normalizedPrefixRaw ? `/${normalizedPrefixRaw.replace(/^\/+|\/+$/g, '')}` : '';
-    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-    if (!normalizedPrefix || normalizedPrefix === '/') return normalizedPath;
-    if (normalizedPath === normalizedPrefix || normalizedPath.startsWith(`${normalizedPrefix}/`)) return normalizedPath;
-    return `${normalizedPrefix}${normalizedPath}`;
-  }
-
-  private buildUrl(path: string): string {
-    return `${this.resolveBaseUrl()}${this.buildAppApiPath(path)}`;
-  }
-
-  private async resolveAuthHeaders(options?: { includeContentType?: boolean }): Promise<Record<string, string>> {
-    const headers: Record<string, string> = {};
-    if (options?.includeContentType !== false) {
-      headers['Content-Type'] = 'application/json';
-    }
-
-    const envToken = this.resolveEnv('VITE_ACCESS_TOKEN');
-    const storageToken = await Promise.resolve(this.deps.storage.get<string>(AUTH_TOKEN_STORAGE_KEY));
-    const accessToken = (envToken || storageToken || '').trim();
-    if (accessToken) {
-      headers.Authorization = `Bearer ${accessToken}`;
-    }
-
-    return headers;
+    return (createAppSdkCoreConfig().baseUrl || '').trim().length > 0;
   }
 
   private isSuccessCode(code: string | undefined): boolean {
     return code === '2000';
-  }
-
-  private async requestJson<T>(path: string, init: RequestInit, options?: { includeContentType?: boolean }): Promise<T> {
-    if (typeof fetch !== 'function') {
-      throw new Error('Global fetch is not available');
-    }
-
-    const headers = await this.resolveAuthHeaders(options);
-    const response = await fetch(this.buildUrl(path), {
-      ...init,
-      headers: {
-        ...headers,
-        ...(init.headers || {}),
-      },
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} ${response.statusText}`);
-    }
-    return (await response.json()) as T;
   }
 
   private toTimestamp(value: unknown, fallback: number): number {
@@ -161,57 +110,49 @@ class AddressSdkServiceImpl implements IAddressSdkService {
   async listAddresses(): Promise<Address[] | null> {
     if (!this.hasSdkBaseUrl()) return null;
 
-    const endpoints = ['/user/address', '/user/addresses'];
-    for (const endpoint of endpoints) {
-      try {
-        const result = await this.requestJson<SdkApiResult<unknown>>(endpoint, { method: 'GET' }, { includeContentType: false });
-        if (!this.isSuccessCode(result.code)) {
-          this.deps.logger.warn(TAG, 'SDK listAddresses business failure', {
-            endpoint,
-            code: result.code,
-            message: result.msg,
-          });
-          continue;
-        }
-
-        const mapped = this.extractAddressList(result.data)
-          .map((item) => this.mapRemoteAddress(item))
-          .filter((item): item is Address => item !== null);
-
-        return mapped;
-      } catch (error) {
-        this.deps.logger.warn(TAG, 'SDK listAddresses request failed', { endpoint, error });
+    try {
+      const client = await this.getClient();
+      const result = await client.user.listAddresses() as SdkApiResult<unknown>;
+      if (!this.isSuccessCode(result.code)) {
+        this.deps.logger.warn(TAG, 'SDK listAddresses business failure', {
+          code: result.code,
+          message: result.msg,
+        });
+        return null;
       }
-    }
 
-    return null;
+      return this.extractAddressList(result.data)
+        .map((item) => this.mapRemoteAddress(item))
+        .filter((item): item is Address => item !== null);
+    } catch (error) {
+      this.deps.logger.warn(TAG, 'SDK listAddresses request failed', { error });
+      return null;
+    }
   }
 
   async saveAddress(address: Partial<Address>): Promise<Address | null> {
     if (!this.hasSdkBaseUrl()) return null;
 
     const isUpdate = typeof address.id === 'string' && address.id.trim().length > 0;
-    const endpoint = isUpdate
-      ? `/user/address/${encodeURIComponent(String(address.id))}`
-      : '/user/address';
-    const method = isUpdate ? 'PUT' : 'POST';
-
-    const body = {
+    const addressDetail = (address.detail || '').trim();
+    const createBody = {
+      name: (address.name || '').trim(),
+      phone: (address.phone || '').trim(),
+      addressDetail,
+      isDefault: address.isDefault,
+    };
+    const updateBody = {
       name: address.name,
       phone: address.phone,
-      province: address.province,
-      city: address.city,
-      district: address.district,
-      detail: address.detail,
-      tag: address.tag,
+      addressDetail: addressDetail || undefined,
       isDefault: address.isDefault,
     };
 
     try {
-      const result = await this.requestJson<SdkApiResult<SdkAddressVO>>(endpoint, {
-        method,
-        body: JSON.stringify(body),
-      });
+      const client = await this.getClient();
+      const result = isUpdate
+        ? await client.user.updateAddress(String(address.id), updateBody) as SdkApiResult<SdkAddressVO>
+        : await client.user.createAddress(createBody) as SdkApiResult<SdkAddressVO>;
       if (!this.isSuccessCode(result.code)) {
         this.deps.logger.warn(TAG, 'SDK saveAddress business failure', { code: result.code, message: result.msg });
         return null;
@@ -226,11 +167,9 @@ class AddressSdkServiceImpl implements IAddressSdkService {
   async deleteAddress(id: string): Promise<boolean | null> {
     if (!this.hasSdkBaseUrl()) return null;
 
-    const endpoint = `/user/address/${encodeURIComponent(id)}`;
     try {
-      const result = await this.requestJson<SdkApiResult<unknown>>(endpoint, {
-        method: 'DELETE',
-      });
+      const client = await this.getClient();
+      const result = await client.user.deleteAddress(id) as SdkApiResult<unknown>;
       if (!this.isSuccessCode(result.code)) {
         this.deps.logger.warn(TAG, 'SDK deleteAddress business failure', { code: result.code, message: result.msg, id });
         return false;
@@ -245,11 +184,9 @@ class AddressSdkServiceImpl implements IAddressSdkService {
   async setDefaultAddress(id: string): Promise<Address | null> {
     if (!this.hasSdkBaseUrl()) return null;
 
-    const endpoint = `/user/address/${encodeURIComponent(id)}/default`;
     try {
-      const result = await this.requestJson<SdkApiResult<SdkAddressVO>>(endpoint, {
-        method: 'PUT',
-      });
+      const client = await this.getClient();
+      const result = await client.user.setDefaultAddress(id) as SdkApiResult<SdkAddressVO>;
       if (!this.isSuccessCode(result.code)) {
         this.deps.logger.warn(TAG, 'SDK setDefaultAddress business failure', { code: result.code, message: result.msg, id });
         return null;

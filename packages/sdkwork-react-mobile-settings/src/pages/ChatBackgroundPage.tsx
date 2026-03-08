@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Navbar, Toast } from '@sdkwork/react-mobile-commons';
+import { Icon, Navbar, Toast } from '@sdkwork/react-mobile-commons';
 import { useSettings } from '../hooks/useSettings';
 
 const COLORS = [
@@ -38,15 +37,19 @@ const Checkmark = () => (
 interface ChatBackgroundPageProps {
   t?: (key: string) => string;
   sessionId?: string;
+  loadSessionBackground?: (sessionId: string) => Promise<string>;
+  saveSessionBackground?: (sessionId: string, background: string) => Promise<void>;
   onBack?: () => void;
 }
 
 export const ChatBackgroundPage: React.FC<ChatBackgroundPageProps> = ({
   t,
   sessionId,
+  loadSessionBackground,
+  saveSessionBackground,
   onBack,
 }) => {
-    const { t: settingsT } = useSettings();
+    const { t: settingsT, config, updateConfig } = useSettings();
     const tr = React.useCallback(
         (key: string, fallback: string) => {
             const appValue = t?.(key);
@@ -60,37 +63,78 @@ export const ChatBackgroundPage: React.FC<ChatBackgroundPageProps> = ({
     const [currentBg, setCurrentBg] = useState('');
     const [tempBg, setTempBg] = useState('');
     const [hasChanged, setHasChanged] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const cameraInputRef = useRef<HTMLInputElement>(null);
 
+    const vibrate = React.useCallback((duration: number) => {
+        if (typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') {
+            return;
+        }
+        navigator.vibrate(duration);
+    }, []);
+
     useEffect(() => {
-        // Load current background
-        const bg = '';
-        setCurrentBg(bg);
-        setTempBg(bg);
-    }, [sessionId]);
+        let cancelled = false;
+        const loadBackground = async () => {
+            let nextBackground = '';
+            if (sessionId) {
+                if (loadSessionBackground) {
+                    nextBackground = await loadSessionBackground(sessionId).catch(() => '');
+                }
+            } else {
+                nextBackground = config?.chatBackground || '';
+            }
+
+            if (cancelled) return;
+            setCurrentBg(nextBackground);
+            setTempBg(nextBackground);
+            setHasChanged(false);
+        };
+
+        void loadBackground();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [config?.chatBackground, loadSessionBackground, sessionId]);
 
     const handleSelect = (bg: string) => {
         setTempBg(bg);
-        setHasChanged(true);
-        if (navigator.vibrate) navigator.vibrate(5);
+        setHasChanged(bg !== currentBg);
+        vibrate(5);
     };
 
     const handleSave = async () => {
-        Toast.success(
-            sessionId
-                ? tr('settings.background.saved_current', 'Applied to current chat')
-                : tr('settings.background.saved_global', 'Applied globally')
-        );
-        setCurrentBg(tempBg);
-        setHasChanged(false);
-        setTimeout(() => onBack?.(), 500);
+        if (isSaving) return;
+        setIsSaving(true);
+        Toast.loading(tr('common.loading', 'Loading...'));
+        try {
+            if (sessionId) {
+                await saveSessionBackground?.(sessionId, tempBg);
+            } else {
+                await updateConfig({ chatBackground: tempBg });
+            }
+
+            setCurrentBg(tempBg);
+            setHasChanged(false);
+            Toast.success(
+                sessionId
+                    ? tr('settings.background.saved_current', 'Applied to current chat')
+                    : tr('settings.background.saved_global', 'Applied globally')
+            );
+            window.setTimeout(() => onBack?.(), 320);
+        } catch {
+            Toast.error(tr('settings.background.save_failed', 'Failed to save background'));
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleRestoreDefault = async () => {
         setTempBg(''); 
-        setHasChanged(true);
-        if (navigator.vibrate) navigator.vibrate(10);
+        setHasChanged(currentBg !== '');
+        vibrate(10);
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,9 +186,22 @@ export const ChatBackgroundPage: React.FC<ChatBackgroundPageProps> = ({
                 onBack={onBack} 
                 rightElement={
                     hasChanged ? (
-                        <div onClick={handleSave} style={{ color: 'var(--primary-color)', fontWeight: 600, fontSize: '15px', cursor: 'pointer', padding: '0 12px' }}>
-                            {tr('common.complete', 'Done')}
-                        </div>
+                        <button
+                            type="button"
+                            onClick={() => void handleSave()}
+                            disabled={isSaving}
+                            style={{
+                                color: isSaving ? 'var(--text-secondary)' : 'var(--primary-color)',
+                                fontWeight: 600,
+                                fontSize: '15px',
+                                cursor: isSaving ? 'not-allowed' : 'pointer',
+                                padding: '0 12px',
+                                border: 'none',
+                                background: 'transparent',
+                            }}
+                        >
+                            {isSaving ? tr('common.loading', 'Loading...') : tr('common.complete', 'Done')}
+                        </button>
                     ) : null
                 }
             />
@@ -164,7 +221,9 @@ export const ChatBackgroundPage: React.FC<ChatBackgroundPageProps> = ({
                                 border: '1px solid var(--border-color)', cursor: 'pointer'
                             }}
                         >
-                            <span style={{ fontSize: '20px' }}>🖼️</span>
+                            <span style={{ display: 'inline-flex', lineHeight: 0 }}>
+                                <Icon name="picture" size={20} color="var(--text-primary)" />
+                            </span>
                             <span style={{ fontSize: '12px', color: 'var(--text-primary)', marginTop: '4px' }}>
                                 {tr('settings.background.from_album', 'Select from Album')}
                             </span>
@@ -178,7 +237,9 @@ export const ChatBackgroundPage: React.FC<ChatBackgroundPageProps> = ({
                                 border: '1px solid var(--border-color)', cursor: 'pointer'
                             }}
                         >
-                            <span style={{ fontSize: '20px' }}>📷</span>
+                            <span style={{ display: 'inline-flex', lineHeight: 0 }}>
+                                <Icon name="scan" size={20} color="var(--text-primary)" />
+                            </span>
                             <span style={{ fontSize: '12px', color: 'var(--text-primary)', marginTop: '4px' }}>
                                 {tr('settings.background.take_photo', 'Take Photo')}
                             </span>
@@ -290,3 +351,4 @@ export const ChatBackgroundPage: React.FC<ChatBackgroundPageProps> = ({
 };
 
 export default ChatBackgroundPage;
+

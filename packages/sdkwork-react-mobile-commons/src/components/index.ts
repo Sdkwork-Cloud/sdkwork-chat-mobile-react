@@ -16,3 +16,5 @@ export * from './Navbar';
 export * from './NavbarQuickActions';
 export * from './Switch';
 export * from './TopTabsNavbar';
+export * from './Cell';
+export * from './ModelSelectorPopup';

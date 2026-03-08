@@ -1,0 +1,14 @@
+.chat-details-page {
+  min-height: 100%;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
+}
+
+.chat-details-page__not-found {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.chat-details-page__members {
+  margin-bottom: 8px;
+}

@@ -18,6 +18,9 @@
     "i18next": "catalog:",
     "lucide-react": "catalog:"
   },
+  "dependencies": {
+    "@sdkwork/app-sdk": "workspace:*"
+  },
   "devDependencies": {
     "@types/react": "catalog:",
     "typescript": "catalog:",

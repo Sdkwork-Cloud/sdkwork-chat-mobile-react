@@ -1,54 +1,47 @@
 .discover-cell-group {
-  margin: 0 12px 12px;
-  background: var(--bg-card);
-  border-radius: 16px;
-  overflow: hidden;
-  border: 0.5px solid var(--border-color);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+  margin: 0 0 10px;
+}
+
+.discover-cell-group .c-cell-group__content {
+  border-radius: 0;
+  overflow: visible;
+  box-shadow: none;
 }
 
 .discover-cell {
-  width: 100%;
-  border: none;
-  background: transparent;
-  padding: 13px 14px;
-  display: flex;
-  align-items: center;
-  text-align: left;
-  cursor: pointer;
-  border-bottom: 0.5px solid var(--border-color);
-  transition: background 0.2s ease;
+  min-height: var(--discover-cell-min-height, 56px);
+  padding-top: var(--discover-cell-vertical-padding, 16px);
+  padding-bottom: var(--discover-cell-vertical-padding, 16px);
 }
 
-.discover-cell:active {
-  background: var(--bg-cell-active);
+.discover-cell .c-cell-item__title {
+  font-weight: 520;
+  letter-spacing: 0.1px;
 }
 
-.discover-cell--last {
-  border-bottom: none;
+.discover-cell__icon {
+  width: var(--discover-cell-icon-size, 34px);
+  height: var(--discover-cell-icon-size, 34px);
+  margin-right: var(--discover-cell-icon-gap, 14px);
 }
 
 .discover-cell__icon-wrap {
-  width: 32px;
-  height: 32px;
-  margin-right: 12px;
+  width: var(--discover-cell-icon-size, 34px);
+  height: var(--discover-cell-icon-size, 34px);
   border-radius: 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  transition: transform 0.16s ease, filter 0.16s ease;
 }
 
-.discover-cell__title {
-  flex: 1;
-  color: var(--text-primary);
-  font-size: 15px;
-  font-weight: 500;
+.discover-cell.c-cell-item--clickable:active .discover-cell__icon-wrap {
+  transform: scale(0.96);
+  filter: saturate(0.95);
 }
 
-.discover-cell__arrow {
-  opacity: 0.7;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+@media (prefers-reduced-motion: reduce) {
+  .discover-cell__icon-wrap {
+    transition: none;
+  }
 }

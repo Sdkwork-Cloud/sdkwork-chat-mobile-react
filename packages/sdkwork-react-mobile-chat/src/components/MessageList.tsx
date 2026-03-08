@@ -59,29 +59,17 @@ const TimeDivider: React.FC<{ timestamp: number; locale: 'zh-CN' | 'en-US'; yest
   return (
     <div
       style={{
-        position: 'sticky',
-        top: '12px',
-        zIndex: 5,
         textAlign: 'center',
-        marginBottom: '18px',
+        marginBottom: '14px',
         pointerEvents: 'none',
-        display: 'flex',
-        justifyContent: 'center',
       }}
     >
       <span
         style={{
           fontSize: '11px',
           color: 'var(--text-secondary)',
-          fontWeight: 520,
-          backgroundColor: 'rgba(var(--bg-card-rgb, 255, 255, 255), 0.76)',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-          padding: '4px 12px',
-          borderRadius: '12px',
-          border: '0.5px solid rgba(120, 132, 155, 0.2)',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-          letterSpacing: '0.5px',
+          fontWeight: 500,
+          lineHeight: '16px',
         }}
       >
         {formatDate(timestamp)}

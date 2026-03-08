@@ -1,0 +1,150 @@
+@import './UserCenterPage.shared.css';
+
+.my-creations-page {
+  --user-center-group-gap: 8px;
+  --user-center-scroll-bottom: 12px;
+}
+
+.my-creations-page__navbar-btn {
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 15px;
+  cursor: pointer;
+  border-radius: 7px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.my-creations-page__navbar-btn:active {
+  background: var(--bg-cell-active);
+}
+
+.my-creations-page__tabs {
+  display: flex;
+  overflow-x: auto;
+  gap: 14px;
+  padding: 0 12px;
+  background: var(--bg-card);
+  border-bottom: 0.5px solid var(--border-color);
+  scrollbar-width: none;
+}
+
+.my-creations-page__tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.my-creations-page__tab-btn {
+  border: 0;
+  margin: 0;
+  padding: 12px 0 9px;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.my-creations-page__tab-btn:active {
+  opacity: 0.76;
+}
+
+.my-creations-page__tab-btn.is-active {
+  color: var(--text-primary);
+  border-bottom-color: var(--primary-color);
+  font-weight: 600;
+}
+
+.my-creations-page__scroll.is-manage-mode {
+  padding-bottom: calc(56px + env(safe-area-inset-bottom));
+}
+
+.my-creations-page__thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.my-creations-page__thumb--placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-body);
+}
+
+.my-creations-page__item .c-cell-item__title,
+.my-creations-page__item .c-cell-item__description {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.my-creations-page__item .c-cell-item__description {
+  max-width: min(52vw, 260px);
+}
+
+.my-creations-page__item .c-cell-item__right {
+  max-width: min(34vw, 140px);
+  justify-content: flex-end;
+}
+
+.my-creations-page__item.is-manage-selected {
+  background: rgba(41, 121, 255, 0.08);
+  box-shadow: inset 2px 0 0 var(--primary-color);
+}
+
+.my-creations-page__meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.my-creations-page__selector {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.my-creations-page__selector.is-selected {
+  border-color: var(--primary-color);
+  background: var(--primary-color);
+}
+
+.my-creations-page__actions {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg-card);
+  border-top: 0.5px solid var(--border-color);
+  padding: 8px 12px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom));
+}
+
+.my-creations-page__delete-btn {
+  width: 100%;
+  height: 38px;
+  border: 0;
+  background: var(--bg-body);
+  color: var(--text-secondary);
+  font-size: 15px;
+  cursor: not-allowed;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.my-creations-page__delete-btn.is-enabled {
+  background: var(--danger);
+  color: white;
+  cursor: pointer;
+}

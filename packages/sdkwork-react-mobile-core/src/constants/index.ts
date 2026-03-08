@@ -5,7 +5,7 @@ export const STORAGE_KEYS = {
   APP_LEVEL: 'sys_app_settings_v1',
   USER_PREFERENCES: 'sys_user_preferences_v1',
   
-  AUTH_TOKEN: 'sys_auth_token_v1',
+  AUTH_TOKEN: 'sdkwork_token',
   AUTH_USER: 'sys_auth_user_v1',
   
   CACHE_PREFIX: 'sys_cache_',

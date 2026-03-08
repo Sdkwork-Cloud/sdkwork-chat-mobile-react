@@ -15,15 +15,24 @@ export { useUserStore } from './stores/userStore';
 // Hooks
 export { useUser, useProfile, useAddresses, useInvoices } from './hooks/useUser';
 
+// Components
+export { UserProfileHeader } from './components';
+export type { UserProfileHeaderProps } from './components';
+
 // Pages
 export {
   MePage,
+  AccountSecurityPage,
   ProfileInfoPage,
+  ProfileEditPage,
+  ProfileBindingEditPage,
   MyQRCodePage,
   MyAddressPage,
   MyAgentsPage,
   MyCreationsPage,
+  MyActivityHistoryPage,
   MyInvoiceTitlePage,
+  MyUserSettingsPage,
 } from './pages';
 
 // i18n

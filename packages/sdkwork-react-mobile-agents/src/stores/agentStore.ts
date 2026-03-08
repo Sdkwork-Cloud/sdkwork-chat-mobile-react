@@ -134,8 +134,8 @@ export const useAgentStore = create<AgentState>()(
       }),
       merge: (persistedState, currentState) => {
         const persisted = (persistedState as Partial<AgentState> | undefined) ?? {};
-        const favoriteAgents = Array.isArray((persisted as { favoriteAgents?: unknown }).favoriteAgents)
-          ? (persisted as { favoriteAgents?: unknown[] }).favoriteAgents
+        const favoriteAgents: unknown[] = Array.isArray((persisted as { favoriteAgents?: unknown }).favoriteAgents)
+          ? ((persisted as { favoriteAgents?: unknown[] }).favoriteAgents ?? [])
           : [];
 
         return {

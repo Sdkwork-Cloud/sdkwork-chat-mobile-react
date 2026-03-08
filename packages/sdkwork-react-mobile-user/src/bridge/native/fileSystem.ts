@@ -66,7 +66,6 @@ export class FileSystemBridge {
       return {
         success: true,
         data: result.data as string,
-        uri: result.uri,
       };
     } catch (error) {
       console.error('Failed to read file:', error);
@@ -124,7 +123,7 @@ export class FileSystemBridge {
     try {
       const fullPath = this.getUserPath(path);
       
-      const result = await Filesystem.mkdir({
+      await Filesystem.mkdir({
         path: fullPath,
         directory: Directory.Documents,
         recursive: true,
@@ -132,7 +131,6 @@ export class FileSystemBridge {
 
       return {
         success: true,
-        uri: result.uri,
       };
     } catch (error) {
       console.error('Failed to create directory:', error);

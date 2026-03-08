@@ -1,10 +1,9 @@
-import { resolveServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
+import { APP_SDK_AUTH_TOKEN_STORAGE_KEY, createAppSdkCoreConfig, getAppSdkCoreClientWithSession, resolveServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
 import type { ServiceFactoryDeps, ServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
+import type { SdkworkAppClient } from '@sdkwork/app-sdk';
 import type { AppConfig } from '../types';
 
 const TAG = 'SettingsSdkService';
-const APP_API_PREFIX = '/app/v3/api';
-const AUTH_TOKEN_STORAGE_KEY = 'sys_auth_token';
 
 interface SdkApiResult<T> {
   data: T;
@@ -26,72 +25,37 @@ class SettingsSdkServiceImpl implements ISettingsSdkService {
     this.deps = resolveServiceFactoryRuntimeDeps(deps);
   }
 
-  private resolveEnv(name: string): string | undefined {
-    const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env;
-    return env?.[name];
-  }
-
-  private resolveBaseUrl(): string {
-    const value = this.resolveEnv('VITE_API_BASE_URL') || '';
-    return value.trim().replace(/\/+$/g, '');
+  private async getClient(): Promise<SdkworkAppClient> {
+    return getAppSdkCoreClientWithSession({
+      storage: this.deps.storage,
+      authStorageKey: APP_SDK_AUTH_TOKEN_STORAGE_KEY,
+    });
   }
 
   hasSdkBaseUrl(): boolean {
-    return this.resolveBaseUrl().length > 0;
+    const baseUrl = (createAppSdkCoreConfig().baseUrl || '').trim();
+    if (!baseUrl) return false;
+    const authToken = this.readAuthToken();
+    return authToken.length > 0;
   }
 
-  private buildAppApiPath(path: string): string {
-    const normalizedPrefixRaw = APP_API_PREFIX.trim();
-    const normalizedPrefix = normalizedPrefixRaw ? `/${normalizedPrefixRaw.replace(/^\/+|\/+$/g, '')}` : '';
-    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-    if (!normalizedPrefix || normalizedPrefix === '/') return normalizedPath;
-    if (normalizedPath === normalizedPrefix || normalizedPath.startsWith(`${normalizedPrefix}/`)) return normalizedPath;
-    return `${normalizedPrefix}${normalizedPath}`;
-  }
-
-  private buildUrl(path: string): string {
-    return `${this.resolveBaseUrl()}${this.buildAppApiPath(path)}`;
-  }
-
-  private async resolveAuthHeaders(options?: { includeContentType?: boolean }): Promise<Record<string, string>> {
-    const headers: Record<string, string> = {};
-    if (options?.includeContentType !== false) {
-      headers['Content-Type'] = 'application/json';
+  private readAuthToken(): string {
+    try {
+      const raw = this.deps.storage.get<string | null | undefined>(APP_SDK_AUTH_TOKEN_STORAGE_KEY);
+      if (typeof raw !== 'string') return '';
+      const normalized = raw.trim();
+      if (!normalized) return '';
+      return normalized.toLowerCase().startsWith('bearer ')
+        ? normalized.slice(7).trim()
+        : normalized;
+    } catch {
+      // Platform runtime may be unavailable in tests or early bootstrap.
+      return '';
     }
-
-    const accessTokenEnv = this.resolveEnv('VITE_ACCESS_TOKEN');
-    const accessTokenStorage = await Promise.resolve(this.deps.storage.get<string>(AUTH_TOKEN_STORAGE_KEY));
-    const accessToken = (accessTokenEnv || accessTokenStorage || '').trim();
-
-    if (accessToken) {
-      headers.Authorization = `Bearer ${accessToken}`;
-      return headers;
-    }
-    return headers;
   }
 
   private isSuccessCode(code: string | undefined): boolean {
     return code === '2000';
-  }
-
-  private async requestJson<T>(path: string, init: RequestInit, options?: { includeContentType?: boolean }): Promise<T> {
-    if (typeof fetch !== 'function') {
-      throw new Error('Global fetch is not available');
-    }
-
-    const headers = await this.resolveAuthHeaders(options);
-    const response = await fetch(this.buildUrl(path), {
-      ...init,
-      headers: {
-        ...headers,
-        ...(init.headers || {}),
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} ${response.statusText}`);
-    }
-    return (await response.json()) as T;
   }
 
   private mapRemoteConfig(data: unknown): Partial<AppConfig> | null {
@@ -112,30 +76,49 @@ class SettingsSdkServiceImpl implements ISettingsSdkService {
     if (typeof source.autoPlayVideo === 'boolean') patch.autoPlayVideo = source.autoPlayVideo;
     if (typeof source.openAIAssistantEnabled === 'boolean') patch.openAIAssistantEnabled = source.openAIAssistantEnabled;
     if (typeof source.chatBackground === 'string') patch.chatBackground = source.chatBackground;
-    if (typeof source.fontSize === 'number') patch.fontSize = source.fontSize;
+    if (typeof source.fontSize === 'number') {
+      patch.fontSize = source.fontSize;
+    } else if (typeof source.fontSize === 'string') {
+      const parsed = Number(source.fontSize);
+      if (Number.isFinite(parsed)) {
+        patch.fontSize = parsed;
+      }
+    }
 
     return Object.keys(patch).length ? patch : null;
+  }
+
+  private buildUiUpdateForm(body: AppConfig): {
+    theme: string;
+    language: string;
+    fontSize: string;
+    notificationsEnabled: boolean;
+  } {
+    return {
+      theme: body.theme,
+      language: body.language,
+      fontSize: String(body.fontSize),
+      notificationsEnabled: body.notificationsEnabled,
+    };
   }
 
   async pullConfig(): Promise<Partial<AppConfig> | null> {
     if (!this.hasSdkBaseUrl()) return null;
 
-    const endpoints = ['/settings/ui', '/user/settings'];
-    for (const endpoint of endpoints) {
-      try {
-        const result = await this.requestJson<SdkApiResult<unknown>>(endpoint, { method: 'GET' }, { includeContentType: false });
-        if (!this.isSuccessCode(result.code)) {
-          this.deps.logger.warn(TAG, 'SDK pull config business failure', { endpoint, code: result.code, message: result.msg });
-          continue;
-        }
-        const mapped = this.mapRemoteConfig(result.data);
-        if (mapped) return mapped;
-      } catch (error) {
-        this.deps.logger.warn(TAG, 'SDK pull config request failed', { endpoint, error });
-      }
-    }
+    try {
+      const client = await this.getClient();
 
-    return null;
+      const uiResult = await client.settings.getUi() as SdkApiResult<unknown>;
+      if (this.isSuccessCode(uiResult.code)) {
+        const mapped = this.mapRemoteConfig(uiResult.data);
+        if (mapped) return mapped;
+      }
+      this.deps.logger.warn(TAG, 'SDK pull ui config business failure', { code: uiResult.code, message: uiResult.msg });
+      return null;
+    } catch (error) {
+      this.deps.logger.warn(TAG, 'SDK pull config request failed', { error });
+      return null;
+    }
   }
 
   async pushConfig(nextConfig: AppConfig, partial: Partial<AppConfig>): Promise<Partial<AppConfig> | null> {
@@ -145,25 +128,25 @@ class SettingsSdkServiceImpl implements ISettingsSdkService {
       ...nextConfig,
       ...partial,
     };
-    const endpoints = ['/settings/ui', '/user/settings'];
 
-    for (const endpoint of endpoints) {
-      try {
-        const result = await this.requestJson<SdkApiResult<unknown>>(endpoint, {
-          method: 'PUT',
-          body: JSON.stringify(body),
-        });
-        if (!this.isSuccessCode(result.code)) {
-          this.deps.logger.warn(TAG, 'SDK push config business failure', { endpoint, code: result.code, message: result.msg });
-          continue;
+    try {
+      const client = await this.getClient();
+
+      const uiBody = this.buildUiUpdateForm(body);
+      const uiResult = await client.settings.updateUi(uiBody) as SdkApiResult<unknown>;
+      if (this.isSuccessCode(uiResult.code)) {
+        const latestUi = await client.settings.getUi() as SdkApiResult<unknown>;
+        if (this.isSuccessCode(latestUi.code)) {
+          return this.mapRemoteConfig(latestUi.data);
         }
-        return this.mapRemoteConfig(result.data);
-      } catch (error) {
-        this.deps.logger.warn(TAG, 'SDK push config request failed', { endpoint, error });
+        return this.mapRemoteConfig(body);
       }
+      this.deps.logger.warn(TAG, 'SDK push ui config business failure', { code: uiResult.code, message: uiResult.msg });
+      return null;
+    } catch (error) {
+      this.deps.logger.warn(TAG, 'SDK push config request failed', { error });
+      return null;
     }
-
-    return null;
   }
 }
 

@@ -10,14 +10,14 @@
   /* --- Z-INDEX ARCHITECTURE --- */
   /* Level 1: Content */
   --z-normal: 1;
-  --z-sticky: 100;   /* Navbar, Tabbar */
+  --z-sticky: 1100;  /* Navbar, Tabbar */
   
   /* Level 2: Floating */
-  --z-drawer: 800;   /* Sidebars, Bottom Sheets that are part of flow */
-  --z-mask: 900;     /* Backdrops */
+  --z-drawer: 1200;  /* Sidebars, Bottom Sheets that are part of flow */
+  --z-mask: 1300;    /* Backdrops */
   
   /* Level 3: Overlays */
-  --z-popup: 1000;   /* Dialogs, ActionSheets */
+  --z-popup: 1400;   /* Dialogs, ActionSheets */
   --z-toast: 2000;   /* Toasts, Notifications */
   --z-island: 3000;  /* Dynamic Island, Top Alerts */
   --z-max: 9999;     /* Critical Overlays (Splash) */

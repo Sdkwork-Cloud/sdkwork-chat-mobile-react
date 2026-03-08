@@ -17,8 +17,15 @@ export const CreationPanelShell: React.FC<CreationPanelShellProps> = ({
   footer,
 }) => {
   return (
-    <Popup visible={visible} onClose={onClose} position="bottom" round safeArea>
-      <div style={{ display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+    <Popup
+      visible={visible}
+      onClose={onClose}
+      position="bottom"
+      round
+      safeArea
+      style={{ height: '90vh', boxSizing: 'border-box' }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <header
           style={{
             height: '52px',

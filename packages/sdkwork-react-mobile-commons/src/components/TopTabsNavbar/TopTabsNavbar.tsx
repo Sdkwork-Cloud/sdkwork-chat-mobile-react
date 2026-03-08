@@ -1,5 +1,6 @@
 import React, { useCallback, useLayoutEffect, useRef } from 'react';
-import { Icon, IconName } from '../Icon';
+import { Icon } from '../Icon';
+import type { IconName } from '../Icon/Icon';
 import './TopTabsNavbar.css';
 
 export interface TopTabItem {

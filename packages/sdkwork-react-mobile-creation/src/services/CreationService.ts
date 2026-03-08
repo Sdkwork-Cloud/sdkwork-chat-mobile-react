@@ -115,6 +115,57 @@ const SEED_CREATIONS: Partial<Creation>[] = [
     userId: 'user_1',
     userName: 'Creator One',
   },
+  {
+    id: 'creation_4',
+    type: 'short_drama',
+    title: '雨夜追光',
+    description: '都市悬疑短剧预告片，三分钟高能反转。',
+    prompt: 'short drama trailer, rainy neon city, suspense pacing, cinematic composition, emotional close-up',
+    status: 'completed',
+    progress: 100,
+    result: {
+      url: 'https://example.com/video/short-drama-rain-night.mp4',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400',
+      duration: 186,
+      format: 'mp4',
+    },
+    params: {
+      duration: 186,
+      aspectRatio: '16:9',
+      model: 'dramagen-v2',
+    },
+    tags: ['短剧', '悬疑', '都市'],
+    isPublic: true,
+    isFavorite: true,
+    viewCount: 934,
+    likeCount: 112,
+    userId: 'user_3',
+    userName: 'StoryLab',
+  },
+  {
+    id: 'creation_5',
+    type: 'collection',
+    title: '春日上新合集',
+    description: '合集包含短剧片段、单个视频、海报与图片素材。',
+    prompt: 'collection board for spring campaign including short drama clips, single videos and image assets',
+    status: 'completed',
+    progress: 100,
+    result: {
+      url: 'https://example.com/collection/spring-campaign',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400',
+      format: 'zip',
+    },
+    params: {
+      model: 'collection-curator-v1',
+    },
+    tags: ['合集', '短剧', '视频', '图片'],
+    isPublic: false,
+    isFavorite: false,
+    viewCount: 278,
+    likeCount: 37,
+    userId: 'user_1',
+    userName: 'Creator One',
+  },
 ];
 
 const SEED_STYLES: CreationStyle[] = [
@@ -185,15 +236,27 @@ class CreationServiceImpl implements ICreationService {
   }
 
   async initialize(): Promise<void> {
-    const existing = await this.getFromStorage(STORAGE_KEYS.CREATIONS);
+    const existing = await this.getFromStorage<Creation[]>(STORAGE_KEYS.CREATIONS);
+    const toCreation = (seed: Partial<Creation>): Creation => ({
+      ...seed,
+      createdAt: this.nowIso(),
+      updatedAt: this.nowIso(),
+      completedAt: this.nowIso(),
+    }) as Creation;
+
     if (!existing) {
-      const creations: Creation[] = SEED_CREATIONS.map(c => ({
-        ...c,
-        createdAt: this.nowIso(),
-        updatedAt: this.nowIso(),
-        completedAt: this.nowIso(),
-      })) as Creation[];
+      const creations: Creation[] = SEED_CREATIONS.map((item) => toCreation(item));
       await this.setToStorage(STORAGE_KEYS.CREATIONS, creations);
+    } else {
+      const requiredSeedIds = ['creation_4', 'creation_5'];
+      const missingSeeds = SEED_CREATIONS
+        .filter((item) => requiredSeedIds.includes(String(item.id)))
+        .filter((item) => !existing.some((current) => current.id === item.id))
+        .map((item) => toCreation(item));
+
+      if (missingSeeds.length > 0) {
+        await this.setToStorage(STORAGE_KEYS.CREATIONS, [...missingSeeds, ...existing]);
+      }
     }
 
     const existingStyles = await this.getFromStorage(STORAGE_KEYS.STYLES);

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { FileSystemBridge } from '../native/fileSystem';
-import type { FileSystemOptions, FileResult, DirectoryResult, FileInfo } from '../types';
+import type { FileSystemOptions, FileResult, DirectoryResult } from '../types';
 
 /**
  * File System Hook

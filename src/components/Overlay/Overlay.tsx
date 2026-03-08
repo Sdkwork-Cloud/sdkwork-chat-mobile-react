@@ -5,7 +5,7 @@ interface OverlayProps {
     visible: boolean;
     onClick?: () => void;
     duration?: number;
-    zIndex?: number;
+    zIndex?: React.CSSProperties['zIndex'];
     blur?: boolean;
     customStyle?: React.CSSProperties;
     opacity?: number;
@@ -15,7 +15,7 @@ export const Overlay: React.FC<OverlayProps> = ({
     visible, 
     onClick, 
     duration = 350, 
-    zIndex = 1000, 
+    zIndex = 'var(--z-mask, 1300)', 
     blur = true,
     opacity = 0.5,
     customStyle 

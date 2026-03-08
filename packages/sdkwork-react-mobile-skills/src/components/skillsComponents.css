@@ -1,0 +1,78 @@
+.skills-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 20px;
+  padding: 0 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--text-secondary);
+  background: var(--bg-body);
+  border: 0.5px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.skills-status-badge--compact {
+  min-height: 18px;
+  padding: 0 6px;
+  font-size: 10px;
+}
+
+.skills-status-badge--enabled {
+  color: #1f8f4a;
+  border-color: rgba(31, 143, 74, 0.35);
+  background: rgba(31, 143, 74, 0.08);
+}
+
+.skills-status-badge--installed_disabled {
+  color: #2b6ef5;
+  border-color: rgba(43, 110, 245, 0.35);
+  background: rgba(43, 110, 245, 0.08);
+}
+
+.skills-status-badge--not_installed {
+  color: var(--text-secondary);
+}
+
+.skills-list-item__icon {
+  width: 30px;
+  height: 30px;
+  margin-right: 10px;
+}
+
+.skills-list-item__icon-wrap {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.skill-action-bar {
+  position: sticky;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  border-top: 0.5px solid var(--border-color);
+  background: var(--bg-card);
+  z-index: 2;
+}
+
+.skill-action-bar__button {
+  width: 100%;
+  min-height: 40px;
+  border: 0;
+  border-radius: 6px;
+  background: #2b6ef5;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.skill-action-bar__button:disabled {
+  opacity: 0.6;
+}

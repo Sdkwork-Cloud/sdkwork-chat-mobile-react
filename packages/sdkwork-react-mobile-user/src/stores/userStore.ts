@@ -2,8 +2,13 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { UserState, UserProfile, Address, InvoiceTitle } from '../types';
 import { userService } from '../services/UserService';
-import { addressService } from '../services/AddressService';
 import { invoiceService } from '../services/InvoiceService';
+import { mapUserCenterProfileToUserProfile, resolveProfileWithFallback } from './profileResolution';
+import {
+  userCenterService,
+  type UserCenterAddress,
+  type UserCenterUpdateProfileInput,
+} from '../services/UserCenterService';
 
 interface UserStore extends UserState {
   // Actions
@@ -18,6 +23,42 @@ interface UserStore extends UserState {
   saveInvoice: (invoice: Partial<InvoiceTitle>) => Promise<void>;
   deleteInvoice: (id: string) => Promise<void>;
   setCurrentUserId: (id: string) => void;
+}
+
+function toTimestamp(value: string | undefined, fallback: number): number {
+  if (!value) {
+    return fallback;
+  }
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? fallback : parsed;
+}
+
+function toUserCenterUpdateProfileInput(updates: Partial<UserProfile>): UserCenterUpdateProfileInput {
+  return {
+    nickname: updates.name?.trim() || undefined,
+    region: updates.region?.trim() || undefined,
+    bio: updates.signature?.trim() || undefined,
+    gender: updates.gender,
+    avatar: updates.avatar?.trim() || undefined,
+  };
+}
+
+function mapUserCenterAddressToAddress(item: UserCenterAddress): Address {
+  const now = Date.now();
+  const addressId = item.id === undefined || item.id === null ? `addr_${now.toString(36)}` : String(item.id);
+  return {
+    id: addressId,
+    name: (item.name || '').trim(),
+    phone: (item.phone || '').trim(),
+    province: (item.provinceCode || '').trim() || undefined,
+    city: (item.cityCode || '').trim() || undefined,
+    district: (item.districtCode || '').trim() || undefined,
+    detail: (item.addressDetail || item.fullAddress || '').trim(),
+    tag: undefined,
+    isDefault: !!item.isDefault,
+    createTime: toTimestamp(item.createdAt, now),
+    updateTime: toTimestamp(item.updatedAt, now),
+  };
 }
 
 export const useUserStore = create<UserStore>()(
@@ -44,16 +85,20 @@ export const useUserStore = create<UserStore>()(
             userService.setCurrentUserId(cachedProfile.id);
           }
 
-          let profile = await userService.getProfile();
-          if (!profile) {
-            const fallbackId = cachedProfile?.id || `user_${Date.now().toString(36)}`;
-            const fallbackName = cachedProfile?.name || fallbackId.slice(-8);
-            profile = await userService.createProfile(fallbackId, fallbackName);
-          }
+          const profile = await resolveProfileWithFallback(cachedProfile, {
+            getRemoteProfile: () => userCenterService.getUserProfile(),
+            getLocalProfile: () => userService.getProfile(),
+            createLocalProfile: (fallbackId, fallbackName) => userService.createProfile(fallbackId, fallbackName),
+          });
 
-          set({ profile, isLoading: false });
-        } catch (error) {
-          set({ error: (error as Error).message, isLoading: false });
+          set({ profile, isLoading: false, error: null });
+        } catch {
+          const fallbackProfile = get().profile;
+          set({
+            profile: fallbackProfile,
+            error: 'Failed to load profile',
+            isLoading: false,
+          });
         }
       },
 
@@ -61,8 +106,9 @@ export const useUserStore = create<UserStore>()(
       updateProfile: async (updates: Partial<UserProfile>) => {
         set({ isLoading: true });
         try {
-          await userService.updateProfile(updates);
-          const profile = await userService.getProfile();
+          const input = toUserCenterUpdateProfileInput(updates);
+          const remoteProfile = await userCenterService.updateUserProfile(input);
+          const profile = mapUserCenterProfileToUserProfile(remoteProfile, get().profile);
           set({ profile, isLoading: false });
         } catch (error) {
           set({ error: (error as Error).message, isLoading: false });
@@ -85,8 +131,10 @@ export const useUserStore = create<UserStore>()(
       // Load addresses
       loadAddresses: async () => {
         try {
-          const addresses = await addressService.getAddresses();
-          set({ addresses });
+          const remoteAddresses = await userCenterService.listUserAddresses();
+          set({
+            addresses: remoteAddresses.map(mapUserCenterAddressToAddress),
+          });
         } catch (error) {
           set({ error: (error as Error).message });
         }
@@ -95,9 +143,39 @@ export const useUserStore = create<UserStore>()(
       // Save address
       saveAddress: async (address: Partial<Address>) => {
         try {
-          await addressService.saveAddress(address);
-          const addresses = await addressService.getAddresses();
-          set({ addresses });
+          const name = (address.name || '').trim();
+          const phone = (address.phone || '').trim();
+          const detail = (address.detail || '').trim();
+          if (!name || !phone || !detail) {
+            throw new Error('Address name, phone and detail are required');
+          }
+
+          if (address.id) {
+            await userCenterService.updateAddress(String(address.id), {
+              name,
+              phone,
+              countryCode: 'CN',
+              provinceCode: address.province?.trim() || undefined,
+              cityCode: address.city?.trim() || undefined,
+              districtCode: address.district?.trim() || undefined,
+              addressDetail: detail,
+              isDefault: address.isDefault,
+            });
+          } else {
+            await userCenterService.createAddress({
+              name,
+              phone,
+              countryCode: 'CN',
+              provinceCode: address.province?.trim() || undefined,
+              cityCode: address.city?.trim() || undefined,
+              districtCode: address.district?.trim() || undefined,
+              addressDetail: detail,
+              isDefault: address.isDefault,
+            });
+          }
+
+          const next = await userCenterService.listUserAddresses();
+          set({ addresses: next.map(mapUserCenterAddressToAddress) });
         } catch (error) {
           set({ error: (error as Error).message });
         }
@@ -106,9 +184,9 @@ export const useUserStore = create<UserStore>()(
       // Delete address
       deleteAddress: async (id: string) => {
         try {
-          await addressService.deleteAddress(id);
-          const addresses = await addressService.getAddresses();
-          set({ addresses });
+          await userCenterService.deleteAddress(id);
+          const next = await userCenterService.listUserAddresses();
+          set({ addresses: next.map(mapUserCenterAddressToAddress) });
         } catch (error) {
           set({ error: (error as Error).message });
         }
@@ -117,9 +195,9 @@ export const useUserStore = create<UserStore>()(
       // Set default address
       setDefaultAddress: async (id: string) => {
         try {
-          await addressService.setDefaultAddress(id);
-          const addresses = await addressService.getAddresses();
-          set({ addresses });
+          await userCenterService.setDefaultAddress(id);
+          const next = await userCenterService.listUserAddresses();
+          set({ addresses: next.map(mapUserCenterAddressToAddress) });
         } catch (error) {
           set({ error: (error as Error).message });
         }

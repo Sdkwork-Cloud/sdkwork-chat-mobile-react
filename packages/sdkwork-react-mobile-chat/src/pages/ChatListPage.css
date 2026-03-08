@@ -1,12 +1,12 @@
 .conversation-list-page {
   min-height: 100%;
-  background: var(--bg-body);
-  padding-bottom: calc(4px + env(safe-area-inset-bottom));
+  background: var(--bg-card);
+  padding-bottom: 0;
 }
 
 .conversation-list-page__list {
-  background: var(--bg-card);
-  min-height: calc(100vh - 48px);
+  background: inherit;
+  min-height: 100%;
 }
 
 .conversation-list-page__empty {
@@ -28,11 +28,7 @@
   align-items: center;
   justify-content: center;
   color: var(--chat-list-empty-icon-fg, var(--primary-color));
-  background: linear-gradient(
-    140deg,
-    var(--chat-list-empty-icon-bg-start, rgba(41, 121, 255, 0.14)),
-    var(--chat-list-empty-icon-bg-end, rgba(63, 100, 255, 0.2))
-  );
+  background: var(--chat-list-empty-icon-bg, rgba(41, 121, 255, 0.14));
   margin-bottom: 16px;
 }
 
@@ -78,11 +74,7 @@
 
 .conversation-list-page__empty-primary {
   color: #fff;
-  background: linear-gradient(
-    145deg,
-    var(--chat-list-empty-primary-bg-start, #2f7dff) 0%,
-    var(--chat-list-empty-primary-bg-end, #3f64ff) 100%
-  );
+  background: var(--chat-list-empty-primary-bg, #2f7dff);
   box-shadow: 0 6px 16px var(--chat-list-empty-primary-shadow, rgba(47, 109, 255, 0.28));
 }
 

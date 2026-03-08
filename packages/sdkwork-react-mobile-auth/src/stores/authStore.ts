@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { AuthState, AuthResponse, SocialProvider } from '../types';
-import { authService } from '../services/AuthService';
+import type { AuthState, SocialProvider } from '../types';
+import { appAuthService } from '../services/appAuthService';
 
-interface AuthStore extends AuthState {
+export interface AuthStore extends AuthState {
   // Actions
   login: (username: string, password: string, remember?: boolean) => Promise<boolean>;
   register: (username: string, password: string, confirmPassword: string) => Promise<boolean>;
@@ -19,7 +19,7 @@ interface AuthStore extends AuthState {
 
 export const useAuthStore = create<AuthStore>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       // Initial state
       isAuthenticated: false,
       isLoading: false,
@@ -30,23 +30,27 @@ export const useAuthStore = create<AuthStore>()(
       // Login action
       login: async (username: string, password: string, remember = false) => {
         set({ isLoading: true, error: null });
-        
-        const result = await authService.login({ username, password, remember });
-        
-        if (result.success && result.data) {
+        try {
+          const session = await appAuthService.login({ username, password, remember });
+          const user = {
+            id: session.userId,
+            username: session.username,
+            name: session.displayName,
+            avatar: '',
+          };
           set({
             isAuthenticated: true,
-            user: result.data.user,
-            token: result.data.token,
+            user,
+            token: session.authToken,
             isLoading: false,
             error: null,
           });
           return true;
-        } else {
+        } catch (error) {
           set({
             isAuthenticated: false,
             isLoading: false,
-            error: result.error || 'Login failed',
+            error: error instanceof Error ? error.message : 'Login failed',
           });
           return false;
         }
@@ -55,27 +59,31 @@ export const useAuthStore = create<AuthStore>()(
       // Register action
       register: async (username: string, password: string, confirmPassword: string) => {
         set({ isLoading: true, error: null });
-        
-        const result = await authService.register({
-          username,
-          password,
-          confirmPassword,
-        });
-        
-        if (result.success && result.data) {
+        try {
+          const session = await appAuthService.register({
+            username,
+            password,
+            confirmPassword,
+          });
+          const user = {
+            id: session.userId,
+            username: session.username,
+            name: session.displayName,
+            avatar: '',
+          };
           set({
             isAuthenticated: true,
-            user: result.data.user,
-            token: result.data.token,
+            user,
+            token: session.authToken,
             isLoading: false,
             error: null,
           });
           return true;
-        } else {
+        } catch (error) {
           set({
             isAuthenticated: false,
             isLoading: false,
-            error: result.error || 'Registration failed',
+            error: error instanceof Error ? error.message : 'Registration failed',
           });
           return false;
         }
@@ -84,79 +92,89 @@ export const useAuthStore = create<AuthStore>()(
       // Request password reset
       requestPasswordReset: async (account: string, channel?: 'EMAIL' | 'SMS') => {
         set({ isLoading: true, error: null });
-
-        const result = await authService.requestPasswordReset({ account, channel });
-        if (result.success) {
+        try {
+          await appAuthService.requestPasswordReset({ account, channel });
           set({ isLoading: false, error: null });
           return true;
+        } catch (error) {
+          set({
+            isLoading: false,
+            error: error instanceof Error ? error.message : 'Failed to request password reset',
+          });
+          return false;
         }
-
-        set({
-          isLoading: false,
-          error: result.error || 'Failed to request password reset',
-        });
-        return false;
       },
 
       // Verify password reset code
       verifyPasswordResetCode: async (account: string, code: string, channel?: 'EMAIL' | 'SMS') => {
         set({ isLoading: true, error: null });
-
-        const result = await authService.verifyPasswordResetCode({ account, code, channel });
-        if (result.success) {
+        try {
+          const verified = await appAuthService.verifyCode({
+            target: account,
+            code,
+            scene: 'RESET_PASSWORD',
+            verifyType: channel === 'EMAIL' ? 'EMAIL' : 'PHONE',
+          });
+          if (!verified) {
+            set({ isLoading: false, error: 'Invalid or expired verification code' });
+            return false;
+          }
           set({ isLoading: false, error: null });
           return true;
+        } catch (error) {
+          set({
+            isLoading: false,
+            error: error instanceof Error ? error.message : 'Failed to verify reset code',
+          });
+          return false;
         }
-
-        set({
-          isLoading: false,
-          error: result.error || 'Failed to verify reset code',
-        });
-        return false;
       },
 
       // Reset password
       resetPassword: async (account: string, code: string, newPassword: string, confirmPassword: string) => {
         set({ isLoading: true, error: null });
-
-        const result = await authService.resetPassword({
-          account,
-          code,
-          newPassword,
-          confirmPassword,
-        });
-        if (result.success) {
+        try {
+          await appAuthService.resetPassword({
+            account,
+            code,
+            newPassword,
+            confirmPassword,
+          });
           set({ isLoading: false, error: null });
           return true;
+        } catch (error) {
+          set({
+            isLoading: false,
+            error: error instanceof Error ? error.message : 'Failed to reset password',
+          });
+          return false;
         }
-
-        set({
-          isLoading: false,
-          error: result.error || 'Failed to reset password',
-        });
-        return false;
       },
 
       // Social login action
       loginWithSocial: async (provider: SocialProvider) => {
         set({ isLoading: true, error: null });
-        
-        const result = await authService.loginWithSocial(provider);
-        
-        if (result.success && result.data) {
+        try {
+          const session = await appAuthService.loginWithSocial({ provider });
+          const user = {
+            id: session.userId,
+            username: session.username,
+            name: session.displayName,
+            avatar: '',
+          };
           set({
             isAuthenticated: true,
-            user: result.data.user,
-            token: result.data.token,
+            user,
+            token: session.authToken,
             isLoading: false,
             error: null,
           });
           return true;
-        } else {
+        } catch (error) {
           set({
             isAuthenticated: false,
             isLoading: false,
-            error: result.error || 'Social login failed',
+            error: error instanceof Error ? error.message : 'Social login failed',
           });
           return false;
         }
@@ -165,7 +183,7 @@ export const useAuthStore = create<AuthStore>()(
       // Logout action
       logout: async () => {
         set({ isLoading: true });
-        await authService.logout();
+        await appAuthService.logout();
         set({
           isAuthenticated: false,
           user: null,
@@ -177,13 +195,18 @@ export const useAuthStore = create<AuthStore>()(
 
       // Check session action
       checkSession: async () => {
-        const result = await authService.checkSession();
-        
-        if (result.success && result.data) {
+        const session = await appAuthService.getCurrentSession();
+        if (session) {
+          const user = {
+            id: session.userId,
+            username: session.username,
+            name: session.displayName,
+            avatar: '',
+          };
           set({
             isAuthenticated: true,
-            user: result.data.user,
-            token: result.data.token,
+            user,
+            token: session.authToken,
             error: null,
           });
           return true;
@@ -199,13 +222,13 @@ export const useAuthStore = create<AuthStore>()(
 
       // Refresh token action
       refreshToken: async () => {
-        const result = await authService.refreshToken();
-        
-        if (result.success && result.data) {
-          set({ token: result.data });
+        try {
+          const session = await appAuthService.refreshToken();
+          set({ token: session.authToken });
           return true;
+        } catch {
+          return false;
         }
-        return false;
       },
 
       // Clear error
@@ -221,3 +244,8 @@ export const useAuthStore = create<AuthStore>()(
     }
   )
 );
+
+export const selectUser = (state: AuthStore) => state.user;
+export const selectIsAuthenticated = (state: AuthStore) => state.isAuthenticated;
+export const selectIsLoading = (state: AuthStore) => state.isLoading;
+export const selectAuthError = (state: AuthStore) => state.error;

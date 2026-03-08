@@ -77,6 +77,26 @@ export {
 export { logger } from './utils/logger';
 
 // ============================================
+// SDK
+// ============================================
+export {
+  APP_SDK_AUTH_TOKEN_STORAGE_KEY,
+  appSdkCoreRequest,
+  applyAppSdkCoreSessionTokens,
+  getAppSdkCoreClientWithSession,
+  createAppSdkCoreConfig,
+  createAppSdkCoreRuntimeConfig,
+  getAppSdkCoreClient,
+  getAppSdkCoreConfig,
+  initAppSdkCoreClient,
+  resetAppSdkCoreClient,
+  type AppRuntimeEnv,
+  type AppSdkCoreRuntimeConfig,
+  type AppSdkCoreSessionOptions,
+  type AppSdkCoreRequestOptions,
+} from './sdk/appSdkClient';
+
+// ============================================
 // Constants
 // ============================================
 export {

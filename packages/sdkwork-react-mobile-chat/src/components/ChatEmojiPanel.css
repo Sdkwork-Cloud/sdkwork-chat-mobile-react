@@ -1,0 +1,58 @@
+.chat-emoji-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.chat-emoji-panel__tabs {
+  display: flex;
+  padding: 0;
+  border-bottom: 0.5px solid rgba(120, 132, 155, 0.24);
+}
+
+.chat-emoji-panel__tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 12px 0 10px;
+  border-bottom: 2px solid transparent;
+  transition: color 0.18s ease, border-color 0.18s ease;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.chat-emoji-panel__tab.is-active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+}
+
+.chat-emoji-panel__grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 6px;
+  padding: 12px 0;
+  overflow-y: auto;
+}
+
+.chat-emoji-panel__item {
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  font-size: 24px;
+  line-height: 1;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.14s ease, transform 0.12s ease;
+  touch-action: manipulation;
+}
+
+.chat-emoji-panel__item:active {
+  background: rgba(120, 132, 155, 0.14);
+  transform: scale(0.94);
+}

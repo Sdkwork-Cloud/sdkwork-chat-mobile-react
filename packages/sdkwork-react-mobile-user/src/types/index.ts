@@ -1,4 +1,12 @@
-import type { BaseEntity } from '@sdkwork/react-mobile-core';
+/**
+ * Local entity base shape for user-center models.
+ * Keep this aligned with core BaseEntity to avoid dts flattening issues.
+ */
+export interface UserEntityBase {
+  id: string;
+  createTime: number;
+  updateTime: number;
+}
 
 /**
  * 用户状态
@@ -12,10 +20,12 @@ export interface UserStatus {
 /**
  * 用户资料
  */
-export interface UserProfile extends BaseEntity {
+export interface UserProfile extends UserEntityBase {
   name: string;
   wxid: string;
   avatar: string;
+  email?: string;
+  phone?: string;
   region: string;
   status: UserStatus;
   gender: 'male' | 'female';
@@ -25,7 +35,7 @@ export interface UserProfile extends BaseEntity {
 /**
  * 地址信息
  */
-export interface Address extends BaseEntity {
+export interface Address extends UserEntityBase {
   name: string;
   phone: string;
   province?: string;
@@ -39,7 +49,7 @@ export interface Address extends BaseEntity {
 /**
  * 发票抬头
  */
-export interface InvoiceTitle extends BaseEntity {
+export interface InvoiceTitle extends UserEntityBase {
   type: 'company' | 'personal';
   title: string;
   taxNo?: string;

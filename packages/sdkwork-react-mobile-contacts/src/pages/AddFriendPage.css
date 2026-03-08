@@ -39,6 +39,53 @@
   background: var(--bg-cell-active);
 }
 
+.add-friend-page__scan-result {
+  border: 0.5px solid rgba(6, 193, 96, 0.32);
+  background: rgba(6, 193, 96, 0.08);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.add-friend-page__scan-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.add-friend-page__scan-title {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.add-friend-page__scan-desc {
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.add-friend-page__scan-btn {
+  border: none;
+  background: #06c160;
+  color: #fff;
+  border-radius: 999px;
+  height: 28px;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.add-friend-page__scan-btn:active {
+  opacity: 0.85;
+}
+
 .add-friend-page__hero {
   border-radius: 14px;
   border: 0.5px solid rgba(69, 123, 255, 0.2);

@@ -31,9 +31,18 @@
       "@sdkwork/react-mobile-discover": ["./packages/sdkwork-react-mobile-discover/src/index.ts"],
       "@sdkwork/react-mobile-notification": ["./packages/sdkwork-react-mobile-notification/src/index.ts"],
       "@sdkwork/react-mobile-wallet": ["./packages/sdkwork-react-mobile-wallet/src/index.ts"],
+      "@sdkwork/react-mobile-vip": ["./packages/sdkwork-react-mobile-vip/src/index.ts"],
       "@sdkwork/react-mobile-drive": ["./packages/sdkwork-react-mobile-drive/src/index.ts"],
+      "@sdkwork/react-mobile-nearby": ["./packages/sdkwork-react-mobile-nearby/src/index.ts"],
+      "@sdkwork/react-mobile-skills": ["./packages/sdkwork-react-mobile-skills/src/index.ts"],
+      "@sdkwork/react-mobile-moments": ["./packages/sdkwork-react-mobile-moments/src/index.ts"],
       "@sdkwork/react-mobile-video": ["./packages/sdkwork-react-mobile-video/src/index.ts"],
       "@sdkwork/react-mobile-search": ["./packages/sdkwork-react-mobile-search/src/index.ts"],
+      "@sdkwork/react-mobile-shopping": ["./packages/sdkwork-react-mobile-shopping/src/index.ts"],
+      "@sdkwork/react-mobile-order-center": ["./packages/sdkwork-react-mobile-order-center/src/index.ts"],
+      "@sdkwork/react-mobile-look": ["./packages/sdkwork-react-mobile-look/src/index.ts"],
+      "@sdkwork/react-mobile-media": ["./packages/sdkwork-react-mobile-media/src/index.ts"],
+      "@sdkwork/react-mobile-app": ["./packages/sdkwork-react-mobile-app/src/index.ts"],
       "@sdkwork/react-mobile-tools": ["./packages/sdkwork-react-mobile-tools/src/index.ts"],
       "@sdkwork/react-mobile-social": ["./packages/sdkwork-react-mobile-social/src/index.ts"],
       "@sdkwork/react-mobile-content": ["./packages/sdkwork-react-mobile-content/src/index.ts"],
@@ -49,7 +58,10 @@
       "@sdkwork/react-mobile-core/constants": ["./packages/sdkwork-react-mobile-core/src/constants/index.ts"],
       "@sdkwork/react-mobile-core": ["./packages/sdkwork-react-mobile-core/src/index.ts"],
       "@sdkwork/react-mobile-commons": ["./packages/sdkwork-react-mobile-commons/src/index.ts"],
-      "@sdkwork/react-mobile-creation": ["./packages/sdkwork-react-mobile-creation/src/index.ts"]
+      "@sdkwork/react-mobile-creation": ["./packages/sdkwork-react-mobile-creation/src/index.ts"],
+      "@sdkwork/app-sdk": ["../../spring-ai-plus-app-api/sdkwork-sdk-app/sdkwork-app-sdk-typescript/src/index.ts"],
+      "@sdkwork/sdk-common": ["../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript/src/index.ts"],
+      "@sdkwork/sdk-common/*": ["../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript/src/*"]
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
@@ -57,6 +69,7 @@
   "exclude": [
     "backup",
     "dist",
-    "node_modules"
+    "node_modules",
+    "sdkwork-sdk-app"
   ]
 }

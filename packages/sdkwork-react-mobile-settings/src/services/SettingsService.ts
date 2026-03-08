@@ -132,6 +132,8 @@ class SettingsServiceImpl extends AbstractStorageService<AppConfig> implements I
       mode: 'cloud',
       provider: 'gemini',
       modelName: 'default',
+      endpoint: '',
+      maxTokens: 2048,
       temperature: 0.7,
     };
 
@@ -141,6 +143,21 @@ class SettingsServiceImpl extends AbstractStorageService<AppConfig> implements I
       video: { ...defaultAIConfig, provider: 'runway', modelName: 'gen-3' },
       speech: { ...defaultAIConfig, provider: 'openai', modelName: 'tts-1' },
       music: { ...defaultAIConfig, provider: 'suno', modelName: 'v3' },
+      soundEffect: { ...defaultAIConfig, provider: 'elevenlabs', modelName: 'sound-effects-v1' },
+    };
+  }
+
+  private normalizeAIConfig(aiConfig?: Partial<AIConfig> | null): AIConfig {
+    const defaults = this.createDefaultAIConfig();
+    const source = aiConfig ?? {};
+
+    return {
+      text: { ...defaults.text, ...(source.text || {}) },
+      image: { ...defaults.image, ...(source.image || {}) },
+      video: { ...defaults.video, ...(source.video || {}) },
+      speech: { ...defaults.speech, ...(source.speech || {}) },
+      music: { ...defaults.music, ...(source.music || {}) },
+      soundEffect: { ...defaults.soundEffect, ...(source.soundEffect || {}) },
     };
   }
 
@@ -161,8 +178,12 @@ class SettingsServiceImpl extends AbstractStorageService<AppConfig> implements I
       fontFamilyPreset: DEFAULT_APPEARANCE_CONFIG.fontFamilyPreset,
       theme: toLegacyTheme(appearanceMode, themePreset),
       notificationsEnabled: true,
+      notificationDetailVisible: true,
+      notificationSoundEnabled: true,
+      notificationVibrationEnabled: true,
       language: 'zh-CN',
       autoPlayVideo: true,
+      landscapeModeEnabled: false,
       openAIAssistantEnabled: false,
       chatBackground: '',
       fontSize: Math.round(16 * fontScale),
@@ -200,11 +221,15 @@ class SettingsServiceImpl extends AbstractStorageService<AppConfig> implements I
       theme: toLegacyTheme(appearanceMode, themePreset),
       fontSize: Math.round(16 * fontScale),
       notificationsEnabled: config.notificationsEnabled ?? true,
+      notificationDetailVisible: config.notificationDetailVisible ?? true,
+      notificationSoundEnabled: config.notificationSoundEnabled ?? true,
+      notificationVibrationEnabled: config.notificationVibrationEnabled ?? true,
       language: normalizeLanguage(config.language),
       autoPlayVideo: config.autoPlayVideo ?? true,
+      landscapeModeEnabled: config.landscapeModeEnabled ?? false,
       openAIAssistantEnabled: config.openAIAssistantEnabled ?? false,
       chatBackground: config.chatBackground ?? '',
-      aiConfig: config.aiConfig || this.createDefaultAIConfig(),
+      aiConfig: this.normalizeAIConfig(config.aiConfig),
     };
   }
 

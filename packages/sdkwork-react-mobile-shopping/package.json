@@ -1,0 +1,22 @@
+{
+  "name": "@sdkwork/react-mobile-shopping",
+  "version": "1.0.0",
+  "description": "Shopping module for OpenChat React Mobile",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "typescript": "catalog:",
+    "tsup": "catalog:"
+  },
+  "peerDependencies": {
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "@sdkwork/react-mobile-commerce": "workspace:*"
+  }
+}

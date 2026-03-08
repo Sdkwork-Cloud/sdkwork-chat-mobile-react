@@ -1,7 +1,12 @@
 export { MePage } from './MePage';
+export { AccountSecurityPage } from './AccountSecurityPage';
 export { MyAddressPage } from './MyAddressPage';
 export { ProfileInfoPage } from './ProfileInfoPage';
+export { ProfileEditPage } from './ProfileEditPage';
+export { ProfileBindingEditPage } from './ProfileBindingEditPage';
 export { MyQRCodePage } from './MyQRCodePage';
 export { MyAgentsPage } from './MyAgentsPage';
 export { MyCreationsPage } from './MyCreationsPage';
 export { MyInvoiceTitlePage } from './MyInvoiceTitlePage';
+export { MyActivityHistoryPage } from './MyActivityHistoryPage';
+export { MyUserSettingsPage } from './MyUserSettingsPage';

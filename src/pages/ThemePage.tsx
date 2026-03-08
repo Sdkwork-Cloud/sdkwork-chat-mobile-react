@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { navigate } from '../router';
+import { ROUTE_PATHS } from '../router/paths';
 import { useTheme, AppTheme } from '../theme/themeContext';
 import { Navbar } from '../components/Navbar/Navbar';
 
@@ -58,7 +59,7 @@ const ThemePage: React.FC = () => {
 
   return (
     <div>
-      <Navbar title="主题设置" onBack={() => navigate('/settings')} />
+      <Navbar title="主题设置" onBack={() => navigate(ROUTE_PATHS.settings)} />
       
       <div style={{ padding: '16px', color: 'var(--text-secondary)', fontSize: '13px' }}>
         选择主题风格

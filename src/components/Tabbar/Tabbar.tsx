@@ -4,27 +4,10 @@ import { useChatStoreState } from '../../stores/chatStore';
 import { Badge } from '../Badge/Badge';
 import { useTranslation } from '../../core/i18n/I18nContext';
 import { Platform } from '../../platform';
-import { APP_TABS, TAB_DEFAULT_PATHS, TabId, resolveTabByPath } from '../../app/shell/navigation';
-import { appUiStateService } from '../../services/AppUiStateService';
+import { APP_TABS, TabId, resolveTabByPath } from '../../app/shell/navigation';
+import type { RoutePath } from '../../router/paths';
+import { resolveTabClickAction } from './tabClickPolicy';
 import './Tabbar.mobile.css';
-
-const TAB_MEMORY_KEY = 'sys_tab_last_paths_v1';
-
-const normalizeTabPath = (value: unknown, fallback: string): string => {
-  if (typeof value !== 'string') return fallback;
-  const raw = value.trim();
-  if (!raw) return fallback;
-
-  try {
-    const url = new URL(raw, window.location.origin);
-    const compactPath = url.pathname.replace(/\/{2,}/g, '/');
-    const pathname = compactPath.length <= 1 ? '/' : compactPath.replace(/\/+$/, '');
-    if (!pathname.startsWith('/')) return fallback;
-    return `${pathname}${url.search || ''}`;
-  } catch (_error) {
-    return fallback;
-  }
-};
 
 const TabIcon: React.FC<{ id: TabId; active: boolean }> = ({ id, active }) => {
   const color = 'currentColor';
@@ -78,9 +61,7 @@ const TabIcon: React.FC<{ id: TabId; active: boolean }> = ({ id, active }) => {
 export const Tabbar: React.FC = () => {
   const { totalUnreadCount } = useChatStoreState();
   const { t } = useTranslation();
-  const tabMemoryRef = React.useRef<Record<TabId, string>>({ ...TAB_DEFAULT_PATHS });
   const clickGuardRef = React.useRef<{ ts: number; tabId: TabId | null }>({ ts: 0, tabId: null });
-  const chatEntryPath = TAB_DEFAULT_PATHS.chat;
 
   const tabs = React.useMemo(
     () =>
@@ -95,39 +76,9 @@ export const Tabbar: React.FC = () => {
   const [activeTab, setActiveTab] = React.useState<TabId>(resolveTabByPath(window.location.pathname));
 
   React.useEffect(() => {
-    try {
-      const raw = appUiStateService.getSessionValue(TAB_MEMORY_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Partial<Record<TabId, unknown>>;
-        tabMemoryRef.current = {
-          // Chat tab should always land on session list.
-          chat: TAB_DEFAULT_PATHS.chat,
-          agents: normalizeTabPath(parsed.agents, TAB_DEFAULT_PATHS.agents),
-          creation: normalizeTabPath(parsed.creation, TAB_DEFAULT_PATHS.creation),
-          discover: normalizeTabPath(parsed.discover, TAB_DEFAULT_PATHS.discover),
-          me: normalizeTabPath(parsed.me, TAB_DEFAULT_PATHS.me),
-        };
-      }
-    } catch (_error) {
-      // Ignore storage parsing errors and use defaults.
-      tabMemoryRef.current = { ...TAB_DEFAULT_PATHS };
-    }
-
     const handleRouteChange = () => {
       const currentTab = resolveTabByPath(window.location.pathname);
       setActiveTab(currentTab);
-
-      const fullPath = `${window.location.pathname}${window.location.search || ''}`;
-      if (currentTab === 'chat') {
-        tabMemoryRef.current.chat = TAB_DEFAULT_PATHS.chat;
-      } else {
-        tabMemoryRef.current[currentTab] = fullPath;
-      }
-      try {
-        appUiStateService.setSessionValue(TAB_MEMORY_KEY, JSON.stringify(tabMemoryRef.current));
-      } catch (_error) {
-        // Ignore storage failures.
-      }
     };
 
     window.addEventListener('routechange', handleRouteChange);
@@ -140,25 +91,20 @@ export const Tabbar: React.FC = () => {
     };
   }, []);
 
-  const handleTabClick = (tab: { id: TabId; path: string }) => {
+  const handleTabClick = (tab: { id: TabId; path: RoutePath }) => {
     if (!tab?.path) {
       return;
     }
 
-    if (tab.id === 'chat') {
-      navigate(chatEntryPath);
-      return;
-    }
-
     const currentPath = window.location.pathname;
-    const fullPath = `${window.location.pathname}${window.location.search || ''}`;
+    const action = resolveTabClickAction({
+      activeTab,
+      targetTab: tab.id,
+      targetPath: tab.path,
+      currentPath,
+    });
 
-    if (activeTab === tab.id) {
-      if (currentPath !== tab.path && resolveTabByPath(currentPath) === tab.id) {
-        navigate(tab.path);
-        return;
-      }
-
+    if (action.type === 'reselect') {
       window.dispatchEvent(
         new CustomEvent('tabreselect', {
           detail: { tabId: tab.id, path: currentPath },
@@ -167,25 +113,19 @@ export const Tabbar: React.FC = () => {
       return;
     }
 
-    try {
-      Platform.device.vibrate(8);
-    } catch (_error) {
-      // Ignore haptics errors to keep tab navigation responsive.
+    if (activeTab !== tab.id) {
+      try {
+        Platform.device.vibrate(8);
+      } catch (_error) {
+        // Ignore haptics errors to keep tab navigation responsive.
+      }
+      setActiveTab(tab.id);
     }
-    setActiveTab(tab.id);
 
-    const currentTab = resolveTabByPath(currentPath);
-    tabMemoryRef.current[currentTab] = fullPath;
-
-    const targetPath = normalizeTabPath(tabMemoryRef.current[tab.id], tab.path);
-    try {
-      navigate(targetPath);
-    } catch (_error) {
-      navigate(tab.path);
-    }
+    navigate(action.targetPath);
   };
 
-  const handleTabActivate = (tab: { id: TabId; path: string }) => {
+  const handleTabActivate = (tab: { id: TabId; path: RoutePath }) => {
     const now = Date.now();
     if (now - clickGuardRef.current.ts < 450 && clickGuardRef.current.tabId === tab.id) return;
     clickGuardRef.current = { ts: now, tabId: tab.id };

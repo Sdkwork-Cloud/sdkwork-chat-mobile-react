@@ -115,7 +115,7 @@ export const RedPacketBubble: React.FC<{ text: string } & LocalizedProps> = ({ t
       }}
       style={{
         width: '230px',
-        background: 'linear-gradient(135deg, #fa9d3b 0%, #f76b1c 100%)',
+        background: '#f78a2d',
         borderRadius: '12px',
         overflow: 'hidden',
         cursor: 'pointer',

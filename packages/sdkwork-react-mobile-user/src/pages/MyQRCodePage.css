@@ -1,0 +1,184 @@
+@import './UserCenterPage.shared.css';
+
+.my-qrcode-page {
+  --user-center-scroll-bottom: 20px;
+}
+
+.my-qrcode-page__more-btn {
+  border: 0;
+  background: transparent;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 7px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.my-qrcode-page__more-btn:active {
+  background: var(--bg-cell-active);
+}
+
+.my-qrcode-page__scroll {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
+}
+
+.my-qrcode-page__card {
+  width: 100%;
+  max-width: 340px;
+  background: var(--bg-card);
+  border: 0.5px solid var(--border-color);
+  padding: 18px;
+}
+
+.my-qrcode-page__profile {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.my-qrcode-page__avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  margin-right: 12px;
+}
+
+.my-qrcode-page__name {
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.my-qrcode-page__sub {
+  margin-top: 3px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.my-qrcode-page__qr {
+  position: relative;
+  width: 240px;
+  height: 240px;
+  margin: 0 auto;
+  background-color: #fff;
+  overflow: hidden;
+}
+
+.my-qrcode-page__qr--classic {
+  background-image:
+    linear-gradient(90deg, #111 50%, transparent 50%),
+    linear-gradient(#111 50%, transparent 50%);
+  background-size: 12px 12px;
+  opacity: 0.86;
+}
+
+.my-qrcode-page__qr--dot {
+  background-image: radial-gradient(#111 2.2px, transparent 2.2px);
+  background-size: 9px 9px;
+  opacity: 0.88;
+}
+
+.my-qrcode-page__qr--liquid {
+  background-image: radial-gradient(circle, #111 38%, transparent 40%);
+  background-size: 16px 16px;
+  opacity: 0.85;
+}
+
+.my-qrcode-page__finder {
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  border: 4px solid #111;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.my-qrcode-page__finder span {
+  width: 20px;
+  height: 20px;
+  background: #111;
+}
+
+.my-qrcode-page__finder--tl {
+  top: 0;
+  left: 0;
+}
+
+.my-qrcode-page__finder--tr {
+  top: 0;
+  right: 0;
+}
+
+.my-qrcode-page__finder--bl {
+  bottom: 0;
+  left: 0;
+}
+
+.my-qrcode-page__qr--liquid .my-qrcode-page__finder,
+.my-qrcode-page__qr--liquid .my-qrcode-page__finder span {
+  border-radius: 50%;
+}
+
+.my-qrcode-page__center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 42px;
+  height: 42px;
+  background: #fff;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.my-qrcode-page__center-avatar {
+  width: 32px;
+  height: 32px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.my-qrcode-page__desc {
+  margin-top: 16px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.my-qrcode-page__payload {
+  margin-top: 8px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
+  word-break: break-all;
+}
+
+.my-qrcode-page__style-btn {
+  margin: 14px auto 0;
+  border: 0.5px solid var(--border-color);
+  background: var(--bg-body);
+  color: var(--text-primary);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 12px;
+  display: block;
+  cursor: pointer;
+}

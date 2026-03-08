@@ -13,6 +13,17 @@ const typeLabelMap: Record<string, string> = {
   video: '视频创作',
   music: '音乐创作',
   text: '文本创作',
+  short_drama: '短剧创作',
+  collection: '合集创作',
+};
+
+const typeEmojiMap: Record<string, string> = {
+  image: '🎨',
+  video: '🎬',
+  music: '🎵',
+  text: '📝',
+  short_drama: '🎞️',
+  collection: '🗂️',
 };
 
 export const CreationDetailPage: React.FC<CreationDetailPageProps> = ({ id, onBack, onNavigate }) => {
@@ -71,7 +82,7 @@ export const CreationDetailPage: React.FC<CreationDetailPageProps> = ({ id, onBa
               <div
                 style={{
                   width: '100%',
-                  aspectRatio: detail.type === 'video' ? '16 / 9' : '1 / 1',
+                  aspectRatio: detail.type === 'video' || detail.type === 'short_drama' ? '16 / 9' : '1 / 1',
                   background: 'linear-gradient(135deg, #1f56d2, #4f8dff)',
                   color: 'white',
                   display: 'flex',
@@ -80,7 +91,7 @@ export const CreationDetailPage: React.FC<CreationDetailPageProps> = ({ id, onBa
                   fontSize: '48px',
                 }}
               >
-                {detail.type === 'video' ? '🎬' : detail.type === 'music' ? '🎵' : detail.type === 'text' ? '📝' : '🎨'}
+                {typeEmojiMap[detail.type] || '🎨'}
               </div>
             )}
             <div style={{ padding: '12px' }}>

@@ -13,16 +13,6 @@ const TAG = 'AuthBridge';
  */
 export function initAuthBridge(): void {
   logger.info(TAG, 'Initializing auth bridge');
-  
-  // 注册社交登录处理器
-  platformService.registerHandler('auth:social_login', async (payload: { provider: SocialProvider }) => {
-    return handleSocialLogin(payload.provider);
-  });
-
-  // 注册生物识别登录处理器
-  platformService.registerHandler('auth:biometric', async () => {
-    return handleBiometricAuth();
-  });
 
   logger.info(TAG, 'Auth bridge initialized');
 }
@@ -181,9 +171,6 @@ export async function isBiometricAvailable(): Promise<boolean> {
  * 请求生物识别认证
  */
 export async function requestBiometricAuth(): Promise<boolean> {
-  const result = await platformService.execute<{ success: boolean }>({
-    type: 'auth:biometric',
-  });
-  
+  const result = await handleBiometricAuth();
   return result.success ?? false;
 }

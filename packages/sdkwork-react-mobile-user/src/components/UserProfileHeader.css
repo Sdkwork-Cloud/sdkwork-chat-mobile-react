@@ -1,0 +1,110 @@
+.user-profile-header {
+  margin: 0 0 8px;
+}
+
+.user-profile-header__cell {
+  width: 100%;
+  min-height: 92px;
+  display: flex;
+  align-items: center;
+  background: var(--bg-card, #ffffff);
+  border-bottom: 0.5px solid var(--border-color, #e5e7eb);
+  padding: 14px 16px;
+  color: var(--text-primary, #111827);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.user-profile-header__cell--clickable {
+  cursor: pointer;
+}
+
+.user-profile-header__cell--clickable:active {
+  background: var(--bg-cell-active);
+}
+
+.user-profile-header__cell--clickable:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px rgba(41, 121, 255, 0.35);
+}
+
+.user-profile-header__avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 0.5px solid var(--border-color, #e5e7eb);
+  background: var(--bg-body, #f3f4f6);
+  margin-right: 14px;
+  flex-shrink: 0;
+}
+
+.user-profile-header__avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.user-profile-header__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-profile-header__name {
+  color: var(--text-primary, #111827);
+  font-size: 19px;
+  line-height: 1.28;
+  font-weight: 600;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-profile-header__id {
+  color: var(--text-secondary, #6b7280);
+  font-size: 12px;
+  line-height: 1.4;
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-profile-header__status {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  border: 0.5px solid var(--border-color, #d1d5db);
+  border-radius: 10px;
+  padding: 3px 8px;
+  background: var(--bg-body, #f3f4f6);
+  color: var(--text-secondary, #4b5563);
+  font-size: 12px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-profile-header__status:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.user-profile-header__status:active {
+  opacity: 0.8;
+}
+
+.user-profile-header__status:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(41, 121, 255, 0.28);
+}
+
+.user-profile-header__arrow {
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.82;
+}

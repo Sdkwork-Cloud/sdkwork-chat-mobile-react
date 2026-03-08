@@ -1,8 +1,17 @@
 import React from 'react';
-import { ActionSheet, Button, Icon, Navbar, Toast } from '@sdkwork/react-mobile-commons';
+import { ActionSheet, CellGroup, CellItem, Icon, Navbar, Toast } from '@sdkwork/react-mobile-commons';
 import { AGENT_REGISTRY } from '@sdkwork/react-mobile-chat';
 import { agentPreferenceService } from '../services/AgentPreferenceService';
 import type { AgentPreferenceOverride } from '../types';
+import {
+  applyAgentPreferences,
+  buildAgentList,
+  formatAgentCreatedDate,
+  resolveAgentAvatarText,
+  type AgentRegistryMap,
+  type DisplayAgent,
+} from './myAgentsListModel';
+import './MyAgentsPage.css';
 
 interface MyAgentsPageProps {
   t?: (key: string) => string;
@@ -11,38 +20,11 @@ interface MyAgentsPageProps {
   onChatWithAgent?: (agentId: string) => void | Promise<void>;
 }
 
-interface DisplayAgent {
-  id: string;
-  name: string;
-  avatar: string;
-  description: string;
-  tags: string[];
-  createTime: number;
-}
-
-const formatDate = (value: number): string => new Date(value).toLocaleDateString();
-
-const buildAgentList = (): DisplayAgent[] => {
-  const now = Date.now();
-  const entries = Object.values(AGENT_REGISTRY).filter((item) => item.id.startsWith('custom_') || item.tags.includes('mine'));
-  const defaultList = entries.length > 0 ? entries : Object.values(AGENT_REGISTRY).slice(0, 3);
-
-  return defaultList.map((item, index) => ({
-    id: item.id,
-    name: item.name,
-    avatar: item.avatar,
-    description: item.description,
-    tags: item.tags,
-    createTime: now - (index + 1) * 86400000 * 3,
-  }));
-};
-
-export const MyAgentsPage: React.FC<MyAgentsPageProps> = ({ t, onBack, onCreateAgent, onChatWithAgent }) => {
+export const MyAgentsPage: React.FC<MyAgentsPageProps> = ({ t, onBack, onChatWithAgent }) => {
   const [openingAgentId, setOpeningAgentId] = React.useState('');
   const [hiddenIds, setHiddenIds] = React.useState<Set<string>>(new Set());
   const [overrides, setOverrides] = React.useState<Record<string, AgentPreferenceOverride>>({});
-  const longPressTimerRef = React.useRef<number | null>(null);
-  const suppressNextClickRef = React.useRef(false);
+
   const tr = React.useCallback(
     (key: string, fallback: string) => {
       const value = t?.(key);
@@ -68,23 +50,12 @@ export const MyAgentsPage: React.FC<MyAgentsPageProps> = ({ t, onBack, onCreateA
     };
   }, []);
 
-  const agents = React.useMemo(() => {
-    const base = buildAgentList();
-    return base
-      .filter((item) => !hiddenIds.has(item.id))
-      .map((item) => ({
-        ...item,
-        name: overrides[item.id]?.name || item.name,
-        description: overrides[item.id]?.description || item.description,
-      }));
-  }, [hiddenIds, overrides]);
+  const baseAgents = React.useMemo(() => buildAgentList(AGENT_REGISTRY as AgentRegistryMap), []);
 
-  const clearPressTimer = React.useCallback(() => {
-    if (longPressTimerRef.current) {
-      window.clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-  }, []);
+  const agents = React.useMemo(
+    () => applyAgentPreferences(baseAgents, hiddenIds, overrides),
+    [baseAgents, hiddenIds, overrides]
+  );
 
   const handleOpenChat = React.useCallback(
     async (agentId: string) => {
@@ -111,6 +82,7 @@ export const MyAgentsPage: React.FC<MyAgentsPageProps> = ({ t, onBack, onCreateA
           { text: tr('my_agents.actions.rename', 'Rename'), key: 'rename' },
           { text: tr('my_agents.actions.delete', 'Delete Agent'), key: 'delete', color: '#fa5151' },
         ],
+        variant: 'user-center',
       });
 
       if (!action) return;
@@ -121,7 +93,9 @@ export const MyAgentsPage: React.FC<MyAgentsPageProps> = ({ t, onBack, onCreateA
       }
 
       if (action.key === 'rename') {
-        const nextName = window.prompt(tr('my_agents.rename_prompt', 'Enter a new agent name'), agent.name)?.trim();
+        const nextName = window
+          .prompt(tr('my_agents.rename_prompt', 'Enter a new agent name'), agent.name)
+          ?.trim();
         if (!nextName) return;
         const nextOverrides = {
           ...overrides,
@@ -137,7 +111,9 @@ export const MyAgentsPage: React.FC<MyAgentsPageProps> = ({ t, onBack, onCreateA
       }
 
       if (action.key === 'delete') {
-        const confirmed = window.confirm(`${tr('my_agents.confirm_delete_prefix', 'Delete')} "${agent.name}"?`);
+        const confirmed = window.confirm(
+          `${tr('my_agents.confirm_delete_prefix', 'Delete')} "${agent.name}"?`
+        );
         if (!confirmed) return;
         const nextHidden = new Set(hiddenIds);
         nextHidden.add(agent.id);
@@ -149,128 +125,61 @@ export const MyAgentsPage: React.FC<MyAgentsPageProps> = ({ t, onBack, onCreateA
     [handleOpenChat, hiddenIds, overrides, tr]
   );
 
-  const handlePressStart = React.useCallback(
-    (agent: DisplayAgent) => {
-      clearPressTimer();
-      longPressTimerRef.current = window.setTimeout(() => {
-        longPressTimerRef.current = null;
-        suppressNextClickRef.current = true;
-        void handleManageAgent(agent);
-      }, 550);
-    },
-    [clearPressTimer, handleManageAgent]
-  );
-
-  React.useEffect(() => {
-    return () => {
-      clearPressTimer();
-    };
-  }, [clearPressTimer]);
-
   return (
-    <div style={{ minHeight: '100%', background: 'var(--bg-body)' }}>
-      <Navbar
-        title={tr('my_agents.title', 'My Agents')}
-        onBack={onBack}
-        rightElement={
-          <button
-            type="button"
-            onClick={onCreateAgent}
-            style={{
-              border: 'none',
-              background: 'transparent',
-              color: 'var(--text-primary)',
-              fontSize: '22px',
-              lineHeight: 1,
-              cursor: 'pointer',
-            }}
-            aria-label="create-agent"
-          >
-            +
-          </button>
-        }
-      />
+    <div className="my-agents-page user-center-page">
+      <Navbar title={tr('my_agents.title', 'My Agents')} onBack={onBack} />
 
-      <div style={{ padding: '12px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom))' }}>
+      <div className="my-agents-page__scroll user-center-page__scroll">
         {agents.length === 0 ? (
-          <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '36px 0' }}>
-            <div style={{ fontSize: '40px', marginBottom: '10px' }}>🤖</div>
-            <div style={{ marginBottom: '12px' }}>{tr('my_agents.empty', 'No agents yet')}</div>
-            <Button size="sm" onClick={onCreateAgent}>
-              {tr('my_agents.create', 'Create')}
-            </Button>
-          </div>
+          <CellGroup>
+            <CellItem
+              title={tr('my_agents.empty', 'No agents yet')}
+              description={tr('my_agents.empty_desc', 'Agents you can access will appear here')}
+              noBorder
+            />
+          </CellGroup>
         ) : (
-          agents.map((agent) => (
-            <button
-              type="button"
-              key={agent.id}
-              onClick={() => {
-                if (suppressNextClickRef.current) {
-                  suppressNextClickRef.current = false;
-                  return;
+          <CellGroup>
+            {agents.map((agent, index) => (
+              <CellItem
+                key={agent.id}
+                icon={<span className="my-agents-page__avatar">{resolveAgentAvatarText(agent)}</span>}
+                title={agent.name}
+                description={agent.description || tr('my_agents.default_desc', 'No description')}
+                value={
+                  openingAgentId === agent.id ? (
+                    <span className="my-agents-page__meta my-agents-page__meta--opening">
+                      <Icon name="loading" size={12} spin color="var(--primary-color)" />
+                      {tr('my_agents.opening', 'Opening...')}
+                    </span>
+                  ) : (
+                    <span className="my-agents-page__meta">
+                      {`${tr('my_agents.created_at', 'Created at')} ${formatAgentCreatedDate(agent.createTime)}`}
+                    </span>
+                  )
                 }
-                void handleOpenChat(agent.id);
-              }}
-              onTouchStart={() => handlePressStart(agent)}
-              onTouchEnd={clearPressTimer}
-              onTouchCancel={clearPressTimer}
-              onMouseDown={() => handlePressStart(agent)}
-              onMouseUp={clearPressTimer}
-              onMouseLeave={clearPressTimer}
-              style={{
-                width: '100%',
-                border: '0.5px solid var(--border-color)',
-                borderRadius: '14px',
-                padding: '12px',
-                marginBottom: '10px',
-                background: 'var(--bg-card)',
-                textAlign: 'left',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-              }}
-            >
-              <div
-                style={{
-                  width: '52px',
-                  height: '52px',
-                  borderRadius: '14px',
-                  background: 'linear-gradient(145deg, rgba(64,128,255,0.1), rgba(121,40,202,0.12))',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '24px',
-                  flexShrink: 0,
+                isLink
+                className={`my-agents-page__item ${openingAgentId === agent.id ? 'is-opening' : ''}`}
+                onClick={() => {
+                  void handleOpenChat(agent.id);
                 }}
-              >
-                {agent.avatar}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{agent.name}</div>
-                <div
-                  style={{
-                    marginTop: '4px',
-                    color: 'var(--text-secondary)',
-                    fontSize: '13px',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {agent.description}
-                </div>
-                <div style={{ marginTop: '6px', color: 'var(--text-placeholder)', fontSize: '12px' }}>
-                  {tr('my_agents.created_at', 'Created at')} {formatDate(agent.createTime)}
-                </div>
-              </div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                {openingAgentId === agent.id ? tr('my_agents.opening', 'Opening...') : tr('my_agents.open', 'Open')}
-                <Icon name="arrow-right" size={14} color="currentColor" />
-              </div>
-            </button>
-          ))
+                rightSlot={(
+                  <button
+                    type="button"
+                    className="my-agents-page__more-btn"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void handleManageAgent(agent);
+                    }}
+                    aria-label={`manage ${agent.name}`}
+                  >
+                    <Icon name="more" size={18} color="var(--text-secondary)" />
+                  </button>
+                )}
+                noBorder={index === agents.length - 1}
+              />
+            ))}
+          </CellGroup>
         )}
       </div>
     </div>

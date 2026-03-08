@@ -42,7 +42,7 @@ class InvoiceServiceImpl extends AbstractStorageService<InvoiceTitle> implements
       sort: { field: 'createTime', order: 'desc' },
     });
 
-    return (invoices.content || []).sort((a, b) => {
+    return (invoices.content || []).sort((a: InvoiceTitle, b: InvoiceTitle) => {
       if (a.isDefault) return -1;
       if (b.isDefault) return 1;
       return 0;

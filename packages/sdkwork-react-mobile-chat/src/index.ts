@@ -5,6 +5,26 @@ export * from './types';
 export { chatService, createChatService } from './services/ChatService';
 export { chatConversationService, createChatConversationService } from './services/ChatConversationService';
 export { chatSdkService, createChatSdkService } from './services/ChatSdkService';
+export {
+  GROUP_TYPE_LABELS,
+  PAYMENT_METHOD_LABELS,
+  createGroupJoinService,
+  createInitialGroupJoinState,
+  formatGroupJoinPrice,
+  groupJoinService,
+  resolveGroupJoinAction,
+} from './services/GroupJoinService';
+export type {
+  GroupJoinActionResult,
+  GroupJoinActionStatus,
+  GroupJoinPlan,
+  GroupJoinSource,
+  GroupJoinState,
+  GroupType,
+  IGroupJoinService,
+  JoinAccessMode,
+  PaymentMethod,
+} from './services/GroupJoinService';
 export { useChatStore, useChatStoreState, useChatStoreActions, ChatStoreProvider } from './stores/chatStore';
 export { getAgent, AGENT_REGISTRY, DEFAULT_AGENT_ID } from './config/agentRegistry';
 
@@ -19,6 +39,7 @@ export { ChatListPage } from './pages/ChatListPage';
 export { ConversationListPage } from './pages/ChatListPage';
 export { ChatDetailsPage } from './pages/ChatDetailsPage';
 export { ChatFilesPage } from './pages/ChatFilesPage';
+export { GroupJoinPage } from './pages/GroupJoinPage';
 
 // Components
 export { ChatInput } from './components/ChatInput';

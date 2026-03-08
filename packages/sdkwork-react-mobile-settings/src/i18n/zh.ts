@@ -42,6 +42,26 @@ export default {
     labels: {
       config_center_desc: '系统模式、主题风格、强调色、字体风格与比例',
     },
+    storage_usage: '本地占用',
+    storage_clean: '刷新估算',
+    storage_clean_desc: '扫描当前本地缓存与媒体占用',
+    background: {
+      saved_current: '已应用到当前会话',
+      saved_global: '已全局应用',
+      save_failed: '保存背景失败',
+    },
+    model_config: {
+      api_key_required: '请填写 API Key',
+      endpoint_required: '请填写 Base URL',
+      base_url: 'Base URL',
+      base_url_placeholder_local: 'http://localhost:11434',
+      base_url_placeholder_cloud: 'https://api.openai.com/v1',
+      api_key: 'API Key',
+      default_params_title: '默认参数',
+      max_tokens: 'Max Tokens',
+      max_tokens_placeholder: '2048',
+      save_failed: '保存配置失败',
+    },
     themes: {
       light: '浅色',
       dark: '深色',

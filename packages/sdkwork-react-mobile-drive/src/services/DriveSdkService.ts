@@ -1,10 +1,9 @@
-import { resolveServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
+import { APP_SDK_AUTH_TOKEN_STORAGE_KEY, createAppSdkCoreConfig, getAppSdkCoreClientWithSession, resolveServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
 import type { ServiceFactoryDeps, ServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
+import type { SdkworkAppClient } from '@sdkwork/app-sdk';
 import type { DriveFile, DriveStats, FileType } from '../types';
 
 const TAG = 'DriveSdkService';
-const APP_API_PREFIX = '/app/v3/api';
-const AUTH_TOKEN_STORAGE_KEY = 'sys_auth_token';
 
 interface SdkApiResult<T> {
   data: T;
@@ -16,9 +15,12 @@ interface SdkApiResult<T> {
 interface SdkDriveItemVO {
   id?: string | number;
   itemId?: string | number;
+  itemUuid?: string;
   name?: string;
+  itemName?: string;
   filename?: string;
   type?: string;
+  fileType?: string;
   mimeType?: string;
   size?: number | string;
   url?: string;
@@ -28,18 +30,35 @@ interface SdkDriveItemVO {
   updateTime?: number | string;
   createdAt?: number | string;
   updatedAt?: number | string;
+  resource?: {
+    url?: string;
+  };
 }
 
-interface SdkDriveStatsVO {
-  total?: number | string;
-  used?: number | string;
-  usage?: number | string;
+interface SdkFileVO {
+  fileId?: string;
+  fileName?: string;
+  fileSize?: number;
+  accessUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface SdkFileSystemDiskVO {
+  totalSize?: number | string;
   usedSize?: number | string;
-  image?: number | string;
-  video?: number | string;
-  document?: number | string;
-  audio?: number | string;
-  other?: number | string;
+  usageRate?: number | string;
+  fileCount?: number | string;
+}
+
+interface DriveFileFallback {
+  id?: string;
+  name?: string;
+  parentId?: string | null;
+  size?: number;
+  url?: string;
+  createTime?: number;
+  updateTime?: number;
 }
 
 export interface IDriveSdkService {
@@ -57,69 +76,19 @@ class DriveSdkServiceImpl implements IDriveSdkService {
     this.deps = resolveServiceFactoryRuntimeDeps(deps);
   }
 
-  private resolveEnv(name: string): string | undefined {
-    const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env;
-    return env?.[name];
-  }
-
-  private resolveBaseUrl(): string {
-    return (this.resolveEnv('VITE_API_BASE_URL') || '').trim().replace(/\/+$/g, '');
+  private async getClient(): Promise<SdkworkAppClient> {
+    return getAppSdkCoreClientWithSession({
+      storage: this.deps.storage,
+      authStorageKey: APP_SDK_AUTH_TOKEN_STORAGE_KEY,
+    });
   }
 
   hasSdkBaseUrl(): boolean {
-    return this.resolveBaseUrl().length > 0;
-  }
-
-  private buildAppApiPath(path: string): string {
-    const normalizedPrefixRaw = APP_API_PREFIX.trim();
-    const normalizedPrefix = normalizedPrefixRaw ? `/${normalizedPrefixRaw.replace(/^\/+|\/+$/g, '')}` : '';
-    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-    if (!normalizedPrefix || normalizedPrefix === '/') return normalizedPath;
-    if (normalizedPath === normalizedPrefix || normalizedPath.startsWith(`${normalizedPrefix}/`)) return normalizedPath;
-    return `${normalizedPrefix}${normalizedPath}`;
-  }
-
-  private buildUrl(path: string): string {
-    return `${this.resolveBaseUrl()}${this.buildAppApiPath(path)}`;
-  }
-
-  private async resolveAuthHeaders(options?: { includeContentType?: boolean }): Promise<Record<string, string>> {
-    const headers: Record<string, string> = {};
-    if (options?.includeContentType !== false) {
-      headers['Content-Type'] = 'application/json';
-    }
-
-    const envToken = this.resolveEnv('VITE_ACCESS_TOKEN');
-    const storageToken = await Promise.resolve(this.deps.storage.get<string>(AUTH_TOKEN_STORAGE_KEY));
-    const accessToken = (envToken || storageToken || '').trim();
-    if (accessToken) {
-      headers.Authorization = `Bearer ${accessToken}`;
-    }
-
-    return headers;
+    return (createAppSdkCoreConfig().baseUrl || '').trim().length > 0;
   }
 
   private isSuccessCode(code: string | undefined): boolean {
     return code === '2000';
-  }
-
-  private async requestJson<T>(path: string, init: RequestInit, options?: { includeContentType?: boolean }): Promise<T> {
-    if (typeof fetch !== 'function') {
-      throw new Error('Global fetch is not available');
-    }
-
-    const headers = await this.resolveAuthHeaders(options);
-    const response = await fetch(this.buildUrl(path), {
-      ...init,
-      headers: {
-        ...headers,
-        ...(init.headers || {}),
-      },
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} ${response.statusText}`);
-    }
-    return (await response.json()) as T;
   }
 
   private toTimestamp(value: unknown, fallback: number): number {
@@ -152,6 +121,7 @@ class DriveSdkServiceImpl implements IDriveSdkService {
       doc: 'document',
       folder: 'folder',
       directory: 'folder',
+      file: 'document',
     };
     if (typeMapping[rawType]) return typeMapping[rawType];
 
@@ -174,45 +144,72 @@ class DriveSdkServiceImpl implements IDriveSdkService {
     return [];
   }
 
-  private mapRemoteDriveFile(remote: SdkDriveItemVO | null | undefined, fallback?: Partial<DriveFile>): DriveFile | null {
+  private mapRemoteDriveFile(remote: SdkDriveItemVO | null | undefined, fallback?: DriveFileFallback): DriveFile | null {
     if (!remote || typeof remote !== 'object') return null;
 
-    const idRaw = remote.id ?? remote.itemId ?? fallback?.id;
+    const idRaw = remote.id ?? remote.itemId ?? remote.itemUuid ?? fallback?.id;
     if (idRaw === undefined || idRaw === null) return null;
 
     const now = this.deps.clock.now();
-    const name = (remote.name || remote.filename || fallback?.name || '').trim();
+    const name = (remote.itemName || remote.name || remote.filename || fallback?.name || '').trim();
     if (!name) return null;
 
     const parentRaw = remote.parentId ?? remote.parentItemId ?? fallback?.parentId ?? null;
     const parentId = parentRaw === null || parentRaw === undefined ? null : String(parentRaw);
-    const type = this.normalizeFileType(remote.type, remote.mimeType);
+    const type = this.normalizeFileType(remote.fileType || remote.type, remote.mimeType);
 
     return {
       id: String(idRaw),
       name,
       type,
       size: this.toNumber(remote.size, fallback?.size || 0),
-      url: (remote.url || fallback?.url || '').trim() || undefined,
+      url: (remote.resource?.url || remote.url || fallback?.url || '').trim() || undefined,
       parentId,
       createTime: this.toTimestamp(remote.createTime ?? remote.createdAt, fallback?.createTime || now),
       updateTime: this.toTimestamp(remote.updateTime ?? remote.updatedAt, now),
-    };
+    } as DriveFile;
+  }
+
+  private mapUploadFile(upload: SdkFileVO, file: File, parentId: string | null): DriveFile {
+    const now = this.deps.clock.now();
+    return {
+      id: upload.fileId || this.deps.idGenerator.next('drive_upload'),
+      name: upload.fileName || file.name,
+      type: this.normalizeFileType(undefined, file.type),
+      size: this.toNumber(upload.fileSize, file.size),
+      url: (upload.accessUrl || '').trim() || undefined,
+      parentId,
+      createTime: this.toTimestamp(upload.createdAt, now),
+      updateTime: this.toTimestamp(upload.updatedAt, now),
+    } as DriveFile;
+  }
+
+  private async fileToBase64DataUrl(file: File): Promise<string | null> {
+    if (typeof FileReader === 'undefined') {
+      return null;
+    }
+
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const value = typeof reader.result === 'string' ? reader.result : '';
+        resolve(value || null);
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
   }
 
   async listFiles(parentId: string | null): Promise<DriveFile[] | null> {
     if (!this.hasSdkBaseUrl()) return null;
 
-    const params = new URLSearchParams();
-    if (typeof parentId === 'string') {
-      params.set('parentId', parentId);
-    }
-    params.set('page', '1');
-    params.set('size', '200');
-    const endpoint = `/drive/items?${params.toString()}`;
-
     try {
-      const result = await this.requestJson<SdkApiResult<unknown>>(endpoint, { method: 'GET' }, { includeContentType: false });
+      const client = await this.getClient();
+      const result = await client.drive.listItems({
+        parentId: parentId || undefined,
+        page: 0,
+        size: 200,
+      }) as SdkApiResult<unknown>;
       if (!this.isSuccessCode(result.code)) {
         this.deps.logger.warn(TAG, 'SDK listFiles business failure', { code: result.code, message: result.msg });
         return null;
@@ -229,60 +226,24 @@ class DriveSdkServiceImpl implements IDriveSdkService {
 
   async uploadFile(file: File, parentId: string | null): Promise<DriveFile | null> {
     if (!this.hasSdkBaseUrl()) return null;
-    if (typeof fetch !== 'function') return null;
 
     try {
-      if (typeof FormData !== 'undefined') {
-        const headers = await this.resolveAuthHeaders({ includeContentType: false });
-        const formData = new FormData();
-        formData.append('file', file);
-        if (parentId) {
-          formData.append('parentId', parentId);
-        }
-
-        const uploadResponse = await fetch(this.buildUrl('/drive/items/upload'), {
-          method: 'POST',
-          headers,
-          body: formData,
-        });
-
-        if (uploadResponse.ok) {
-          const uploadResult = (await uploadResponse.json()) as SdkApiResult<SdkDriveItemVO>;
-          if (this.isSuccessCode(uploadResult.code)) {
-            const mapped = this.mapRemoteDriveFile(uploadResult.data, {
-              name: file.name,
-              parentId,
-              size: file.size,
-            });
-            if (mapped) return mapped;
-          }
-        }
-      }
-    } catch (error) {
-      this.deps.logger.warn(TAG, 'SDK multipart upload failed, fallback to filesystem/files', error);
-    }
-
-    try {
-      const result = await this.requestJson<SdkApiResult<SdkDriveItemVO>>('/filesystem/files', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: file.name,
-          parentId,
-          mimeType: file.type,
-          size: file.size,
-        }),
-      });
-
-      if (!this.isSuccessCode(result.code)) {
-        this.deps.logger.warn(TAG, 'SDK uploadFile business failure', { code: result.code, message: result.msg });
+      const client = await this.getClient();
+      const fileData = await this.fileToBase64DataUrl(file);
+      if (!fileData) {
+        this.deps.logger.warn(TAG, 'SDK uploadFile file conversion failed');
         return null;
       }
 
-      return this.mapRemoteDriveFile(result.data, {
-        name: file.name,
-        parentId,
-        size: file.size,
-      });
+      const uploadResult = await client.upload.file({ file: fileData }) as SdkApiResult<SdkFileVO>;
+      if (!this.isSuccessCode(uploadResult.code) || !uploadResult.data) {
+        this.deps.logger.warn(TAG, 'SDK upload register business failure', {
+          code: uploadResult.code,
+          message: uploadResult.msg
+        });
+        return null;
+      }
+      return this.mapUploadFile(uploadResult.data, file, parentId);
     } catch (error) {
       this.deps.logger.warn(TAG, 'SDK uploadFile request failed', error);
       return null;
@@ -293,9 +254,8 @@ class DriveSdkServiceImpl implements IDriveSdkService {
     if (!this.hasSdkBaseUrl()) return null;
 
     try {
-      const result = await this.requestJson<SdkApiResult<unknown>>(`/drive/items/${encodeURIComponent(id)}`, {
-        method: 'DELETE',
-      });
+      const client = await this.getClient();
+      const result = await client.drive.deleteItem(id) as SdkApiResult<unknown>;
       if (!this.isSuccessCode(result.code)) {
         this.deps.logger.warn(TAG, 'SDK deleteFile business failure', { code: result.code, message: result.msg, id });
         return false;
@@ -310,35 +270,29 @@ class DriveSdkServiceImpl implements IDriveSdkService {
   async getStats(): Promise<DriveStats | null> {
     if (!this.hasSdkBaseUrl()) return null;
 
-    const endpoints = ['/filesystem/disks/default', '/drive/stats'];
-    for (const endpoint of endpoints) {
-      try {
-        const result = await this.requestJson<SdkApiResult<unknown>>(endpoint, { method: 'GET' }, { includeContentType: false });
-        if (!this.isSuccessCode(result.code)) {
-          this.deps.logger.warn(TAG, 'SDK getStats business failure', { endpoint, code: result.code, message: result.msg });
-          continue;
-        }
-
-        if (result.data && typeof result.data === 'object') {
-          const source = result.data as SdkDriveStatsVO;
-          const total = this.toNumber(source.total, 0);
-          const used = this.toNumber(source.used ?? source.usage ?? source.usedSize, 0);
-          return {
-            total,
-            used,
-            image: this.toNumber(source.image, 0),
-            video: this.toNumber(source.video, 0),
-            document: this.toNumber(source.document, 0),
-            audio: this.toNumber(source.audio, 0),
-            other: this.toNumber(source.other, 0),
-          };
-        }
-      } catch (error) {
-        this.deps.logger.warn(TAG, 'SDK getStats request failed', { endpoint, error });
+    try {
+      const client = await this.getClient();
+      const result = await client.fileSystem.getPrimaryDisk() as SdkApiResult<SdkFileSystemDiskVO>;
+      if (!this.isSuccessCode(result.code)) {
+        this.deps.logger.warn(TAG, 'SDK getStats business failure', { code: result.code, message: result.msg });
+        return null;
       }
-    }
 
-    return null;
+      const total = this.toNumber(result.data?.totalSize, 0);
+      const used = this.toNumber(result.data?.usedSize ?? result.data?.usageRate, 0);
+      return {
+        total,
+        used,
+        image: 0,
+        video: 0,
+        document: 0,
+        audio: 0,
+        other: 0,
+      };
+    } catch (error) {
+      this.deps.logger.warn(TAG, 'SDK getStats request failed', { error });
+      return null;
+    }
   }
 }
 

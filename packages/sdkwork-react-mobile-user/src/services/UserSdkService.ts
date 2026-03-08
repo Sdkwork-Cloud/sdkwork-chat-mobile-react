@@ -1,10 +1,9 @@
-import { resolveServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
+import { APP_SDK_AUTH_TOKEN_STORAGE_KEY, createAppSdkCoreConfig, getAppSdkCoreClientWithSession, resolveServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
 import type { ServiceFactoryDeps, ServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
+import type { SdkworkAppClient } from '@sdkwork/app-sdk';
 import type { UserProfile } from '../types';
 
 const TAG = 'UserSdkService';
-const APP_API_PREFIX = '/app/v3/api';
-const AUTH_TOKEN_STORAGE_KEY = 'sys_auth_token';
 
 interface SdkApiResult<T> {
   data: T;
@@ -65,71 +64,19 @@ class UserSdkServiceImpl implements IUserSdkService {
     this.deps = resolveServiceFactoryRuntimeDeps(deps);
   }
 
-  private resolveEnv(name: string): string | undefined {
-    const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env;
-    return env?.[name];
-  }
-
-  private resolveBaseUrl(): string {
-    return (this.resolveEnv('VITE_API_BASE_URL') || '').trim().replace(/\/+$/g, '');
+  private async getClient(): Promise<SdkworkAppClient> {
+    return getAppSdkCoreClientWithSession({
+      storage: this.deps.storage,
+      authStorageKey: APP_SDK_AUTH_TOKEN_STORAGE_KEY,
+    });
   }
 
   hasSdkBaseUrl(): boolean {
-    return this.resolveBaseUrl().length > 0;
-  }
-
-  private buildAppApiPath(path: string): string {
-    const normalizedPrefixRaw = APP_API_PREFIX.trim();
-    const normalizedPrefix = normalizedPrefixRaw ? `/${normalizedPrefixRaw.replace(/^\/+|\/+$/g, '')}` : '';
-    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-    if (!normalizedPrefix || normalizedPrefix === '/') return normalizedPath;
-    if (normalizedPath === normalizedPrefix || normalizedPath.startsWith(`${normalizedPrefix}/`)) return normalizedPath;
-    return `${normalizedPrefix}${normalizedPath}`;
-  }
-
-  private buildUrl(path: string): string {
-    return `${this.resolveBaseUrl()}${this.buildAppApiPath(path)}`;
-  }
-
-  private async resolveAuthHeaders(options?: { includeContentType?: boolean }): Promise<Record<string, string>> {
-    const headers: Record<string, string> = {};
-    if (options?.includeContentType !== false) {
-      headers['Content-Type'] = 'application/json';
-    }
-
-    const envToken = this.resolveEnv('VITE_ACCESS_TOKEN');
-    const storageToken = await Promise.resolve(this.deps.storage.get<string>(AUTH_TOKEN_STORAGE_KEY));
-    const accessToken = (envToken || storageToken || '').trim();
-    if (accessToken) {
-      headers.Authorization = `Bearer ${accessToken}`;
-    }
-
-    return headers;
+    return (createAppSdkCoreConfig().baseUrl || '').trim().length > 0;
   }
 
   private isSuccessCode(code: string | undefined): boolean {
     return code === '2000';
-  }
-
-  private async requestJson<T>(path: string, init: RequestInit, options?: { includeContentType?: boolean }): Promise<T> {
-    if (typeof fetch !== 'function') {
-      throw new Error('Global fetch is not available');
-    }
-
-    const headers = await this.resolveAuthHeaders(options);
-    const response = await fetch(this.buildUrl(path), {
-      ...init,
-      headers: {
-        ...headers,
-        ...(init.headers || {}),
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} ${response.statusText}`);
-    }
-
-    return (await response.json()) as T;
   }
 
   private toTimestamp(value: unknown, fallback: number): number {
@@ -179,13 +126,27 @@ class UserSdkServiceImpl implements IUserSdkService {
     };
   }
 
+  private async fileToBase64DataUrl(file: File): Promise<string | null> {
+    if (typeof FileReader === 'undefined') {
+      return null;
+    }
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const value = typeof reader.result === 'string' ? reader.result : '';
+        resolve(value || null);
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
+  }
+
   async fetchProfile(options?: UserSdkFetchProfileOptions): Promise<UserProfile | null> {
     if (!this.hasSdkBaseUrl()) return null;
 
     try {
-      const result = await this.requestJson<SdkApiResult<SdkUserProfileVO>>('/user/profile', { method: 'GET' }, {
-        includeContentType: false,
-      });
+      const client = await this.getClient();
+      const result = await client.user.getUserProfile() as SdkApiResult<SdkUserProfileVO>;
       if (!this.isSuccessCode(result.code)) {
         this.deps.logger.warn(TAG, 'SDK fetchProfile business failure', { code: result.code, message: result.msg });
         return null;
@@ -201,10 +162,8 @@ class UserSdkServiceImpl implements IUserSdkService {
     if (!this.hasSdkBaseUrl()) return null;
 
     try {
-      const result = await this.requestJson<SdkApiResult<SdkUserProfileVO>>('/user/profile', {
-        method: 'PUT',
-        body: JSON.stringify(updates),
-      });
+      const client = await this.getClient();
+      const result = await client.user.updateUserProfile(updates) as SdkApiResult<SdkUserProfileVO>;
       if (!this.isSuccessCode(result.code)) {
         this.deps.logger.warn(TAG, 'SDK updateProfile business failure', { code: result.code, message: result.msg });
         return null;
@@ -230,23 +189,16 @@ class UserSdkServiceImpl implements IUserSdkService {
 
   async uploadAvatar(file: File): Promise<string | null> {
     if (!this.hasSdkBaseUrl()) return null;
-    if (typeof fetch !== 'function' || typeof FormData === 'undefined') return null;
 
     try {
-      const headers = await this.resolveAuthHeaders({ includeContentType: false });
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch(this.buildUrl('/user/avatar'), {
-        method: 'POST',
-        headers,
-        body: formData,
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status} ${response.statusText}`);
+      const client = await this.getClient();
+      const fileData = await this.fileToBase64DataUrl(file);
+      if (!fileData) {
+        this.deps.logger.warn(TAG, 'SDK uploadAvatar file conversion failed');
+        return null;
       }
 
-      const result = (await response.json()) as SdkApiResult<SdkAvatarUploadVO>;
+      const result = await client.user.uploadAvatar({ file: fileData }) as SdkApiResult<SdkAvatarUploadVO>;
       if (!this.isSuccessCode(result.code)) {
         this.deps.logger.warn(TAG, 'SDK uploadAvatar business failure', { code: result.code, message: result.msg });
         return null;

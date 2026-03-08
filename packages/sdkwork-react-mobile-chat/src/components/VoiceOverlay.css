@@ -1,22 +1,31 @@
 .voice-overlay {
   position: fixed;
-  inset: 0;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
   z-index: 9999;
   pointer-events: none;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  padding: 0 20px;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.18) 100%);
+  padding: 0;
+  background: rgba(0, 0, 0, 0.18);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
-  transition: padding-bottom 0.18s ease;
+  transition: opacity 0.16s ease;
+}
+
+@supports (height: 100dvh) {
+  .voice-overlay {
+    height: 100dvh;
+  }
 }
 
 .voice-overlay__card {
-  width: 172px;
-  height: 172px;
-  border-radius: 24px;
+  width: min(190px, 76vw);
+  height: min(190px, 76vw);
+  border-radius: 26px;
   background: rgba(17, 22, 30, 0.92);
   color: #fff;
   display: flex;
@@ -31,8 +40,8 @@
 }
 
 .voice-overlay__card.is-cancel {
-  background: linear-gradient(160deg, rgba(250, 81, 81, 0.95) 0%, rgba(235, 63, 63, 0.95) 100%);
-  transform: translateY(-4px) scale(1.03);
+  background: rgba(235, 63, 63, 0.95);
+  transform: scale(1.04);
 }
 
 .voice-overlay__icon-wrap {

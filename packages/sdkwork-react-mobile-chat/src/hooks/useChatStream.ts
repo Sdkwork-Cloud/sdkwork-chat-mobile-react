@@ -98,7 +98,7 @@ export const useChatStream = () => {
         await addMessage(session.id, {
           id: modelMsgId,
           role: 'model',
-          content: 'Thinking...',
+          content: '',
           createTime: Date.now(),
           isStreaming: true,
           status: 'sending',

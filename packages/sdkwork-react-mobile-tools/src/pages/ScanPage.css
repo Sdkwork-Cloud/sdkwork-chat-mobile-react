@@ -1,0 +1,233 @@
+.scan-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: #101214;
+  color: #fff;
+  overflow: hidden;
+}
+
+.scan-page__header {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(env(safe-area-inset-top) + 10px) 14px 10px;
+}
+
+.scan-page__close-btn {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scan-page__header-placeholder {
+  width: 34px;
+  height: 34px;
+}
+
+.scan-page__title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.scan-page__content {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 20px 20px;
+}
+
+.scan-page__viewport {
+  position: relative;
+  width: min(74vw, 300px);
+  aspect-ratio: 1 / 1;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.58);
+  color: rgba(255, 255, 255, 0.48);
+  overflow: hidden;
+  border-radius: 2px;
+  display: block;
+  padding: 0;
+}
+
+.scan-page__viewport:focus-visible {
+  outline: 2px solid #07c160;
+  outline-offset: 2px;
+}
+
+.scan-page__corner {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+}
+
+.scan-page__corner--lt {
+  top: 0;
+  left: 0;
+  border-top: 3px solid #07c160;
+  border-left: 3px solid #07c160;
+}
+
+.scan-page__corner--rt {
+  top: 0;
+  right: 0;
+  border-top: 3px solid #07c160;
+  border-right: 3px solid #07c160;
+}
+
+.scan-page__corner--lb {
+  bottom: 0;
+  left: 0;
+  border-bottom: 3px solid #07c160;
+  border-left: 3px solid #07c160;
+}
+
+.scan-page__corner--rb {
+  bottom: 0;
+  right: 0;
+  border-bottom: 3px solid #07c160;
+  border-right: 3px solid #07c160;
+}
+
+.scan-page__scan-line {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  height: 2px;
+  background: #07c160;
+  opacity: 0;
+}
+
+.scan-page__viewport.is-scanning .scan-page__scan-line {
+  animation: scan-page-line 2s linear infinite;
+}
+
+.scan-page__scan-icon {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scan-page__tip {
+  margin: 28px 0 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.92);
+  text-align: center;
+}
+
+.scan-page__status {
+  margin: 0;
+  min-height: 20px;
+  font-size: 12px;
+  line-height: 20px;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.scan-page__result {
+  margin-top: 12px;
+  width: min(92vw, 380px);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #16181d;
+  padding: 12px 14px;
+  text-align: left;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+}
+
+.scan-page__result-title {
+  margin: 0;
+  font-size: 12px;
+  color: #6c7483;
+}
+
+.scan-page__result-value {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
+  word-break: break-all;
+}
+
+.scan-page__actions {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  gap: 44px;
+  padding: 12px 18px calc(env(safe-area-inset-bottom) + 16px);
+  background: rgba(8, 9, 11, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.scan-page__action {
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.94);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.scan-page__action:disabled {
+  opacity: 0.6;
+}
+
+.scan-page__action-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scan-page__action.is-active .scan-page__action-icon {
+  background: #07c160;
+  color: #062414;
+}
+
+.scan-page__action-text {
+  font-size: 12px;
+  line-height: 1;
+}
+
+@keyframes scan-page-line {
+  0% {
+    top: 10px;
+    opacity: 0.12;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    top: calc(100% - 12px);
+    opacity: 0.12;
+  }
+}

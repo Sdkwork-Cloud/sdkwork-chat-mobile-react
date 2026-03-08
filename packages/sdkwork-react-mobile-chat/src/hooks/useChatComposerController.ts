@@ -11,6 +11,8 @@ interface UseChatComposerControllerOptions {
   onCancelReply: () => void;
   onVoiceSent?: () => void;
   onVoiceCancelled?: () => void;
+  onRequestFocusText?: () => void;
+  onRequestBlurText?: () => void;
 }
 
 const Haptic = {
@@ -32,6 +34,8 @@ export const useChatComposerController = ({
   onCancelReply,
   onVoiceSent,
   onVoiceCancelled,
+  onRequestFocusText,
+  onRequestBlurText,
 }: UseChatComposerControllerOptions) => {
   const [input, setInput] = useState('');
   const [mode, setMode] = useState<ComposerMode>('text');
@@ -39,15 +43,27 @@ export const useChatComposerController = ({
   const [isRecording, setIsRecording] = useState(false);
   const [cancelVoice, setCancelVoice] = useState(false);
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const textInputRef = useRef<HTMLTextAreaElement>(null);
   const startYRef = useRef<number>(0);
+  const requestFocus = useCallback(() => {
+    onRequestFocusText?.();
+    if (!onRequestFocusText) {
+      textInputRef.current?.focus();
+    }
+  }, [onRequestFocusText]);
+  const requestBlur = useCallback(() => {
+    onRequestBlurText?.();
+    if (!onRequestBlurText) {
+      textInputRef.current?.blur();
+    }
+  }, [onRequestBlurText]);
 
   const closePanel = useCallback((focus = false) => {
     setActivePanel('none');
     if (focus) {
-      window.setTimeout(() => textareaRef.current?.focus(), 100);
+      window.setTimeout(() => requestFocus(), 100);
     }
-  }, []);
+  }, [requestFocus]);
 
   const handleSend = useCallback(() => {
     if (!input.trim() || isLoading) return false;
@@ -61,24 +77,9 @@ export const useChatComposerController = ({
       onCancelReply();
     }
 
-    window.setTimeout(() => textareaRef.current?.focus(), 50);
+    window.setTimeout(() => requestFocus(), 50);
     return true;
-  }, [input, isLoading, onSend, replyMessage, onCancelReply, closePanel]);
-
-  const handleEmojiSelect = useCallback((emoji: string) => {
-    setInput((prev) => prev + emoji);
-    Haptic.selection();
-  }, []);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        handleSend();
-      }
-    },
-    [handleSend]
-  );
+  }, [input, isLoading, onSend, replyMessage, onCancelReply, closePanel, requestFocus]);
 
   const togglePanel = useCallback((panel: Exclude<ComposerPanel, 'none'>) => {
     setMode('text');
@@ -88,25 +89,28 @@ export const useChatComposerController = ({
     setActivePanel((prev) => {
       const next = prev === panel ? 'none' : panel;
       if (next === 'none') {
-        window.setTimeout(() => textareaRef.current?.focus(), 100);
+        window.setTimeout(() => requestFocus(), 100);
       } else {
-        textareaRef.current?.blur();
+        requestBlur();
       }
       return next;
     });
 
     Haptic.selection();
-  }, []);
+  }, [requestBlur, requestFocus]);
 
   const toggleMode = useCallback(() => {
     Haptic.selection();
     const nextMode: ComposerMode = mode === 'text' ? 'voice' : 'text';
     setMode(nextMode);
     closePanel();
+    if (nextMode === 'voice') {
+      requestBlur();
+    }
     setIsRecording(false);
     setCancelVoice(false);
     return nextMode;
-  }, [mode, closePanel]);
+  }, [closePanel, mode, requestBlur]);
 
   const startVoiceRecording = useCallback(
     (clientY: number) => {
@@ -202,10 +206,7 @@ export const useChatComposerController = ({
     activePanel,
     isRecording,
     cancelVoice,
-    textareaRef,
     handleSend,
-    handleEmojiSelect,
-    handleKeyDown,
     togglePanel,
     toggleMode,
     startVoiceRecording,

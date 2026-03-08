@@ -1,0 +1,123 @@
+@import './UserCenterPage.shared.css';
+@import './UserCenterSheet.shared.css';
+
+.my-address-page {
+  --user-center-group-gap: 8px;
+  --user-center-scroll-bottom: 66px;
+  --user-center-sheet-z-index: 2000;
+  --user-center-sheet-padding-bottom: 14px;
+}
+
+.my-address-page__navbar-btn {
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 6px;
+  border-radius: 6px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.my-address-page__navbar-btn:active {
+  background: var(--bg-cell-active);
+}
+
+.my-address-page__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.my-address-page__phone {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.my-address-page__badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.my-address-page__badge {
+  font-size: 10px;
+  border-radius: 10px;
+  padding: 2px 7px;
+  line-height: 1.2;
+}
+
+.my-address-page__badge--default {
+  color: #fa5151;
+  background: rgba(250, 81, 81, 0.11);
+}
+
+.my-address-page__badge--tag {
+  color: #2979ff;
+  background: rgba(41, 121, 255, 0.12);
+}
+
+.my-address-page__more-btn {
+  border: 0;
+  background: transparent;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 7px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.my-address-page__more-btn:active {
+  background: var(--bg-cell-active);
+}
+
+.my-address-page__actions {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg-card);
+  border-top: 0.5px solid var(--border-color);
+  padding: 10px 12px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+}
+
+.my-address-page__sheet-form {
+  display: grid;
+  gap: 10px;
+}
+
+.my-address-page__region-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.my-address-page__input {
+  width: 100%;
+  height: 38px;
+  border-radius: 10px;
+  border: 0.5px solid var(--border-color);
+  background: var(--bg-body);
+  color: var(--text-primary);
+  padding: 0 10px;
+  outline: none;
+}
+
+.my-address-page__textarea {
+  height: 88px;
+  resize: none;
+  padding-top: 10px;
+}
+
+.my-address-page__default-row {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-secondary);
+  font-size: 13px;
+}

@@ -1,11 +1,11 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '@sdkwork/react-mobile-commons';
 import './VoiceOverlay.css';
 
 interface VoiceOverlayProps {
   isRecording: boolean;
   cancelVoice: boolean;
-  bottomOffset?: number;
   recordingHint?: string;
   cancelHint?: string;
 }
@@ -13,17 +13,13 @@ interface VoiceOverlayProps {
 export const VoiceOverlay: React.FC<VoiceOverlayProps> = ({
   isRecording,
   cancelVoice,
-  bottomOffset = 112,
   recordingHint = '\u4e0a\u6ed1\u53d6\u6d88\u53d1\u9001',
   cancelHint = '\u677e\u5f00\u53d6\u6d88',
 }) => {
   if (!isRecording) return null;
 
-  return (
-    <div
-      className="voice-overlay"
-      style={{ paddingBottom: `calc(env(safe-area-inset-bottom) + ${Math.max(96, Math.min(188, bottomOffset))}px)` }}
-    >
+  const content = (
+    <div className="voice-overlay">
       <div className={`voice-overlay__card${cancelVoice ? ' is-cancel' : ''}`}>
         <div className="voice-overlay__icon-wrap" aria-hidden="true">
           <Icon name={cancelVoice ? 'close' : 'voice'} size={46} />
@@ -48,4 +44,10 @@ export const VoiceOverlay: React.FC<VoiceOverlayProps> = ({
       </div>
     </div>
   );
+
+  if (typeof document === 'undefined') {
+    return content;
+  }
+
+  return createPortal(content, document.body);
 };

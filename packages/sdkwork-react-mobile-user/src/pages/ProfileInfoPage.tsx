@@ -1,53 +1,86 @@
 import React from 'react';
-import { ActionSheet, Button, Icon, Navbar, Skeleton, Toast } from '@sdkwork/react-mobile-commons';
+import { ActionSheet, CellGroup, CellItem, Icon, Navbar, Skeleton, Toast } from '@sdkwork/react-mobile-commons';
 import { useUser } from '../hooks/useUser';
-import type { UserProfile } from '../types';
+import {
+  formatEmailBindingValue,
+  formatPhoneBindingValue,
+  toBindingStatusLabel,
+} from './profileBindingDisplay';
 import './ProfileInfoPage.css';
-
-type EditableField = 'name' | 'signature' | null;
 
 interface ProfileInfoPageProps {
   t?: (key: string) => string;
   onBack?: () => void;
+  onEditNameClick?: () => void;
+  onEditRegionClick?: () => void;
+  onEditSignatureClick?: () => void;
+  onEditPasswordClick?: () => void;
+  onEditPhoneClick?: () => void;
+  onEditEmailClick?: () => void;
+  onEditWechatClick?: () => void;
+  onEditQqClick?: () => void;
   onQRCodeClick?: () => void;
   onAddressClick?: () => void;
   onInvoiceClick?: () => void;
+  onActivityHistoryClick?: () => void;
+  onUserSettingsClick?: () => void;
 }
 
-const Row: React.FC<{
-  label: string;
-  value?: React.ReactNode;
-  onClick?: () => void;
-  isLast?: boolean;
-  center?: boolean;
-}> = ({ label, value, onClick, isLast, center }) => (
-  <button
-    type="button"
-    className={`profile-info-page__row ${isLast ? 'profile-info-page__row--last' : ''}`}
-    onClick={onClick}
-    disabled={!onClick}
-    style={{ alignItems: center ? 'center' : undefined, minHeight: center ? '86px' : undefined }}
-  >
-    <span className="profile-info-page__label">{label}</span>
-    <span className="profile-info-page__value">{value}</span>
-    {onClick ? (
-      <span className="profile-info-page__arrow">
-        <Icon name="arrow-right" size={18} color="var(--text-secondary)" />
-      </span>
-    ) : null}
-  </button>
-);
+const copyText = async (text: string): Promise<boolean> => {
+  if (!text) return false;
+
+  if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // fallback to legacy copy
+    }
+  }
+
+  if (typeof document === 'undefined') return false;
+
+  try {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    const copied = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    return copied;
+  } catch {
+    return false;
+  }
+};
 
 export const ProfileInfoPage: React.FC<ProfileInfoPageProps> = ({
   t,
   onBack,
+  onEditNameClick,
+  onEditRegionClick,
+  onEditSignatureClick,
+  onEditPasswordClick,
+  onEditPhoneClick,
+  onEditEmailClick,
+  onEditWechatClick,
+  onEditQqClick,
   onQRCodeClick,
   onAddressClick,
   onInvoiceClick,
+  onActivityHistoryClick,
+  onUserSettingsClick,
 }) => {
-  const { profile, updateProfile, updateAvatar, isLoading } = useUser();
-  const [editingField, setEditingField] = React.useState<EditableField>(null);
-  const [editValue, setEditValue] = React.useState('');
+  const {
+    profile,
+    updateProfile,
+    updateAvatar,
+    isLoading,
+    error,
+    loadProfile,
+  } = useUser();
   const [isUploading, setIsUploading] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -70,11 +103,23 @@ export const ProfileInfoPage: React.FC<ProfileInfoPageProps> = ({
       gender: tr('profile.gender', 'Gender'),
       region: tr('profile.region', 'Region'),
       signature: tr('profile.signature', 'Signature'),
+      changePassword: tr('profile.change_password', 'Change Password'),
+      activityHistory: tr('profile.activity_history', 'Activity History'),
+      userSettings: tr('profile.user_settings', 'User Settings'),
+      bindEmail: tr('profile.bind_email', 'Email'),
+      bindPhone: tr('profile.bind_phone', 'Phone'),
+      bindWechat: tr('profile.bind_wechat', 'WeChat'),
+      bindQq: tr('profile.bind_qq', 'QQ'),
       address: tr('profile.address', 'My Addresses'),
       invoice: tr('profile.invoice', 'Invoice Titles'),
       copied: tr('profile.actions.copied', 'Copied'),
-      save: tr('profile.actions.save', 'Save'),
-      cancel: tr('common.cancel', 'Cancel'),
+      updateAction: tr('profile.change_password_action', 'Update'),
+      bound: tr('profile.bound', 'Bound'),
+      notBound: tr('profile.not_bound', 'Not bound'),
+      retry: tr('common.refresh', 'Refresh'),
+      emptyTitle: tr('profile.empty', 'Profile unavailable'),
+      emptyDescription: tr('profile.empty_desc', 'Tap to reload profile'),
+      loadFailedNotice: tr('profile.load_failed_notice', 'Profile refresh failed. Showing available local data.'),
     }),
     [tr]
   );
@@ -96,7 +141,7 @@ export const ProfileInfoPage: React.FC<ProfileInfoPageProps> = ({
     try {
       await updateAvatar(file);
       Toast.success(tr('profile.messages.avatar_updated', 'Avatar updated'));
-    } catch (error) {
+    } catch {
       Toast.error(tr('profile.errors.avatar_upload_failed', 'Avatar upload failed, please try again'));
     } finally {
       setIsUploading(false);
@@ -104,38 +149,14 @@ export const ProfileInfoPage: React.FC<ProfileInfoPageProps> = ({
     }
   };
 
-  const openEditor = (field: Exclude<EditableField, null>) => {
-    if (!profile) return;
-    const currentValue = field === 'name' ? profile.name : profile.signature;
-    setEditValue(currentValue || '');
-    setEditingField(field);
-  };
-
-  const saveEditor = async () => {
-    if (!profile || !editingField) return;
-    const nextValue = editValue.trim();
-    if (!nextValue) {
-      Toast.info(tr('profile.errors.input_required', 'Please enter content'));
-      return;
-    }
-
-    try {
-      await updateProfile({ [editingField]: nextValue } as Partial<UserProfile>);
-      Toast.success(tr('profile.messages.updated', 'Profile updated'));
-      setEditingField(null);
-    } catch (error) {
-      Toast.error(tr('profile.errors.save_failed', 'Save failed, please try again later'));
-    }
-  };
-
   const handleCopyWXID = async () => {
     if (!profile?.wxid) return;
-    try {
-      await navigator.clipboard.writeText(profile.wxid);
+    const copied = await copyText(profile.wxid);
+    if (copied) {
       Toast.success(labels.copied);
-    } catch (error) {
-      Toast.error(tr('profile.errors.copy_failed', 'Copy failed'));
+      return;
     }
+    Toast.error(tr('profile.errors.copy_failed', 'Copy failed'));
   };
 
   const handleGenderSelect = async () => {
@@ -146,39 +167,29 @@ export const ProfileInfoPage: React.FC<ProfileInfoPageProps> = ({
         { text: tr('profile.gender_value.male', 'Male'), key: 'male' },
         { text: tr('profile.gender_value.female', 'Female'), key: 'female' },
       ],
-    });
-    if (!result?.key) return;
-    await updateProfile({ gender: result.key as 'male' | 'female' });
-  };
-
-  const handleRegionSelect = async () => {
-    if (!profile) return;
-    const result = await ActionSheet.showActions({
-      title: tr('profile.select_region', 'Select Region'),
-      actions: [
-        { text: tr('profile.regions.shanghai', 'Shanghai'), key: 'Shanghai' },
-        { text: tr('profile.regions.beijing', 'Beijing'), key: 'Beijing' },
-        { text: tr('profile.regions.shenzhen', 'Shenzhen'), key: 'Shenzhen' },
-        { text: tr('profile.regions.guangzhou', 'Guangzhou'), key: 'Guangzhou' },
-        { text: tr('profile.regions.custom', 'Custom'), key: 'custom' },
-      ],
+      variant: 'user-center',
     });
     if (!result?.key) return;
 
-    if (result.key === 'custom') {
-      const custom = window.prompt(tr('profile.input_region', 'Please enter region'), profile.region || '');
-      if (!custom?.trim()) return;
-      await updateProfile({ region: custom.trim() });
-      return;
+    try {
+      await updateProfile({ gender: result.key as 'male' | 'female' });
+    } catch {
+      Toast.error(tr('profile.errors.save_failed', 'Save failed, please try again later'));
     }
-
-    await updateProfile({ region: result.key });
   };
 
   const avatarUrl = profile?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=OpenChat';
+  const profileName = profile?.name || tr('profile.default_name', 'WeChat User');
+  const profileId = profile?.wxid || '--';
+  const emailValue = formatEmailBindingValue(profile?.email);
+  const phoneValue = formatPhoneBindingValue(profile?.phone);
+  const emailStatus = toBindingStatusLabel(profile?.email, labels.bound, labels.notBound);
+  const phoneStatus = toBindingStatusLabel(profile?.phone, labels.bound, labels.notBound);
+  const phoneDisplayValue = phoneStatus === labels.bound ? phoneValue : labels.notBound;
+  const emailDisplayValue = emailStatus === labels.bound ? emailValue : labels.notBound;
 
   return (
-    <div className="profile-info-page">
+    <div className="profile-info-page user-center-page">
       <Navbar title={labels.title} onBack={onBack} />
 
       <input
@@ -189,30 +200,39 @@ export const ProfileInfoPage: React.FC<ProfileInfoPageProps> = ({
         onChange={handleFileChange}
       />
 
-      <div className="profile-info-page__scroll">
+      <div className="profile-info-page__scroll user-center-page__scroll">
+        {error && !isLoading ? (
+          <div className="profile-info-page__alert" role="status">
+            <span className="profile-info-page__alert-text">{labels.loadFailedNotice}</span>
+            <button
+              type="button"
+              className="profile-info-page__alert-retry"
+              onClick={() => void loadProfile()}
+            >
+              {labels.retry}
+            </button>
+          </div>
+        ) : null}
+
         {!profile && isLoading ? (
-          <>
-            <div className="profile-info-page__group">
-              <div className="profile-info-page__skeleton-row">
-                <Skeleton width="100%" height={84} style={{ borderRadius: '12px' }} />
-              </div>
-              <div className="profile-info-page__skeleton-row">
-                <Skeleton width="100%" height={52} style={{ borderRadius: '10px' }} />
-              </div>
+          <CellGroup>
+            <div className="profile-info-page__skeleton-cell">
+              <Skeleton width="100%" height={62} style={{ borderRadius: 0 }} />
             </div>
-          </>
+            <div className="profile-info-page__skeleton-cell profile-info-page__skeleton-cell--last">
+              <Skeleton width="100%" height={44} style={{ borderRadius: 0 }} />
+            </div>
+          </CellGroup>
         ) : null}
 
         {profile ? (
           <>
-            <div className="profile-info-page__group">
-              <Row
-                label={labels.avatar}
-                onClick={handleAvatarClick}
-                center
+            <CellGroup>
+              <CellItem
+                title={labels.avatar}
                 value={(
                   <div className="profile-info-page__avatar-wrap">
-                    <img src={avatarUrl} alt={profile.name} className="profile-info-page__avatar" />
+                    <img src={avatarUrl} alt={profileName} className="profile-info-page__avatar" />
                     {isUploading ? (
                       <div className="profile-info-page__avatar-mask">
                         <Icon name="loading" size={16} spin color="#fff" />
@@ -220,70 +240,103 @@ export const ProfileInfoPage: React.FC<ProfileInfoPageProps> = ({
                     ) : null}
                   </div>
                 )}
+                isLink
+                onClick={handleAvatarClick}
+                className="profile-info-page__avatar-cell"
               />
-              <Row label={labels.name} onClick={() => openEditor('name')} value={profile.name} />
-              <Row label={labels.wxid} onClick={handleCopyWXID} value={profile.wxid} />
-              <Row
-                label={labels.qrcode}
-                onClick={onQRCodeClick}
-                isLast
+              <CellItem title={labels.name} value={profileName} isLink onClick={onEditNameClick} />
+              <CellItem
+                title={labels.wxid}
+                value={<span className="profile-info-page__id-value">{profileId}</span>}
+                isLink
+                onClick={handleCopyWXID}
+              />
+              <CellItem
+                title={labels.qrcode}
                 value={<Icon name="qrcode" size={18} color="var(--text-secondary)" />}
+                isLink
+                onClick={onQRCodeClick}
+                noBorder
               />
-            </div>
+            </CellGroup>
 
-            <div className="profile-info-page__group">
-              <Row
-                label={labels.gender}
-                onClick={handleGenderSelect}
+            <CellGroup>
+              <CellItem
+                title={labels.gender}
                 value={
                   profile.gender === 'male'
                     ? tr('profile.gender_value.male', 'Male')
                     : tr('profile.gender_value.female', 'Female')
                 }
+                isLink
+                onClick={handleGenderSelect}
               />
-              <Row label={labels.region} onClick={handleRegionSelect} value={profile.region || '--'} />
-              <Row
-                label={labels.signature}
-                onClick={() => openEditor('signature')}
-                isLast
-                value={<span className="profile-info-page__truncate">{profile.signature || tr('profile.not_set', 'Not set')}</span>}
+              <CellItem title={labels.region} value={profile.region || '--'} isLink onClick={onEditRegionClick} />
+              <CellItem
+                title={labels.signature}
+                value={<span className="profile-info-page__value-truncate">{profile.signature || tr('profile.not_set', 'Not set')}</span>}
+                isLink
+                onClick={onEditSignatureClick}
+                noBorder
               />
-            </div>
+            </CellGroup>
 
-            <div className="profile-info-page__group">
-              <Row label={labels.address} onClick={onAddressClick} />
-              <Row label={labels.invoice} onClick={onInvoiceClick} isLast />
-            </div>
+            <CellGroup>
+              <CellItem
+                title={labels.bindPhone}
+                value={phoneDisplayValue}
+                isLink
+                onClick={onEditPhoneClick}
+              />
+              <CellItem
+                title={labels.bindEmail}
+                value={emailDisplayValue}
+                isLink
+                onClick={onEditEmailClick}
+              />
+              <CellItem
+                title={labels.bindWechat}
+                value={labels.notBound}
+                isLink
+                onClick={onEditWechatClick}
+              />
+              <CellItem
+                title={labels.bindQq}
+                value={labels.notBound}
+                isLink
+                onClick={onEditQqClick}
+              />
+              <CellItem
+                title={labels.changePassword}
+                value={<span className="profile-info-page__action-value">{labels.updateAction}</span>}
+                isLink
+                onClick={onEditPasswordClick}
+                noBorder
+              />
+            </CellGroup>
+
+            <CellGroup>
+              <CellItem title={labels.activityHistory} isLink onClick={onActivityHistoryClick} />
+              <CellItem title={labels.userSettings} isLink onClick={onUserSettingsClick} />
+              <CellItem title={labels.address} isLink onClick={onAddressClick} />
+              <CellItem title={labels.invoice} isLink onClick={onInvoiceClick} noBorder />
+            </CellGroup>
           </>
         ) : null}
-      </div>
 
-      {editingField ? (
-        <div className="profile-info-page__sheet">
-          <div className="profile-info-page__sheet-mask" onClick={() => setEditingField(null)} />
-          <div className="profile-info-page__sheet-content">
-            <div className="profile-info-page__sheet-head">
-              <button type="button" onClick={() => setEditingField(null)}>
-                {labels.cancel}
-              </button>
-              <span>{editingField === 'name' ? labels.name : labels.signature}</span>
-              <button type="button" onClick={() => void saveEditor()}>
-                {labels.save}
-              </button>
-            </div>
-            <textarea
-              value={editValue}
-              onChange={(event) => setEditValue(event.target.value)}
-              placeholder={editingField === 'name' ? labels.name : labels.signature}
-              rows={editingField === 'name' ? 2 : 4}
-              className="profile-info-page__sheet-input"
+        {!isLoading && !profile ? (
+          <CellGroup>
+            <CellItem
+              title={labels.emptyTitle}
+              description={labels.emptyDescription}
+              value={labels.retry}
+              isLink
+              onClick={() => void loadProfile()}
+              noBorder
             />
-            <Button block onClick={() => void saveEditor()}>
-              {labels.save}
-            </Button>
-          </div>
-        </div>
-      ) : null}
+          </CellGroup>
+        ) : null}
+      </div>
     </div>
   );
 };

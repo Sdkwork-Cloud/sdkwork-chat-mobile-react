@@ -1,10 +1,9 @@
-import { resolveServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
+import { APP_SDK_AUTH_TOKEN_STORAGE_KEY, createAppSdkCoreConfig, getAppSdkCoreClientWithSession, resolveServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
 import type { ServiceFactoryDeps, ServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
+import type { SdkworkAppClient } from '@sdkwork/app-sdk';
 import type { FeedbackRecord, FeedbackStatus, FeedbackSubmitInput, FeedbackType } from '../types';
 
 const TAG = 'FeedbackSdkService';
-const APP_API_PREFIX = '/app/v3/api';
-const AUTH_TOKEN_STORAGE_KEY = 'sys_auth_token';
 
 interface SdkApiResult<T> {
   data: T;
@@ -51,17 +50,18 @@ class FeedbackSdkServiceImpl implements IFeedbackSdkService {
     this.deps = resolveServiceFactoryRuntimeDeps(deps);
   }
 
-  private resolveEnv(name: string): string | undefined {
-    const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env;
-    return env?.[name];
-  }
-
-  private resolveBaseUrl(): string {
-    return (this.resolveEnv('VITE_API_BASE_URL') || '').trim().replace(/\/+$/g, '');
+  private async getClient(): Promise<SdkworkAppClient> {
+    return getAppSdkCoreClientWithSession({
+      storage: this.deps.storage,
+      authStorageKey: APP_SDK_AUTH_TOKEN_STORAGE_KEY,
+    });
   }
 
   hasSdkBaseUrl(): boolean {
-    return this.resolveBaseUrl().length > 0;
+    const baseUrl = (createAppSdkCoreConfig().baseUrl || '').trim();
+    if (!baseUrl) return false;
+    const authToken = this.readAuthToken();
+    return authToken.length > 0;
   }
 
   getLastError(): FeedbackSdkError | null {
@@ -72,57 +72,23 @@ class FeedbackSdkServiceImpl implements IFeedbackSdkService {
     this.lastError = error;
   }
 
-  private buildAppApiPath(path: string): string {
-    const normalizedPrefixRaw = APP_API_PREFIX.trim();
-    const normalizedPrefix = normalizedPrefixRaw ? `/${normalizedPrefixRaw.replace(/^\/+|\/+$/g, '')}` : '';
-    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-    if (!normalizedPrefix || normalizedPrefix === '/') return normalizedPath;
-    if (normalizedPath === normalizedPrefix || normalizedPath.startsWith(`${normalizedPrefix}/`)) return normalizedPath;
-    return `${normalizedPrefix}${normalizedPath}`;
-  }
-
-  private buildUrl(path: string): string {
-    return `${this.resolveBaseUrl()}${this.buildAppApiPath(path)}`;
-  }
-
-  private async resolveAuthHeaders(options?: { includeContentType?: boolean }): Promise<Record<string, string>> {
-    const headers: Record<string, string> = {};
-    if (options?.includeContentType !== false) {
-      headers['Content-Type'] = 'application/json';
+  private readAuthToken(): string {
+    try {
+      const raw = this.deps.storage.get<string | null | undefined>(APP_SDK_AUTH_TOKEN_STORAGE_KEY);
+      if (typeof raw !== 'string') return '';
+      const normalized = raw.trim();
+      if (!normalized) return '';
+      return normalized.toLowerCase().startsWith('bearer ')
+        ? normalized.slice(7).trim()
+        : normalized;
+    } catch {
+      // Platform runtime may be unavailable in tests or early bootstrap.
+      return '';
     }
-
-    const envToken = this.resolveEnv('VITE_ACCESS_TOKEN');
-    const storageToken = await Promise.resolve(this.deps.storage.get<string>(AUTH_TOKEN_STORAGE_KEY));
-    const accessToken = (envToken || storageToken || '').trim();
-    if (accessToken) {
-      headers.Authorization = `Bearer ${accessToken}`;
-    }
-
-    return headers;
   }
 
   private isSuccessCode(code: string | undefined): boolean {
     return code === '2000';
-  }
-
-  private async requestJson<T>(path: string, init: RequestInit, options?: { includeContentType?: boolean }): Promise<T> {
-    if (typeof fetch !== 'function') {
-      throw new Error('Global fetch is not available');
-    }
-
-    const headers = await this.resolveAuthHeaders(options);
-    const response = await fetch(this.buildUrl(path), {
-      ...init,
-      headers: {
-        ...headers,
-        ...(init.headers || {}),
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} ${response.statusText}`);
-    }
-    return (await response.json()) as T;
   }
 
   private toTimestamp(value: unknown, fallback: number): number {
@@ -202,10 +168,8 @@ class FeedbackSdkServiceImpl implements IFeedbackSdkService {
     };
 
     try {
-      const result = await this.requestJson<SdkApiResult<SdkFeedbackVO>>('/feedback', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
+      const client = await this.getClient();
+      const result = await client.feedback.submit(payload) as SdkApiResult<SdkFeedbackVO>;
 
       if (!this.isSuccessCode(result.code)) {
         this.setLastError({ code: result.code, message: result.msg || 'Feedback submit failed' });
@@ -237,9 +201,8 @@ class FeedbackSdkServiceImpl implements IFeedbackSdkService {
     this.setLastError(null);
 
     try {
-      const result = await this.requestJson<SdkApiResult<unknown>>('/feedback', {
-        method: 'GET',
-      }, { includeContentType: false });
+      const client = await this.getClient();
+      const result = await client.feedback.listFeedback({ page: 0, size: 100 }) as SdkApiResult<unknown>;
 
       if (!this.isSuccessCode(result.code)) {
         this.setLastError({ code: result.code, message: result.msg || 'Feedback list request failed' });
@@ -247,12 +210,10 @@ class FeedbackSdkServiceImpl implements IFeedbackSdkService {
         return null;
       }
 
-      const mapped = this.extractFeedbackList(result.data)
+      return this.extractFeedbackList(result.data)
         .map((item) => this.mapFeedback(item, { type: 'other', content: '' }))
         .filter((item): item is FeedbackRecord => item !== null)
         .sort((a, b) => b.submitTime - a.submitTime);
-
-      return mapped;
     } catch (error) {
       this.setLastError({
         message: error instanceof Error ? error.message : 'Feedback list request failed',

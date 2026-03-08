@@ -1,6 +1,16 @@
 import { useCallback, useEffect } from 'react';
 import { useUserStore } from '../stores/userStore';
 import type { Address, InvoiceTitle, UserProfile } from '../types';
+import {
+  userCenterService,
+  type UserCenterBindPlatform,
+  type UserCenterChangePasswordInput,
+  type UserCenterHistoryPage,
+  type UserCenterHistoryQuery,
+  type UserCenterSettings,
+  type UserCenterThirdPartyBindInput,
+  type UserCenterUpdateSettingsInput,
+} from '../services/UserCenterService';
 
 export function useUser() {
   const profile = useUserStore((state) => state.profile);
@@ -67,6 +77,93 @@ export function useUser() {
     [deleteInvoice]
   );
 
+  const handleChangePassword = useCallback(
+    async (input: UserCenterChangePasswordInput) => {
+      await userCenterService.changePassword(input);
+    },
+    []
+  );
+
+  const handleGetLoginHistory = useCallback(
+    async (params?: UserCenterHistoryQuery): Promise<UserCenterHistoryPage> => {
+      return userCenterService.getLoginHistory(params);
+    },
+    []
+  );
+
+  const handleGetGenerationHistory = useCallback(
+    async (params?: UserCenterHistoryQuery): Promise<UserCenterHistoryPage> => {
+      return userCenterService.getGenerationHistory(params);
+    },
+    []
+  );
+
+  const handleGetUserSettings = useCallback(
+    async (): Promise<UserCenterSettings | null> => {
+      return userCenterService.getUserSettings();
+    },
+    []
+  );
+
+  const handleUpdateUserSettings = useCallback(
+    async (input: UserCenterUpdateSettingsInput): Promise<UserCenterSettings> => {
+      return userCenterService.updateUserSettings(input);
+    },
+    []
+  );
+
+  const handleBindEmail = useCallback(
+    async (email: string, verifyCode?: string) => {
+      const result = await userCenterService.bindEmail(email, verifyCode);
+      await loadProfile();
+      return result;
+    },
+    [loadProfile]
+  );
+
+  const handleUnbindEmail = useCallback(
+    async () => {
+      const result = await userCenterService.unbindEmail();
+      await loadProfile();
+      return result;
+    },
+    [loadProfile]
+  );
+
+  const handleBindPhone = useCallback(
+    async (phone: string, verifyCode?: string) => {
+      const result = await userCenterService.bindPhone(phone, verifyCode);
+      await loadProfile();
+      return result;
+    },
+    [loadProfile]
+  );
+
+  const handleUnbindPhone = useCallback(
+    async () => {
+      const result = await userCenterService.unbindPhone();
+      await loadProfile();
+      return result;
+    },
+    [loadProfile]
+  );
+
+  const handleBindThirdParty = useCallback(
+    async (platform: UserCenterBindPlatform, input?: UserCenterThirdPartyBindInput) => {
+      await userCenterService.bindThirdParty(platform, input);
+      await loadProfile();
+    },
+    [loadProfile]
+  );
+
+  const handleUnbindThirdParty = useCallback(
+    async (platform: UserCenterBindPlatform) => {
+      await userCenterService.unbindThirdParty(platform);
+      await loadProfile();
+    },
+    [loadProfile]
+  );
+
   return {
     profile,
     addresses,
@@ -83,6 +180,17 @@ export function useUser() {
     loadInvoices,
     saveInvoice: handleSaveInvoice,
     deleteInvoice: handleDeleteInvoice,
+    changePassword: handleChangePassword,
+    getLoginHistory: handleGetLoginHistory,
+    getGenerationHistory: handleGetGenerationHistory,
+    getUserSettings: handleGetUserSettings,
+    updateUserSettings: handleUpdateUserSettings,
+    bindEmail: handleBindEmail,
+    unbindEmail: handleUnbindEmail,
+    bindPhone: handleBindPhone,
+    unbindPhone: handleUnbindPhone,
+    bindThirdParty: handleBindThirdParty,
+    unbindThirdParty: handleUnbindThirdParty,
     setCurrentUserId,
   };
 }

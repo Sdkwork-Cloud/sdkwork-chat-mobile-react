@@ -37,7 +37,7 @@ export class ShareBridge {
   /**
    * Share user profile
    */
-  static async shareProfile(userName: string, userId: string, avatarUrl?: string): Promise<ShareResult> {
+  static async shareProfile(userName: string, userId: string, _avatarUrl?: string): Promise<ShareResult> {
     return this.share({
       title: `${userName}的个人名片`,
       text: `添加 ${userName} 为好友，ID: ${userId}`,

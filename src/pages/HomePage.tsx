@@ -7,6 +7,7 @@ import { PullToRefresh } from '../components/PullToRefresh/PullToRefresh';
 import { AppEvents, EVENTS } from '../core/events';
 import { useTranslation } from '../core/i18n/I18nContext';
 import { navigate } from '../router';
+import { ROUTE_PATHS } from '../router/paths';
 import { openOmniChat } from '../navigation/openChatNavigation';
 import { useChatStoreState } from '../stores/chatStore';
 import './HomePage.css';
@@ -83,9 +84,9 @@ const PlusMenu: React.FC<{ visible: boolean; onClose: () => void }> = ({ visible
 
   const menuItems = [
     { icon: 'spark' as HomeIconName, label: '\u5feb\u901f AI \u5bf9\u8bdd', action: () => openOmniChat() },
-    { icon: 'group' as HomeIconName, label: t('menu_group_chat'), action: () => navigate('/contacts', { mode: 'select', action: 'create_group' }) },
-    { icon: 'addUser' as HomeIconName, label: t('menu_add_friend'), action: () => navigate('/contacts') },
-    { icon: 'scan' as HomeIconName, label: t('menu_scan'), action: () => navigate('/scan') },
+    { icon: 'group' as HomeIconName, label: t('menu_group_chat'), action: () => navigate(ROUTE_PATHS.contacts, { mode: 'select', action: 'create_group' }) },
+    { icon: 'addUser' as HomeIconName, label: t('menu_add_friend'), action: () => navigate(ROUTE_PATHS.contacts) },
+    { icon: 'scan' as HomeIconName, label: t('menu_scan'), action: () => navigate(ROUTE_PATHS.scan) },
   ];
 
   return (
@@ -189,7 +190,7 @@ const HomePage: React.FC = () => {
           leftElement={(
             <div className="home-navbar-left">
               <Badge content={notifyCount} offset={[0, 4]}>
-                <button type="button" className="home-icon-btn" onClick={() => navigate('/notifications')} aria-label="notifications">
+                <button type="button" className="home-icon-btn" onClick={() => navigate(ROUTE_PATHS.notifications)} aria-label="notifications">
                   <HomeIcon name="bell" />
                 </button>
               </Badge>
@@ -197,7 +198,7 @@ const HomePage: React.FC = () => {
           )}
           rightElement={(
             <div className="home-navbar-actions">
-              <button type="button" className="home-icon-btn" onClick={() => navigate('/search')} aria-label="search">
+              <button type="button" className="home-icon-btn" onClick={() => navigate(ROUTE_PATHS.search)} aria-label="search">
                 <HomeIcon name="search" />
               </button>
               <button type="button" className="home-icon-btn" onClick={() => setShowMenu((prev) => !prev)} aria-label="more">
@@ -208,7 +209,7 @@ const HomePage: React.FC = () => {
           )}
         />
 
-        <button type="button" className="home-search-row" onClick={() => navigate('/search')}>
+        <button type="button" className="home-search-row" onClick={() => navigate(ROUTE_PATHS.search)}>
           <HomeIcon name="search" size={15} />
           <span>{'\u641c\u7d22'}</span>
         </button>
@@ -230,7 +231,7 @@ const HomePage: React.FC = () => {
           <div className="home-session-panel">
             {sortedSessions.map((session, index) => (
               <div key={session.id}>
-                <ChatListItem session={session} onClick={() => navigate('/chat', { id: session.id })} />
+                <ChatListItem session={session} onClick={() => navigate(ROUTE_PATHS.chat, { id: session.id })} />
                 {index !== sortedSessions.length - 1 && <div className="home-list-divider" />}
               </div>
             ))}
@@ -248,7 +249,7 @@ const HomePage: React.FC = () => {
                   <button type="button" className="home-empty-primary" onClick={() => openOmniChat()}>
                     {'\u5f00\u59cb AI \u5bf9\u8bdd'}
                   </button>
-                  <button type="button" className="home-empty-secondary" onClick={() => navigate('/agents')}>
+                  <button type="button" className="home-empty-secondary" onClick={() => navigate(ROUTE_PATHS.agents)}>
                     {'\u6d4f\u89c8\u667a\u80fd\u4f53'}
                   </button>
                 </div>

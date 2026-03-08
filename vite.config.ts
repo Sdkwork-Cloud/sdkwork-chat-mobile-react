@@ -23,6 +23,8 @@ export default defineConfig(({ mode }) => {
       resolve: {
         alias: [
           { find: '@', replacement: path.resolve(__dirname, '.') },
+          { find: '@sdkwork/app-sdk', replacement: path.resolve(__dirname, '../../spring-ai-plus-app-api/sdkwork-sdk-app/sdkwork-app-sdk-typescript/src/index.ts') },
+          { find: '@sdkwork/sdk-common', replacement: path.resolve(__dirname, '../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript/src/index.ts') },
           // Sub-path exports for core package (must come before main package entry)
           { find: /^@sdkwork\/react-mobile-core\/events$/, replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-core/src/events/index.ts') },
           { find: /^@sdkwork\/react-mobile-core\/platform$/, replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-core/src/platform/index.ts') },
@@ -43,9 +45,18 @@ export default defineConfig(({ mode }) => {
           { find: '@sdkwork/react-mobile-discover', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-discover/src/index.ts') },
           { find: '@sdkwork/react-mobile-notification', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-notification/src/index.ts') },
           { find: '@sdkwork/react-mobile-wallet', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-wallet/src/index.ts') },
+          { find: '@sdkwork/react-mobile-vip', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-vip/src/index.ts') },
           { find: '@sdkwork/react-mobile-drive', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-drive/src/index.ts') },
+          { find: '@sdkwork/react-mobile-nearby', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-nearby/src/index.ts') },
+          { find: '@sdkwork/react-mobile-skills', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-skills/src/index.ts') },
+          { find: '@sdkwork/react-mobile-moments', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-moments/src/index.ts') },
           { find: '@sdkwork/react-mobile-video', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-video/src/index.ts') },
           { find: '@sdkwork/react-mobile-search', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-search/src/index.ts') },
+          { find: '@sdkwork/react-mobile-shopping', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-shopping/src/index.ts') },
+          { find: '@sdkwork/react-mobile-order-center', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-order-center/src/index.ts') },
+          { find: '@sdkwork/react-mobile-look', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-look/src/index.ts') },
+          { find: '@sdkwork/react-mobile-media', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-media/src/index.ts') },
+          { find: '@sdkwork/react-mobile-app', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-app/src/index.ts') },
           { find: '@sdkwork/react-mobile-tools', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-tools/src/index.ts') },
           { find: '@sdkwork/react-mobile-social', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-social/src/index.ts') },
           { find: '@sdkwork/react-mobile-content', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-content/src/index.ts') },
@@ -86,13 +97,22 @@ export default defineConfig(({ mode }) => {
               if (normalized.includes('/packages/sdkwork-react-mobile-social/')) return 'feature-social';
               if (normalized.includes('/packages/sdkwork-react-mobile-wallet/')) return 'feature-wallet';
               if (normalized.includes('/packages/sdkwork-react-mobile-drive/')) return 'feature-drive';
+              if (normalized.includes('/packages/sdkwork-react-mobile-nearby/')) return 'feature-nearby';
+              if (normalized.includes('/packages/sdkwork-react-mobile-skills/')) return 'feature-skills';
+              if (normalized.includes('/packages/sdkwork-react-mobile-moments/')) return 'feature-moments';
               if (normalized.includes('/packages/sdkwork-react-mobile-video/')) return 'feature-video';
               if (normalized.includes('/packages/sdkwork-react-mobile-contacts/')) return 'feature-contacts';
               if (normalized.includes('/packages/sdkwork-react-mobile-search/')) return 'feature-search';
+              if (normalized.includes('/packages/sdkwork-react-mobile-shopping/')) return 'feature-shopping';
+              if (normalized.includes('/packages/sdkwork-react-mobile-order-center/')) return 'feature-order-center';
+              if (normalized.includes('/packages/sdkwork-react-mobile-look/')) return 'feature-look';
+              if (normalized.includes('/packages/sdkwork-react-mobile-media/')) return 'feature-media';
+              if (normalized.includes('/packages/sdkwork-react-mobile-app/')) return 'feature-app';
               if (normalized.includes('/packages/sdkwork-react-mobile-auth/')) return 'feature-auth';
               if (normalized.includes('/packages/sdkwork-react-mobile-tools/')) return 'feature-tools';
               if (normalized.includes('/packages/sdkwork-react-mobile-content/')) return 'feature-content';
               if (normalized.includes('/packages/sdkwork-react-mobile-notification/')) return 'feature-notification';
+              if (normalized.includes('/packages/sdkwork-react-mobile-vip/')) return 'feature-vip';
               if (normalized.includes('/packages/sdkwork-react-mobile-communication/')) return 'feature-communication';
               if (normalized.includes('/packages/sdkwork-react-mobile-appointments/')) return 'feature-appointments';
               if (normalized.includes('/packages/sdkwork-react-mobile-commerce/')) return 'feature-commerce';

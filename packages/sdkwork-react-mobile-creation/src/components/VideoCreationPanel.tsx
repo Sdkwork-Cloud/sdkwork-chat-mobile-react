@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { ModelSelectorPopup, type ModelChannelOption } from '@sdkwork/react-mobile-commons';
 import { CreationPanelShell } from './CreationPanelShell';
 
 interface VideoCreationPayload {
@@ -17,16 +18,50 @@ interface VideoCreationPanelProps {
 
 const ratioOptions = ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9'];
 const durationOptions = [4, 5, 6, 8, 10, 12];
-const modelOptions = ['Sora Turbo', 'Runway Gen-3', 'Veo', 'Pika 1.0'];
+const modelChannels: ModelChannelOption[] = [
+  {
+    id: 'openai',
+    name: 'OpenAI',
+    icon: 'O',
+    models: [{ id: 'sora-turbo', name: 'Sora Turbo' }],
+  },
+  {
+    id: 'runway',
+    name: 'Runway',
+    icon: 'R',
+    models: [{ id: 'runway-gen-3', name: 'Runway Gen-3' }],
+  },
+  {
+    id: 'google',
+    name: 'Google',
+    icon: 'G',
+    models: [{ id: 'veo-2', name: 'Veo 2' }],
+  },
+  {
+    id: 'pika',
+    name: 'Pika',
+    icon: 'P',
+    models: [{ id: 'pika-1.0', name: 'Pika 1.0' }],
+  },
+];
 
 export const VideoCreationPanel: React.FC<VideoCreationPanelProps> = ({ visible, onClose, onSubmit }) => {
+  const defaultChannel = modelChannels[0];
+  const defaultModelId = defaultChannel.models[0]?.id || 'sora-turbo';
+
   const [prompt, setPrompt] = useState('');
   const [ratio, setRatio] = useState('16:9');
   const [duration, setDuration] = useState(5);
-  const [model, setModel] = useState(modelOptions[0]);
+  const [provider, setProvider] = useState(defaultChannel.id);
+  const [model, setModel] = useState(defaultModelId);
   const [submitting, setSubmitting] = useState(false);
+  const [showModelSelector, setShowModelSelector] = useState(false);
 
   const disabled = useMemo(() => !prompt.trim() || submitting, [prompt, submitting]);
+  const selectedModel = useMemo(
+    () => modelChannels.flatMap((channel) => channel.models).find((item) => item.id === model),
+    [model],
+  );
 
   const handleSubmit = async () => {
     if (disabled) return;
@@ -37,7 +72,7 @@ export const VideoCreationPanel: React.FC<VideoCreationPanelProps> = ({ visible,
         prompt,
         ratio,
         duration,
-        model,
+        model: selectedModel?.name || model,
       });
       onClose();
       setPrompt('');
@@ -68,7 +103,7 @@ export const VideoCreationPanel: React.FC<VideoCreationPanelProps> = ({ visible,
             background: disabled ? 'var(--bg-cell-active)' : 'var(--primary-gradient)',
           }}
         >
-          {submitting ? '正在生成...' : `生成视频 · ${duration}s`}
+          {submitting ? '正在生成...' : `生成视频 · ${duration}s · ${selectedModel?.name || model}`}
         </button>
       )}
     >
@@ -78,7 +113,7 @@ export const VideoCreationPanel: React.FC<VideoCreationPanelProps> = ({ visible,
       <textarea
         value={prompt}
         onChange={(event) => setPrompt(event.target.value)}
-        placeholder="例如：一只机器人在未来城市穿梭，镜头推进，霓虹灯流光特效..."
+        placeholder="例如：一个机器人在未来城市穿梭，镜头推进，霓虹灯流光特效..."
         style={{
           width: '100%',
           minHeight: '110px',
@@ -142,9 +177,9 @@ export const VideoCreationPanel: React.FC<VideoCreationPanelProps> = ({ visible,
 
       <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>模型引擎</span>
-        <select
-          value={model}
-          onChange={(event) => setModel(event.target.value)}
+        <button
+          type="button"
+          onClick={() => setShowModelSelector(true)}
           style={{
             border: '1px solid var(--border-color)',
             borderRadius: '10px',
@@ -152,15 +187,27 @@ export const VideoCreationPanel: React.FC<VideoCreationPanelProps> = ({ visible,
             background: 'var(--bg-body)',
             color: 'var(--text-primary)',
             padding: '0 10px',
+            textAlign: 'left',
+            cursor: 'pointer',
           }}
         >
-          {modelOptions.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
+          {selectedModel?.name || model}
+        </button>
       </label>
+
+      <ModelSelectorPopup
+        visible={showModelSelector}
+        title="选择模型"
+        channels={modelChannels}
+        initialChannelId={provider}
+        selectedModelId={model}
+        onClose={() => setShowModelSelector(false)}
+        onSelect={(channelId, modelId) => {
+          setProvider(channelId);
+          setModel(modelId);
+          setShowModelSelector(false);
+        }}
+      />
     </CreationPanelShell>
   );
 };

@@ -1,7 +1,6 @@
 
 import React from 'react';
-import { useTouchFeedback } from '../../mobile/hooks/useTouchFeedback';
-import './Cell.mobile.css';
+import { CellItem } from '@sdkwork/react-mobile-commons';
 
 export interface CellProps {
   title: React.ReactNode;
@@ -23,6 +22,9 @@ export interface CellProps {
   
   rightIcon?: React.ReactNode; // Custom right icon instead of arrow
   border?: boolean; // Force border visibility
+  dividerInsetStart?: number | string;
+  dividerInsetEnd?: number | string;
+  dividerFullWidth?: boolean;
 }
 
 export const Cell: React.FC<CellProps> = ({ 
@@ -40,57 +42,31 @@ export const Cell: React.FC<CellProps> = ({
   titleStyle,
   valueStyle,
   rightIcon,
-  border = true
+  border = true,
+  dividerInsetStart,
+  dividerInsetEnd,
+  dividerFullWidth = false,
 }) => {
-  const isClickable = clickable || isLink || !!onClick;
-  const { isActive, touchProps } = useTouchFeedback({ disable: !isClickable });
+  const resolvedOnClick = clickable
+    ? (onClick ? () => onClick(undefined as unknown as React.MouseEvent) : () => undefined)
+    : (onClick ? () => onClick(undefined as unknown as React.MouseEvent) : undefined);
 
   return (
-    <div 
-      className={`
-        cell 
-        ${isActive ? 'cell--active' : ''} 
-        ${center ? 'cell--center' : ''} 
-        ${required ? 'cell--required' : ''}
-        ${!border ? 'cell--no-border' : ''}
-        ${isClickable ? 'cell--clickable' : ''}
-        ${className}
-      `}
-      onClick={onClick}
-      {...touchProps}
+    <CellItem
+      title={<span style={titleStyle}>{required ? <>{'* '}{title}</> : title}</span>}
+      description={label}
+      value={value !== undefined ? <span style={valueStyle}>{value}</span> : undefined}
+      icon={icon}
+      isLink={Boolean(isLink && !rightIcon)}
+      onClick={resolvedOnClick}
+      rightSlot={rightIcon}
+      center={center}
+      noBorder={!border}
+      dividerInsetStart={dividerInsetStart}
+      dividerInsetEnd={dividerInsetEnd}
+      dividerFullWidth={dividerFullWidth}
+      className={className}
       style={style}
-    >
-      {/* Left Icon */}
-      {icon && (
-        <div className="cell__left-icon">
-          {icon}
-        </div>
-      )}
-      
-      {/* Title & Label */}
-      <div className="cell__title-wrap">
-        <div className="cell__title" style={titleStyle}>
-          {title}
-        </div>
-        {label && <div className="cell__label">{label}</div>}
-      </div>
-
-      {/* Value (Right Content) */}
-      {(value !== undefined || isLink || rightIcon) && (
-        <div className="cell__value" style={valueStyle}>
-          {value !== undefined && <span className="cell__value-text">{value}</span>}
-          
-          {rightIcon ? (
-             <div className="cell__right-icon">{rightIcon}</div>
-          ) : isLink ? (
-             <div className="cell__right-icon">
-               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.3 }}>
-                 <polyline points="9 18 15 12 9 6"></polyline>
-               </svg>
-             </div>
-          ) : null}
-        </div>
-      )}
-    </div>
+    />
   );
 };

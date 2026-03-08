@@ -9,6 +9,7 @@ import { getAgent } from '../config/agentRegistry';
 import { chatService } from '../services/ChatService';
 import { useChatStoreActions, useChatStoreState } from '../stores/chatStore';
 import type { Message } from '../types';
+import { resolveChatBackground } from './chatBackgroundResolver';
 import './ChatPage.css';
 
 const fileToBase64 = (file: File): Promise<string> =>
@@ -30,6 +31,7 @@ const fileToBase64 = (file: File): Promise<string> =>
 interface ChatPageProps {
   t?: (key: string) => string;
   sessionId: string;
+  globalBackground?: string;
   highlightMsgId?: string;
   onBack?: () => void;
   onDetails?: () => void;
@@ -40,6 +42,7 @@ interface ChatPageProps {
 export const ChatPage: React.FC<ChatPageProps> = ({
   t,
   sessionId,
+  globalBackground,
   highlightMsgId,
   onBack,
   onDetails,
@@ -80,12 +83,13 @@ export const ChatPage: React.FC<ChatPageProps> = ({
   const agent = session ? getAgent(session.agentId) : getAgent('omni_core');
 
   useEffect(() => {
-    if (session?.sessionConfig?.backgroundImage) {
-      setBgImage(session.sessionConfig.backgroundImage);
-      return;
-    }
-    setBgImage('');
-  }, [session]);
+    setBgImage(
+      resolveChatBackground({
+        sessionBackground: session?.sessionConfig?.backgroundImage,
+        globalBackground,
+      })
+    );
+  }, [globalBackground, session?.sessionConfig?.backgroundImage]);
 
   useEffect(() => {
     if (sessionId && session?.unreadCount && session.unreadCount > 0) {
@@ -175,7 +179,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({
   const chatConfig = useMemo(
     () => ({
       showUserAvatar: session.sessionConfig?.showAvatar ?? false,
-      showModelAvatar: true,
+      showModelAvatar: session.sessionConfig?.showAvatar ?? false,
     }),
     [session.sessionConfig?.showAvatar]
   );
@@ -188,7 +192,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({
         </button>
       ) : (
         <button type="button" className="chat-page__nav-btn" onClick={onDetails} aria-label="chat-menu">
-          <Icon name="more" size={22} />
+          <Icon name="more" size={21} strokeWidth={2.2} />
         </button>
       )}
     </div>
@@ -221,6 +225,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({
 
   return (
     <Page
+      className="chat-page-root"
       title={session.groupName || agent.name}
       showBack={Boolean(onBack)}
       onBack={onBack}

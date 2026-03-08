@@ -1,0 +1,9 @@
+@import './UserCenterPage.shared.css';
+
+.account-security-page {
+  --user-center-group-gap: 8px;
+}
+
+.account-security-page__scroll {
+  min-height: 0;
+}

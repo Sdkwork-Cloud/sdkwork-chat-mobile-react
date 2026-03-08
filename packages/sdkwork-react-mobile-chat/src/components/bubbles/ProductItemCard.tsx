@@ -114,7 +114,7 @@ export const ProductItemCard: React.FC<ProductItemCardProps> = ({
             top: 0,
             left: 0,
             zIndex: 10,
-            background: 'linear-gradient(90deg, #2979FF, #4B9FFF)',
+            background: '#2979FF',
             color: 'white',
             fontSize: '10px',
             fontWeight: 700,

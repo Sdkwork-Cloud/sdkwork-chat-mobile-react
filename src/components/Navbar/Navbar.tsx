@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { navigateBack } from '../../router';
+import { ROUTE_PATHS, type RoutePathInput } from '../../router/paths';
 import { Sound } from '../../utils/sound';
 import { Icon } from '../Icon/Icon';
 import './Navbar.mobile.css';
@@ -11,7 +12,7 @@ export interface NavbarProps {
   leftElement?: React.ReactNode;
   centerElement?: React.ReactNode;
   onBack?: () => void;
-  backFallback?: string;
+  backFallback?: RoutePathInput;
   rightElement?: React.ReactNode;
   showBack?: boolean;
   variant?: 'default' | 'transparent' | 'elevated';
@@ -49,7 +50,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   leftElement,
   centerElement,
   onBack,
-  backFallback = '/',
+  backFallback = ROUTE_PATHS.root,
   rightElement,
   showBack = true,
   variant = 'default',

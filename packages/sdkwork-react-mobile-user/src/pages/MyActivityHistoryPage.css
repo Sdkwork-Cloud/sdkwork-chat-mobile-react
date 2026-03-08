@@ -1,0 +1,59 @@
+@import './UserCenterPage.shared.css';
+
+.my-activity-history-page {
+  --user-center-group-gap: 8px;
+  --user-center-scroll-bottom: 64px;
+}
+
+.my-activity-history-page__tabs {
+  display: flex;
+  background: var(--bg-card);
+  border-bottom: 0.5px solid var(--border-color);
+}
+
+.my-activity-history-page__tab-btn {
+  flex: 1;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.my-activity-history-page__tab-btn:active {
+  background: var(--bg-cell-active);
+}
+
+.my-activity-history-page__tab-btn.is-active {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.my-activity-history-page__tab-btn.is-active::after {
+  content: '';
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: 0;
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.my-activity-history-page__time {
+  color: var(--text-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.my-activity-history-page__actions {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg-card);
+  border-top: 0.5px solid var(--border-color);
+  padding: 10px 12px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+}

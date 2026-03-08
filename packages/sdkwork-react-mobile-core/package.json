@@ -75,6 +75,9 @@
     "@capacitor/network": "catalog:",
     "@capacitor/preferences": "catalog:"
   },
+  "dependencies": {
+    "@sdkwork/app-sdk": "workspace:*"
+  },
   "devDependencies": {
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",

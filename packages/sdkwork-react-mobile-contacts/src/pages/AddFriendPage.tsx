@@ -1,13 +1,20 @@
 import React from 'react';
-import { Icon, Page } from '@sdkwork/react-mobile-commons';
+import { Icon, Page, Toast } from '@sdkwork/react-mobile-commons';
 import { contactsService } from '../services/ContactsService';
 import './AddFriendPage.css';
+
+interface ScannedUserPayload {
+  id?: string;
+  name?: string;
+}
 
 interface AddFriendPageProps {
   t?: (key: string) => string;
   onBack?: () => void;
   onSearchClick?: () => void;
   onNavigate?: (path: string, params?: Record<string, string>) => void;
+  scannedUser?: ScannedUserPayload;
+  onQuickAddScannedUser?: (payload: ScannedUserPayload) => void;
 }
 
 interface FriendEntryItem {
@@ -35,6 +42,8 @@ export const AddFriendPage: React.FC<AddFriendPageProps> = ({
   onBack,
   onSearchClick,
   onNavigate,
+  scannedUser,
+  onQuickAddScannedUser,
 }) => {
   const [pendingRequestCount, setPendingRequestCount] = React.useState(0);
   const tr = React.useCallback(
@@ -78,6 +87,15 @@ export const AddFriendPage: React.FC<AddFriendPageProps> = ({
     }
     navigate('/search', { from: 'add-friend' });
   }, [navigate, onSearchClick]);
+
+  const handleQuickAddScannedUser = React.useCallback(() => {
+    if (!scannedUser?.id && !scannedUser?.name) return;
+    if (onQuickAddScannedUser) {
+      onQuickAddScannedUser(scannedUser);
+      return;
+    }
+    Toast.success(tr('add_friend.scan_add_success', 'Friend request sent'));
+  }, [onQuickAddScannedUser, scannedUser, tr]);
 
   const primaryEntries = React.useMemo<FriendEntryItem[]>(
     () => [
@@ -189,6 +207,21 @@ export const AddFriendPage: React.FC<AddFriendPageProps> = ({
           <Icon name="search" size={16} color="var(--text-placeholder)" />
           <span>{tr('add_friend.search_placeholder', 'Search by ID, phone or nickname')}</span>
         </button>
+
+        {scannedUser?.id || scannedUser?.name ? (
+          <div className="add-friend-page__scan-result">
+            <div className="add-friend-page__scan-main">
+              <div className="add-friend-page__scan-title">{tr('add_friend.scan_user_title', 'Recognized User')}</div>
+              <div className="add-friend-page__scan-desc">
+                {scannedUser.name || scannedUser.id}
+                {scannedUser.id ? ` (${scannedUser.id})` : ''}
+              </div>
+            </div>
+            <button type="button" className="add-friend-page__scan-btn" onClick={handleQuickAddScannedUser}>
+              {tr('add_friend.scan_add', 'Add')}
+            </button>
+          </div>
+        ) : null}
 
         <div className="add-friend-page__hero">
           <div className="add-friend-page__hero-icon">

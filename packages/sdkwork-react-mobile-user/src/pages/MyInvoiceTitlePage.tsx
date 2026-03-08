@@ -1,7 +1,8 @@
 import React from 'react';
-import { Button, Navbar, Toast } from '@sdkwork/react-mobile-commons';
+import { Button, CellGroup, CellItem, Navbar, Switch, Toast } from '@sdkwork/react-mobile-commons';
 import { useUser } from '../hooks/useUser';
 import type { InvoiceTitle } from '../types';
+import './MyInvoiceTitlePage.css';
 
 interface MyInvoiceTitlePageProps {
   t?: (key: string) => string;
@@ -15,17 +16,6 @@ interface InvoiceModalProps {
   onSubmit: (value: Partial<InvoiceTitle>) => Promise<void>;
   onDelete?: () => Promise<void>;
 }
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  height: '40px',
-  borderRadius: '10px',
-  border: '0.5px solid var(--border-color)',
-  background: 'var(--bg-body)',
-  color: 'var(--text-primary)',
-  padding: '0 10px',
-  outline: 'none',
-};
 
 const InvoiceModal: React.FC<InvoiceModalProps> = ({ value, tr, onCancel, onSubmit, onDelete }) => {
   const [form, setForm] = React.useState<Partial<InvoiceTitle>>(value);
@@ -55,89 +45,68 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ value, tr, onCancel, onSubm
   };
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.46)',
-        zIndex: 2200,
-        display: 'flex',
-        alignItems: 'flex-end',
-      }}
-    >
-      <div
-        style={{
-          width: '100%',
-          borderTopLeftRadius: '16px',
-          borderTopRightRadius: '16px',
-          background: 'var(--bg-card)',
-          padding: '14px',
-          paddingBottom: 'calc(14px + env(safe-area-inset-bottom))',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <button type="button" onClick={onCancel} style={{ border: 0, background: 'transparent', color: 'var(--text-secondary)' }}>
+    <div className="my-invoice-page__sheet user-center-sheet">
+      <div className="my-invoice-page__sheet-mask user-center-sheet__mask" onClick={onCancel} />
+      <div className="my-invoice-page__sheet-content user-center-sheet__content">
+        <div className="my-invoice-page__sheet-head user-center-sheet__head">
+          <button
+            type="button"
+            className="user-center-sheet__action user-center-sheet__action--start"
+            onClick={onCancel}
+          >
             {tr('common.cancel', 'Cancel')}
           </button>
-          <div style={{ color: 'var(--text-primary)', fontWeight: 700 }}>
+          <span className="user-center-sheet__title">
             {value.id ? tr('invoice.edit', 'Edit Title') : tr('invoice.add', 'Add Title')}
-          </div>
-          <button type="button" onClick={() => void submit()} style={{ border: 0, background: 'transparent', color: 'var(--primary-color)', fontWeight: 600 }}>
+          </span>
+          <button
+            type="button"
+            className="user-center-sheet__action user-center-sheet__action--primary user-center-sheet__action--end"
+            onClick={() => void submit()}
+          >
             {tr('common.save', 'Save')}
           </button>
         </div>
 
-        <div style={{ display: 'grid', gap: '10px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0,1fr))', gap: '8px' }}>
+        <div className="my-invoice-page__sheet-form">
+          <div className="my-invoice-page__type-switch">
             <button
               type="button"
+              className={`my-invoice-page__type-btn ${form.type === 'company' ? 'is-active' : ''}`}
               onClick={() => setForm((prev) => ({ ...prev, type: 'company' }))}
-              style={{
-                height: '36px',
-                borderRadius: '10px',
-                border: form.type === 'company' ? '1px solid var(--primary-color)' : '0.5px solid var(--border-color)',
-                background: form.type === 'company' ? 'rgba(41,121,255,0.1)' : 'var(--bg-body)',
-                color: form.type === 'company' ? 'var(--primary-color)' : 'var(--text-secondary)',
-              }}
             >
               {tr('invoice.type_company', 'Company')}
             </button>
             <button
               type="button"
+              className={`my-invoice-page__type-btn ${form.type === 'personal' ? 'is-active' : ''}`}
               onClick={() => setForm((prev) => ({ ...prev, type: 'personal', taxNo: undefined }))}
-              style={{
-                height: '36px',
-                borderRadius: '10px',
-                border: form.type === 'personal' ? '1px solid var(--primary-color)' : '0.5px solid var(--border-color)',
-                background: form.type === 'personal' ? 'rgba(41,121,255,0.1)' : 'var(--bg-body)',
-                color: form.type === 'personal' ? 'var(--primary-color)' : 'var(--text-secondary)',
-              }}
             >
               {tr('invoice.type_personal', 'Personal')}
             </button>
           </div>
+
           <input
             value={form.title || ''}
             onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
             placeholder={tr('invoice.name_placeholder', 'Invoice title')}
-            style={inputStyle}
+            className="my-invoice-page__input user-center-sheet__input"
           />
+
           {form.type === 'company' ? (
             <input
               value={form.taxNo || ''}
               onChange={(event) => setForm((prev) => ({ ...prev, taxNo: event.target.value }))}
               placeholder={tr('invoice.tax_placeholder', 'Tax number')}
-              style={inputStyle}
+              className="my-invoice-page__input user-center-sheet__input"
             />
           ) : null}
-          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-            <input
-              type="checkbox"
-              checked={!!form.isDefault}
-              onChange={(event) => setForm((prev) => ({ ...prev, isDefault: event.target.checked }))}
-            />
-            {tr('invoice.default', 'Set as default title')}
-          </label>
+
+          <div className="my-invoice-page__default-row">
+            <span>{tr('invoice.default', 'Set as default title')}</span>
+            <Switch checked={!!form.isDefault} onChange={(checked) => setForm((prev) => ({ ...prev, isDefault: checked }))} />
+          </div>
+
           <Button block loading={loading} onClick={() => void submit()}>
             {tr('common.save', 'Save')}
           </Button>
@@ -152,9 +121,19 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ value, tr, onCancel, onSubm
   );
 };
 
+const formatInvoiceDescription = (item: InvoiceTitle, tr: (key: string, fallback: string) => string): string => {
+  const typeLabel = item.type === 'company'
+    ? tr('invoice.type_company', 'Company')
+    : tr('invoice.type_personal', 'Personal');
+  return item.type === 'company' && item.taxNo
+    ? `${typeLabel} | ${item.taxNo}`
+    : typeLabel;
+};
+
 export const MyInvoiceTitlePage: React.FC<MyInvoiceTitlePageProps> = ({ t, onBack }) => {
   const { invoices, isLoading, loadInvoices, saveInvoice, deleteInvoice } = useUser();
   const [editing, setEditing] = React.useState<Partial<InvoiceTitle> | null>(null);
+
   const tr = React.useCallback(
     (key: string, fallback: string) => {
       const value = t?.(key);
@@ -201,71 +180,49 @@ export const MyInvoiceTitlePage: React.FC<MyInvoiceTitlePageProps> = ({ t, onBac
   };
 
   return (
-    <div style={{ minHeight: '100%', background: 'var(--bg-body)', display: 'flex', flexDirection: 'column' }}>
+    <div className="my-invoice-page user-center-page">
       <Navbar title={tr('invoice.title', 'Invoice Titles')} onBack={onBack} />
 
-      <div style={{ flex: 1, padding: '12px', overflowY: 'auto', paddingBottom: '100px' }}>
+      <div className="my-invoice-page__scroll user-center-page__scroll">
         {isLoading ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-            {tr('common.loading', 'Loading...')}
-          </div>
+          <CellGroup>
+            <CellItem title={tr('common.loading', 'Loading...')} noBorder />
+          </CellGroup>
         ) : null}
 
         {!isLoading && invoices.length === 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '56%', opacity: 0.52 }}>
-            <div style={{ fontSize: '46px', marginBottom: '14px' }}>🧾</div>
-            <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{tr('invoice.empty', 'No invoice titles')}</div>
-          </div>
+          <CellGroup>
+            <CellItem
+              title={tr('invoice.empty', 'No invoice titles')}
+              description={tr('invoice.empty_desc', 'Tap to create your first invoice title')}
+              value={tr('invoice.add', 'Add')}
+              isLink
+              onClick={openCreate}
+              noBorder
+            />
+          </CellGroup>
         ) : null}
 
-        {!isLoading &&
-          invoices.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => openEdit(item)}
-              style={{
-                width: '100%',
-                background: 'var(--bg-card)',
-                borderRadius: '12px',
-                padding: '14px',
-                marginBottom: '10px',
-                border: '0.5px solid var(--border-color)',
-                textAlign: 'left',
-                cursor: 'pointer',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ color: 'var(--text-primary)', fontSize: '16px', fontWeight: 600 }}>{item.title}</span>
-                  {item.isDefault ? (
-                    <span style={{ fontSize: '10px', color: '#fa5151', background: 'rgba(250,81,81,0.1)', borderRadius: '4px', padding: '2px 6px' }}>
-                      {tr('invoice.default_tag', 'Default')}
-                    </span>
-                  ) : null}
-                </div>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{tr('common.edit', 'Edit')}</span>
-              </div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '13px', display: 'inline-flex', gap: '10px' }}>
-                <span>{item.type === 'company' ? tr('invoice.type_company', 'Company') : tr('invoice.type_personal', 'Personal')}</span>
-                {item.type === 'company' && item.taxNo ? <span>{item.taxNo}</span> : null}
-              </div>
-            </button>
-          ))}
+        {!isLoading && invoices.length > 0 ? (
+          <CellGroup>
+            {invoices.map((item, index) => (
+              <CellItem
+                key={item.id}
+                title={item.title}
+                description={formatInvoiceDescription(item, tr)}
+                value={item.isDefault ? (
+                  <span className="my-invoice-page__default-tag">{tr('invoice.default_tag', 'Default')}</span>
+                ) : undefined}
+                isLink
+                onClick={() => openEdit(item)}
+                noBorder={index === invoices.length - 1}
+              />
+            ))}
+          </CellGroup>
+        ) : null}
       </div>
 
-      <div
-        style={{
-          position: 'fixed',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'var(--bg-card)',
-          borderTop: '0.5px solid var(--border-color)',
-          padding: '12px',
-          paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
-        }}
-      >
+      <div className="my-invoice-page__actions">
         <Button block onClick={openCreate}>
           + {tr('invoice.add', 'Add Title')}
         </Button>

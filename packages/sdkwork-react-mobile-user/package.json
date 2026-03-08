@@ -13,6 +13,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "@sdkwork/react-mobile-core": "workspace:*",
+    "@sdkwork/react-mobile-commons": "workspace:*",
     "@sdkwork/react-mobile-chat": "workspace:*",
     "@sdkwork/react-mobile-creation": "workspace:*",
     "zustand": "catalog:",
@@ -21,6 +22,7 @@
     "lucide-react": "catalog:"
   },
   "devDependencies": {
+    "@sdkwork/react-mobile-commons": "workspace:*",
     "@types/react": "catalog:",
     "typescript": "catalog:",
     "tsup": "catalog:"

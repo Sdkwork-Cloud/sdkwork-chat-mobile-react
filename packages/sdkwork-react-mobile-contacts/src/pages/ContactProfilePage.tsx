@@ -68,7 +68,7 @@ export const ContactProfilePage: React.FC<ContactProfilePageProps> = ({
   };
 
   const handleVideoCall = () => {
-    onNavigate?.('/video-call', { id: contactId });
+    onNavigate?.('/communication', { id: contactId });
   };
 
   const handleMoreOptions = async () => {

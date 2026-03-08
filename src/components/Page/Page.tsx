@@ -1,6 +1,7 @@
 
 import React, { useRef } from 'react';
 import { Navbar, NavbarProps } from '../Navbar/Navbar';
+import type { RoutePathInput } from '../../router/paths';
 import { useScrollRestoration } from '../../hooks/useScrollRestoration';
 import { PullToRefresh } from '../PullToRefresh/PullToRefresh';
 import { StateView, ViewStatus } from '../StateView/StateView';
@@ -13,7 +14,7 @@ interface PageProps {
     onBack?: () => void;
     rightElement?: React.ReactNode;
     navbarVariant?: NavbarProps['variant']; 
-    backFallback?: string;
+    backFallback?: RoutePathInput;
     noNavbar?: boolean;
     noPadding?: boolean; 
     background?: string;

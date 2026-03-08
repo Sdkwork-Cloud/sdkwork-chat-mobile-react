@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useQueryParams, navigate, navigateBack } from '../router';
+import { ROUTE_PATHS } from '../router/paths';
 import { Navbar } from '../components/Navbar/Navbar';
 import { Cell, CellGroup } from '../components/Cell';
 import { settingsService } from '@sdkwork/react-mobile-settings';
@@ -55,9 +56,9 @@ const MainSettingsView: React.FC = () => {
   return (
     <div style={{ padding: '0 0 20px' }}>
       <CellGroup title="外观">
-        <Cell title="深色模式" value={config?.theme || theme} onClick={() => navigate('/theme')} />
-        <Cell title="字体大小" value={`${fontSize}px`} onClick={() => navigate('/general?tab=font-size')} />
-        <Cell title="聊天背景" onClick={() => navigate('/chat-background')} />
+        <Cell title="深色模式" value={config?.theme || theme} onClick={() => navigate(ROUTE_PATHS.theme)} />
+        <Cell title="字体大小" value={`${fontSize}px`} onClick={() => navigate(`${ROUTE_PATHS.general}?tab=font-size`)} />
+        <Cell title="聊天背景" onClick={() => navigate(ROUTE_PATHS.chatBackground)} />
       </CellGroup>
 
       <CellGroup title="功能">
@@ -97,7 +98,7 @@ const GeneralPage: React.FC = () => {
 
   return (
     <div>
-      <Navbar title="通用设置" onBack={() => navigateBack('/settings')} />
+      <Navbar title="通用设置" onBack={() => navigateBack(ROUTE_PATHS.settings)} />
       {subPage === 'font-size' ? <FontSizeSettingsView /> : <MainSettingsView />}
     </div>
   );

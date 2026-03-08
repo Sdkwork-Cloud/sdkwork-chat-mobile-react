@@ -69,7 +69,7 @@ export const Page: React.FC<PageProps> = ({
           overflowX: 'hidden',
           WebkitOverflowScrolling: 'touch',
           padding: noPadding ? 0 : '16px',
-          paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
+          paddingBottom: noPadding ? 0 : 'calc(16px + env(safe-area-inset-bottom))',
         }}
       >
         {children}

@@ -213,10 +213,14 @@ export const CreationPage: React.FC<CreationPageProps> = ({ onSearchClick, onDet
             type: 'music',
             title: payload.title,
             prompt: payload.prompt,
-            tags: [payload.style, payload.instrumental ? 'instrumental' : 'vocal'],
+            tags: [payload.style, payload.instrumental ? 'instrumental' : 'vocal', payload.model],
             params: {
               genre: payload.style,
               mood: payload.instrumental ? 'instrumental' : 'vocal',
+              model: payload.model,
+              customMode: payload.mode === 'custom',
+              lyrics: payload.lyrics,
+              stylePrompt: payload.stylePrompt,
             },
           });
         }}

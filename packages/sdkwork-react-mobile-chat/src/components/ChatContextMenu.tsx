@@ -154,7 +154,7 @@ export const ChatContextMenu: React.FC<ChatContextMenuProps> = ({
         style={{
           position: 'fixed',
           inset: 0,
-          zIndex: 1000,
+          zIndex: 'var(--z-popup, 1400)',
         }}
       />
       <div
@@ -167,7 +167,7 @@ export const ChatContextMenu: React.FC<ChatContextMenuProps> = ({
           boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
           minWidth: '160px',
           maxWidth: '200px',
-          zIndex: 1001,
+          zIndex: 'calc(var(--z-popup, 1400) + 1)',
           transformOrigin: position.transformOrigin,
           animation: 'menuPop 0.15s ease-out',
           overflow: 'hidden',

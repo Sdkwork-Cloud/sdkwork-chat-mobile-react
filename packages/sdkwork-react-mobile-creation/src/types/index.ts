@@ -2,7 +2,7 @@
 // Creation Types
 // ============================================
 
-export type CreationType = 'image' | 'video' | 'music' | 'text';
+export type CreationType = 'image' | 'video' | 'music' | 'text' | 'short_drama' | 'collection';
 export type CreationStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
 
 export interface Creation {
@@ -65,6 +65,9 @@ export interface CreationParams {
   mood?: string;
   tempo?: number;
   instruments?: string[];
+  customMode?: boolean;
+  lyrics?: string;
+  stylePrompt?: string;
   
   // Common params
   seed?: number;

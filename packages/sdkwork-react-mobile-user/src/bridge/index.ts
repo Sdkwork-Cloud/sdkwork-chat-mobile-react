@@ -35,9 +35,9 @@ export function isNative(): boolean {
  * Get current platform
  */
 export function getPlatform(): 'ios' | 'android' | 'web' {
-  const platform = Capacitor.getPlatform();
-  if (platform === 'ios') return 'ios';
-  if (platform === 'android') return 'android';
+  const runtimePlatform = Capacitor.getPlatform();
+  if (runtimePlatform === 'ios') return 'ios';
+  if (runtimePlatform === 'android') return 'android';
   return 'web';
 }
 
@@ -49,8 +49,6 @@ export function isFeatureAvailable(feature: 'camera' | 'filesystem' | 'share' | 
     // Web fallback - most features work on web
     return true;
   }
-  
-  const platform = getPlatform();
   
   switch (feature) {
     case 'camera':

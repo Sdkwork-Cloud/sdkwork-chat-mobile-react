@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Switch } from '@sdkwork/react-mobile-commons';
+import { ModelSelectorPopup, Switch, type ModelChannelOption } from '@sdkwork/react-mobile-commons';
 import { CreationPanelShell } from './CreationPanelShell';
 
 interface ImageCreationPayload {
@@ -19,17 +19,51 @@ interface ImageCreationPanelProps {
 
 const styleOptions = ['通用', '摄影', '动漫', '赛博', '油画', '像素', '3D'];
 const ratioOptions = ['1:1', '16:9', '9:16', '4:3', '3:4'];
-const modelOptions = ['Midjourney V6', 'DALL·E 3', 'Imagen 3', 'SDXL Turbo'];
+const modelChannels: ModelChannelOption[] = [
+  {
+    id: 'midjourney',
+    name: 'Midjourney',
+    icon: 'M',
+    models: [{ id: 'midjourney-v6', name: 'Midjourney V6' }],
+  },
+  {
+    id: 'openai',
+    name: 'OpenAI',
+    icon: 'O',
+    models: [{ id: 'dall-e-3', name: 'DALL-E 3' }],
+  },
+  {
+    id: 'google',
+    name: 'Google',
+    icon: 'G',
+    models: [{ id: 'imagen-3', name: 'Imagen 3' }],
+  },
+  {
+    id: 'stability',
+    name: 'Stability',
+    icon: 'S',
+    models: [{ id: 'sdxl-turbo', name: 'SDXL Turbo' }],
+  },
+];
 
 export const ImageCreationPanel: React.FC<ImageCreationPanelProps> = ({ visible, onClose, onSubmit }) => {
+  const defaultChannel = modelChannels[0];
+  const defaultModelId = defaultChannel.models[0]?.id || 'midjourney-v6';
+
   const [prompt, setPrompt] = useState('');
   const [style, setStyle] = useState(styleOptions[0]);
   const [ratio, setRatio] = useState(ratioOptions[0]);
-  const [model, setModel] = useState(modelOptions[0]);
+  const [provider, setProvider] = useState(defaultChannel.id);
+  const [model, setModel] = useState(defaultModelId);
   const [hd, setHd] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [showModelSelector, setShowModelSelector] = useState(false);
 
   const disabled = useMemo(() => !prompt.trim() || submitting, [prompt, submitting]);
+  const selectedModel = useMemo(
+    () => modelChannels.flatMap((channel) => channel.models).find((item) => item.id === model),
+    [model],
+  );
 
   const handleSubmit = async () => {
     if (disabled) return;
@@ -40,7 +74,7 @@ export const ImageCreationPanel: React.FC<ImageCreationPanelProps> = ({ visible,
         prompt,
         style,
         aspectRatio: ratio,
-        model,
+        model: selectedModel?.name || model,
         hd,
       });
       onClose();
@@ -72,7 +106,7 @@ export const ImageCreationPanel: React.FC<ImageCreationPanelProps> = ({ visible,
             background: disabled ? 'var(--bg-cell-active)' : 'var(--primary-gradient)',
           }}
         >
-          {submitting ? '正在生成...' : `生成图片 · ${model}`}
+          {submitting ? '正在生成...' : `生成图片 · ${selectedModel?.name || model}`}
         </button>
       )}
     >
@@ -150,9 +184,9 @@ export const ImageCreationPanel: React.FC<ImageCreationPanelProps> = ({ visible,
 
         <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>模型</span>
-          <select
-            value={model}
-            onChange={(event) => setModel(event.target.value)}
+          <button
+            type="button"
+            onClick={() => setShowModelSelector(true)}
             style={{
               border: '1px solid var(--border-color)',
               borderRadius: '10px',
@@ -160,14 +194,12 @@ export const ImageCreationPanel: React.FC<ImageCreationPanelProps> = ({ visible,
               background: 'var(--bg-body)',
               color: 'var(--text-primary)',
               padding: '0 10px',
+              textAlign: 'left',
+              cursor: 'pointer',
             }}
           >
-            {modelOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+            {selectedModel?.name || model}
+          </button>
         </label>
       </div>
 
@@ -185,6 +217,20 @@ export const ImageCreationPanel: React.FC<ImageCreationPanelProps> = ({ visible,
         <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>高清增强 (Hires Fix)</span>
         <Switch checked={hd} onChange={setHd} />
       </div>
+
+      <ModelSelectorPopup
+        visible={showModelSelector}
+        title="选择模型"
+        channels={modelChannels}
+        initialChannelId={provider}
+        selectedModelId={model}
+        onClose={() => setShowModelSelector(false)}
+        onSelect={(channelId, modelId) => {
+          setProvider(channelId);
+          setModel(modelId);
+          setShowModelSelector(false);
+        }}
+      />
     </CreationPanelShell>
   );
 };

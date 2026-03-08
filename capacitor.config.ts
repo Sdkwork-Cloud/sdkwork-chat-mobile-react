@@ -1,43 +1,36 @@
 
-import { CapacitorConfig } from '@capacitor/cli';
+import type { CapacitorConfig } from '@capacitor/cli';
+
+const capServerUrl = process.env.CAP_SERVER_URL?.trim();
+const useNativeDevServer = Boolean(capServerUrl);
 
 const config: CapacitorConfig = {
   appId: 'com.openchat.ai',
   appName: 'OpenChat',
   webDir: 'dist',
-  
-  // Development Server
-  server: {
-    url: process.env.NODE_ENV === 'development' 
-      ? 'http://localhost:8080' 
-      : undefined,
-    cleartext: process.env.NODE_ENV === 'development',
-  },
-  
-  // iOS Configuration
+  bundledWebRuntime: false,
+  server: useNativeDevServer
+    ? {
+        url: capServerUrl,
+        cleartext: capServerUrl?.startsWith('http://') ?? false,
+      }
+    : undefined,
   ios: {
     contentInset: 'always',
-    allowsLinkPreview: false,
     scrollEnabled: true,
-    backgroundColor: '#ffffff',
   },
-  
-  // Android Configuration
   android: {
     allowMixedContent: false,
     captureInput: true,
-    webContentsDebuggingEnabled: process.env.NODE_ENV === 'development',
-    backgroundColor: '#ffffff',
+    webContentsDebuggingEnabled: useNativeDevServer,
   },
-  
-  // Plugins
   plugins: {
     StatusBar: {
       style: 'DARK',
       backgroundColor: '#ffffff',
     },
     SplashScreen: {
-      launchShowDuration: 2000,
+      launchShowDuration: 1200,
       launchAutoHide: true,
       backgroundColor: '#ffffff',
       androidSplashResourceName: 'splash',

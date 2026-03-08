@@ -2,8 +2,16 @@
 export * from './types';
 
 // Services
-export { authService, createAuthService } from './services/AuthService';
-export { authSdkService, createAuthSdkService } from './services/AuthSdkService';
+export { appAuthService } from './services/appAuthService';
+export {
+  useAppSdkClient,
+  getAppSdkClient,
+  initAppSdkClient,
+  resetAppSdkClient,
+  createAppSdkClientConfig,
+  createAppSdkRuntimeConfig,
+  applyAppSdkSessionTokens,
+} from './services/useAppSdkClient';
 
 // Stores
 export { useAuthStore } from './stores/authStore';

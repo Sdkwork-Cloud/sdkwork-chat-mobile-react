@@ -1,7 +1,8 @@
 import React from 'react';
-import { ActionSheet, Button, Icon, Navbar, Toast } from '@sdkwork/react-mobile-commons';
+import { ActionSheet, Button, CellGroup, CellItem, Icon, Navbar, Switch, Toast } from '@sdkwork/react-mobile-commons';
 import { useUser } from '../hooks/useUser';
 import type { Address } from '../types';
+import './MyAddressPage.css';
 
 interface MyAddressPageProps {
   t?: (key: string) => string;
@@ -16,6 +17,11 @@ interface AddressFormModalProps {
   onSubmit: (value: Partial<Address>) => Promise<void>;
 }
 
+const formatAddressLine = (address: Partial<Address>): string => {
+  const district = [address.province, address.city, address.district].filter(Boolean).join(' ');
+  return `${district} ${address.detail || ''}`.trim();
+};
+
 const AddressFormModal: React.FC<AddressFormModalProps> = ({ value, title, tr, onCancel, onSubmit }) => {
   const [form, setForm] = React.useState<Partial<Address>>(value);
   const [submitting, setSubmitting] = React.useState(false);
@@ -25,101 +31,99 @@ const AddressFormModal: React.FC<AddressFormModalProps> = ({ value, title, tr, o
   }, [value]);
 
   const submit = async () => {
-    if (!form.name || !form.phone || !form.detail) {
+    if (!form.name?.trim() || !form.phone?.trim() || !form.detail?.trim()) {
       Toast.info(tr('address.errors.required', 'Please complete address information'));
       return;
     }
     setSubmitting(true);
-    await onSubmit(form);
+    await onSubmit({
+      ...form,
+      name: form.name.trim(),
+      phone: form.phone.trim(),
+      detail: form.detail.trim(),
+      province: form.province?.trim(),
+      city: form.city?.trim(),
+      district: form.district?.trim(),
+      tag: form.tag?.trim(),
+    });
     setSubmitting(false);
   };
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0, 0, 0, 0.45)',
-        zIndex: 2000,
-        display: 'flex',
-        alignItems: 'flex-end',
-      }}
-    >
-      <div
-        style={{
-          width: '100%',
-          background: 'var(--bg-card)',
-          borderTopLeftRadius: '16px',
-          borderTopRightRadius: '16px',
-          padding: '16px',
-          paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <div style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{title}</div>
+    <div className="my-address-page__sheet user-center-sheet">
+      <div className="my-address-page__sheet-mask user-center-sheet__mask" onClick={onCancel} />
+      <div className="my-address-page__sheet-content user-center-sheet__content">
+        <div className="my-address-page__sheet-head user-center-sheet__head">
           <button
             type="button"
+            className="user-center-sheet__action user-center-sheet__action--start"
             onClick={onCancel}
-            style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}
           >
             {tr('address.close', 'Close')}
           </button>
+          <span className="user-center-sheet__title">{title}</span>
+          <button
+            type="button"
+            className="user-center-sheet__action user-center-sheet__action--primary user-center-sheet__action--end"
+            onClick={() => void submit()}
+          >
+            {tr('common.save', 'Save')}
+          </button>
         </div>
-        <div style={{ display: 'grid', gap: '10px' }}>
+
+        <div className="my-address-page__sheet-form">
           <input
             value={form.name || ''}
-            onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+            onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
             placeholder={tr('address.contact', 'Contact')}
-            style={inputStyle}
+            className="my-address-page__input user-center-sheet__input"
           />
           <input
             value={form.phone || ''}
-            onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
+            onChange={(event) => setForm((prev) => ({ ...prev, phone: event.target.value }))}
             placeholder={tr('address.phone', 'Phone')}
-            style={inputStyle}
+            className="my-address-page__input user-center-sheet__input"
           />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '8px' }}>
+          <div className="my-address-page__region-grid">
             <input
               value={form.province || ''}
-              onChange={(e) => setForm((prev) => ({ ...prev, province: e.target.value }))}
+              onChange={(event) => setForm((prev) => ({ ...prev, province: event.target.value }))}
               placeholder={tr('address.province', 'Province')}
-              style={inputStyle}
+              className="my-address-page__input user-center-sheet__input"
             />
             <input
               value={form.city || ''}
-              onChange={(e) => setForm((prev) => ({ ...prev, city: e.target.value }))}
+              onChange={(event) => setForm((prev) => ({ ...prev, city: event.target.value }))}
               placeholder={tr('address.city', 'City')}
-              style={inputStyle}
+              className="my-address-page__input user-center-sheet__input"
             />
             <input
               value={form.district || ''}
-              onChange={(e) => setForm((prev) => ({ ...prev, district: e.target.value }))}
+              onChange={(event) => setForm((prev) => ({ ...prev, district: event.target.value }))}
               placeholder={tr('address.district', 'District')}
-              style={inputStyle}
+              className="my-address-page__input user-center-sheet__input"
             />
           </div>
           <textarea
             value={form.detail || ''}
-            onChange={(e) => setForm((prev) => ({ ...prev, detail: e.target.value }))}
+            onChange={(event) => setForm((prev) => ({ ...prev, detail: event.target.value }))}
             placeholder={tr('address.detail', 'Address Detail')}
             rows={3}
-            style={{ ...inputStyle, resize: 'none', height: '88px', paddingTop: '10px' }}
+            className="my-address-page__input my-address-page__textarea user-center-sheet__input"
           />
           <input
             value={form.tag || ''}
-            onChange={(e) => setForm((prev) => ({ ...prev, tag: e.target.value }))}
+            onChange={(event) => setForm((prev) => ({ ...prev, tag: event.target.value }))}
             placeholder={tr('address.tag_placeholder', 'Tag (Home / Work)')}
-            style={inputStyle}
+            className="my-address-page__input user-center-sheet__input"
           />
-          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '13px' }}>
-            <input
-              type="checkbox"
-              checked={!!form.isDefault}
-              onChange={(e) => setForm((prev) => ({ ...prev, isDefault: e.target.checked }))}
-            />
-            {tr('address.default', 'Set as Default')}
-          </label>
-          <Button fullWidth loading={submitting} onClick={submit}>
+
+          <div className="my-address-page__default-row">
+            <span>{tr('address.default', 'Set as Default')}</span>
+            <Switch checked={!!form.isDefault} onChange={(checked) => setForm((prev) => ({ ...prev, isDefault: checked }))} />
+          </div>
+
+          <Button block loading={submitting} onClick={() => void submit()}>
             {tr('address.save', 'Save Address')}
           </Button>
         </div>
@@ -128,21 +132,11 @@ const AddressFormModal: React.FC<AddressFormModalProps> = ({ value, title, tr, o
   );
 };
 
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  height: '38px',
-  borderRadius: '10px',
-  border: '0.5px solid var(--border-color)',
-  background: 'var(--bg-body)',
-  color: 'var(--text-primary)',
-  padding: '0 10px',
-  outline: 'none',
-};
-
 export const MyAddressPage: React.FC<MyAddressPageProps> = ({ t, onBack }) => {
   const { addresses, isLoading, loadAddresses, saveAddress, deleteAddress, setDefaultAddress } = useUser();
   const [formVisible, setFormVisible] = React.useState(false);
   const [editing, setEditing] = React.useState<Partial<Address>>({});
+
   const tr = React.useCallback(
     (key: string, fallback: string) => {
       const value = t?.(key);
@@ -180,8 +174,9 @@ export const MyAddressPage: React.FC<MyAddressPageProps> = ({ t, onBack }) => {
       { text: tr('address.delete', 'Delete Address'), key: 'delete', color: '#fa5151' },
     ];
     const result = await ActionSheet.showActions({
-      title: `${address.name} · ${address.phone}`,
+      title: `${address.name} ${address.phone}`,
       actions,
+      variant: 'user-center',
     });
     if (!result?.key) return;
 
@@ -209,114 +204,89 @@ export const MyAddressPage: React.FC<MyAddressPageProps> = ({ t, onBack }) => {
   };
 
   return (
-    <div style={{ minHeight: '100%', background: 'var(--bg-body)' }}>
+    <div className="my-address-page user-center-page">
       <Navbar
         title={tr('address.title', 'My Addresses')}
         onBack={onBack}
-        rightElement={
+        rightElement={(
           <button
             type="button"
             onClick={openCreateForm}
-            style={{ border: 'none', background: 'transparent', color: 'var(--text-primary)', cursor: 'pointer' }}
+            className="my-address-page__navbar-btn"
           >
             {tr('address.add', 'Add')}
           </button>
-        }
+        )}
       />
 
-      <div style={{ padding: '12px', paddingBottom: '94px' }}>
+      <div className="my-address-page__scroll user-center-page__scroll">
         {isLoading ? (
-          <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '24px' }}>
-            {tr('address.loading', 'Loading addresses...')}
-          </div>
+          <CellGroup>
+            <CellItem title={tr('address.loading', 'Loading addresses...')} noBorder />
+          </CellGroup>
         ) : null}
 
         {!isLoading && addresses.length === 0 ? (
-          <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '32px 0' }}>
-            <div style={{ fontSize: '40px', marginBottom: '10px' }}>📦</div>
-            <div style={{ marginBottom: '12px' }}>{tr('address.empty', 'No addresses')}</div>
-            <Button size="sm" variant="outline" onClick={openCreateForm}>
-              {tr('address.add', 'Add Address')}
-            </Button>
-          </div>
+          <CellGroup>
+            <CellItem
+              title={tr('address.empty', 'No addresses')}
+              description={tr('address.empty_desc', 'Tap to add your first address')}
+              value={tr('address.add', 'Add')}
+              isLink
+              onClick={openCreateForm}
+              noBorder
+            />
+          </CellGroup>
         ) : null}
 
-        {addresses.map((address) => (
-          <div
-            key={address.id}
-            onClick={() => openEditForm(address)}
-            style={{
-              background: 'var(--bg-card)',
-              border: '0.5px solid var(--border-color)',
-              borderRadius: '14px',
-              padding: '12px',
-              marginBottom: '10px',
-              cursor: 'pointer',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ color: 'var(--text-primary)', fontWeight: 700 }}>
-                {address.name} <span style={{ fontWeight: 500 }}>{address.phone}</span>
-              </div>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                {address.isDefault ? (
-                  <span
-                    style={{
-                      fontSize: '11px',
-                      color: '#fa5151',
-                      borderRadius: '10px',
-                      padding: '3px 8px',
-                      background: 'rgba(250,81,81,0.1)',
-                    }}
-                  >
-                    {tr('address.default_tag', 'Default')}
+        {!isLoading && addresses.length > 0 ? (
+          <CellGroup>
+            {addresses.map((address, index) => (
+              <CellItem
+                key={address.id}
+                title={(
+                  <span className="my-address-page__title">
+                    <span>{address.name}</span>
+                    <span className="my-address-page__phone">{address.phone}</span>
                   </span>
-                ) : null}
-                {address.tag ? (
-                  <span
-                    style={{
-                      fontSize: '11px',
-                      color: '#2979FF',
-                      borderRadius: '10px',
-                      padding: '3px 8px',
-                      background: 'rgba(41,121,255,0.1)',
-                    }}
-                  >
-                    {address.tag}
+                )}
+                description={formatAddressLine(address)}
+                value={(
+                  <span className="my-address-page__badges">
+                    {address.isDefault ? (
+                      <span className="my-address-page__badge my-address-page__badge--default">
+                        {tr('address.default_tag', 'Default')}
+                      </span>
+                    ) : null}
+                    {address.tag ? (
+                      <span className="my-address-page__badge my-address-page__badge--tag">
+                        {address.tag}
+                      </span>
+                    ) : null}
                   </span>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    void handleAddressActions(address);
-                  }}
-                  style={{ border: 0, background: 'transparent', color: 'var(--text-secondary)', padding: '2px', cursor: 'pointer' }}
-                  aria-label={`more actions for ${address.name}`}
-                >
-                  <Icon name="more" size={18} />
-                </button>
-              </div>
-            </div>
-            <div style={{ marginTop: '8px', color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.4 }}>
-              {[address.province, address.city, address.district].filter(Boolean).join(' ')} {address.detail}
-            </div>
-          </div>
-        ))}
+                )}
+                rightSlot={(
+                  <button
+                    type="button"
+                    className="my-address-page__more-btn"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void handleAddressActions(address);
+                    }}
+                    aria-label={`more actions for ${address.name}`}
+                  >
+                    <Icon name="more" size={18} color="var(--text-secondary)" />
+                  </button>
+                )}
+                onClick={() => openEditForm(address)}
+                noBorder={index === addresses.length - 1}
+              />
+            ))}
+          </CellGroup>
+        ) : null}
       </div>
 
-      <div
-        style={{
-          position: 'fixed',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'var(--bg-card)',
-          borderTop: '0.5px solid var(--border-color)',
-          padding: '12px',
-          paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
-        }}
-      >
+      <div className="my-address-page__actions">
         <Button block onClick={openCreateForm}>
           + {tr('address.add', 'Add Address')}
         </Button>

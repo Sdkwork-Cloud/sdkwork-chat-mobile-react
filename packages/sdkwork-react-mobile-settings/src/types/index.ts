@@ -27,6 +27,7 @@ export interface AIConfig {
   video: ModelConfigItem;
   speech: ModelConfigItem;
   music: ModelConfigItem;
+  soundEffect: ModelConfigItem;
 }
 
 export interface AppConfig extends BaseEntity {
@@ -40,8 +41,12 @@ export interface AppConfig extends BaseEntity {
   fontFamilyPreset: FontFamilyPreset;
   theme: ThemeType;
   notificationsEnabled: boolean;
+  notificationDetailVisible?: boolean;
+  notificationSoundEnabled?: boolean;
+  notificationVibrationEnabled?: boolean;
   language: 'zh-CN' | 'en-US';
   autoPlayVideo: boolean;
+  landscapeModeEnabled?: boolean;
   openAIAssistantEnabled: boolean;
   chatBackground: string;
   fontSize: number;

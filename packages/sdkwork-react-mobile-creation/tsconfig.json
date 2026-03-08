@@ -19,8 +19,11 @@
     "declarationMap": true,
     "baseUrl": ".",
     "paths": {
+      "@sdkwork/react-mobile-core": ["../sdkwork-react-mobile-core/src/index.ts"],
       "@sdkwork/react-mobile-core/*": ["../sdkwork-react-mobile-core/src/*"],
+      "@sdkwork/react-mobile-commons": ["../sdkwork-react-mobile-commons/src/index.ts"],
       "@sdkwork/react-mobile-commons/*": ["../sdkwork-react-mobile-commons/src/*"],
+      "@sdkwork/react-mobile-auth": ["../sdkwork-react-mobile-auth/src/index.ts"],
       "@sdkwork/react-mobile-auth/*": ["../sdkwork-react-mobile-auth/src/*"]
     }
   },

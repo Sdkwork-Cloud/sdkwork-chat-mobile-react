@@ -2,6 +2,9 @@ import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { MobileLayout } from '../layouts/MobileLayout';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../core/i18n/I18nContext';
+import { normalizePathname, resolveInitialPath, resolveRouteTarget } from './navigationPolicy';
+import { ROUTE_PATHS, type RoutePath, type RoutePathInput } from './paths';
+import { resolveScanRouteIntent } from './scanRouteIntent';
 
 const lazyExport = <TModule, TComponent extends React.ComponentType<any>>(
   loader: () => Promise<TModule>,
@@ -31,7 +34,15 @@ const scheduleIdleTask = (task: () => void): (() => void) => {
 const prefetchCoreBundles = () => {
   void Promise.allSettled([
     import('@sdkwork/react-mobile-discover'),
+    import('@sdkwork/react-mobile-skills'),
+    import('@sdkwork/react-mobile-moments'),
+    import('@sdkwork/react-mobile-shopping'),
+    import('@sdkwork/react-mobile-order-center'),
+    import('@sdkwork/react-mobile-look'),
+    import('@sdkwork/react-mobile-media'),
+    import('@sdkwork/react-mobile-app'),
     import('@sdkwork/react-mobile-agents'),
+    import('@sdkwork/react-mobile-nearby'),
     import('@sdkwork/react-mobile-creation'),
     import('@sdkwork/react-mobile-user'),
     import('@sdkwork/react-mobile-contacts'),
@@ -51,14 +62,21 @@ const ChatPage = lazyExport(() => import('@sdkwork/react-mobile-chat'), (m) => m
 const ConversationListPage = lazyExport(() => import('@sdkwork/react-mobile-chat'), (m) => m.ConversationListPage);
 const ChatDetailsPage = lazyExport(() => import('@sdkwork/react-mobile-chat'), (m) => m.ChatDetailsPage);
 const ChatFilesPage = lazyExport(() => import('@sdkwork/react-mobile-chat'), (m) => m.ChatFilesPage);
+const GroupJoinPage = lazyExport(() => import('@sdkwork/react-mobile-chat'), (m) => m.GroupJoinPage);
 
 const MePage = lazyExport(() => import('@sdkwork/react-mobile-user'), (m) => m.MePage);
+const AccountSecurityPage = lazyExport(() => import('@sdkwork/react-mobile-user'), (m) => m.AccountSecurityPage);
 const ProfileInfoPage = lazyExport(() => import('@sdkwork/react-mobile-user'), (m) => m.ProfileInfoPage);
+const ProfileEditPage = lazyExport(() => import('@sdkwork/react-mobile-user'), (m) => m.ProfileEditPage);
+const ProfileBindingEditPage = lazyExport(() => import('@sdkwork/react-mobile-user'), (m) => m.ProfileBindingEditPage);
 const MyQRCodePage = lazyExport(() => import('@sdkwork/react-mobile-user'), (m) => m.MyQRCodePage);
 const MyAddressPage = lazyExport(() => import('@sdkwork/react-mobile-user'), (m) => m.MyAddressPage);
 const MyAgentsPage = lazyExport(() => import('@sdkwork/react-mobile-user'), (m) => m.MyAgentsPage);
 const MyCreationsPage = lazyExport(() => import('@sdkwork/react-mobile-user'), (m) => m.MyCreationsPage);
 const MyInvoiceTitlePage = lazyExport(() => import('@sdkwork/react-mobile-user'), (m) => m.MyInvoiceTitlePage);
+const MyActivityHistoryPage = lazyExport(() => import('@sdkwork/react-mobile-user'), (m) => m.MyActivityHistoryPage);
+const MyUserSettingsPage = lazyExport(() => import('@sdkwork/react-mobile-user'), (m) => m.MyUserSettingsPage);
+const VipPage = lazyExport(() => import('@sdkwork/react-mobile-vip'), (m) => m.VipPage);
 
 const SettingsPage = lazyExport(() => import('@sdkwork/react-mobile-settings'), (m) => m.SettingsPage);
 const ThemePage = lazyExport(() => import('@sdkwork/react-mobile-settings'), (m) => m.ThemePage);
@@ -75,18 +93,25 @@ const AddFriendPage = lazyExport(() => import('@sdkwork/react-mobile-contacts'),
 const AgentsPage = lazyExport(() => import('@sdkwork/react-mobile-agents'), (m) => m.AgentsPage);
 const DiscoverPage = lazyExport(() => import('@sdkwork/react-mobile-discover'), (m) => m.DiscoverPage);
 const ShakePage = lazyExport(() => import('@sdkwork/react-mobile-discover'), (m) => m.ShakePage);
+const SkillsCenterPage = lazyExport(() => import('@sdkwork/react-mobile-skills'), (m) => m.SkillsCenterPage);
+const SkillDetailPage = lazyExport(() => import('@sdkwork/react-mobile-skills'), (m) => m.SkillDetailPage);
 const NotificationPage = lazyExport(() => import('@sdkwork/react-mobile-notification'), (m) => m.NotificationPage);
 const WalletPage = lazyExport(() => import('@sdkwork/react-mobile-wallet'), (m) => m.WalletPage);
 const CloudDrivePage = lazyExport(() => import('@sdkwork/react-mobile-drive'), (m) => m.CloudDrivePage);
+const NearbyPage = lazyExport(() => import('@sdkwork/react-mobile-nearby'), (m) => m.NearbyPage);
 const VideosPage = lazyExport(() => import('@sdkwork/react-mobile-video'), (m) => m.VideosPage);
+const ShoppingPage = lazyExport(() => import('@sdkwork/react-mobile-shopping'), (m) => m.ShoppingPage);
+const OrderCenterPage = lazyExport(() => import('@sdkwork/react-mobile-order-center'), (m) => m.OrderCenterPage);
+const LookPage = lazyExport(() => import('@sdkwork/react-mobile-look'), (m) => m.LookPage);
+const MediaCenterPage = lazyExport(() => import('@sdkwork/react-mobile-media'), (m) => m.MediaCenterPage);
+const AppCenterPage = lazyExport(() => import('@sdkwork/react-mobile-app'), (m) => m.AppCenterPage);
 const SearchPage = lazyExport(() => import('@sdkwork/react-mobile-search'), (m) => m.SearchPage);
 const ScanPage = lazyExport(() => import('@sdkwork/react-mobile-tools'), (m) => m.ScanPage);
 const FavoritesPage = lazyExport(() => import('@sdkwork/react-mobile-social'), (m) => m.FavoritesPage);
-const MomentsPage = lazyExport(() => import('@sdkwork/react-mobile-social'), (m) => m.MomentsPage);
+const MomentsPage = lazyExport(() => import('@sdkwork/react-mobile-moments'), (m) => m.MomentsPage);
 const ArticlesPage = lazyExport(() => import('@sdkwork/react-mobile-content'), (m) => m.ArticlesPage);
 const CallsPage = lazyExport(() => import('@sdkwork/react-mobile-communication'), (m) => m.CallsPage);
 const AppointmentsPage = lazyExport(() => import('@sdkwork/react-mobile-appointments'), (m) => m.AppointmentsPage);
-const MallPage = lazyExport(() => import('@sdkwork/react-mobile-commerce'), (m) => m.MallPage);
 const CategoryPage = lazyExport(() => import('@sdkwork/react-mobile-commerce'), (m) => m.CategoryPage);
 const CommerceProductDetailPage = lazyExport(
   () => import('@sdkwork/react-mobile-commerce'),
@@ -118,7 +143,7 @@ const DistributionRankPage = lazyExport(
 const WithdrawPage = lazyExport(() => import('@sdkwork/react-mobile-commerce'), (m) => m.WithdrawPage);
 const SharePosterPage = lazyExport(() => import('@sdkwork/react-mobile-commerce'), (m) => m.SharePosterPage);
 
-const Redirect: React.FC<{ to: string }> = ({ to }) => {
+const Redirect: React.FC<{ to: RoutePathInput }> = ({ to }) => {
   useEffect(() => {
     navigate(to);
   }, [to]);
@@ -153,7 +178,7 @@ const openAgentConversation = async (agentId: string) => {
   const createResult = await chatService.createSession(chatAgentId).catch(() => null);
   const createdSessionId = createResult?.data?.id;
   if (createResult?.success && createdSessionId) {
-    navigate('/chat', { id: createdSessionId });
+    navigate(ROUTE_PATHS.chat, { id: createdSessionId });
     return;
   }
 
@@ -163,7 +188,7 @@ const openAgentConversation = async (agentId: string) => {
   const latestSessionId = sessions[0]?.id;
 
   if (matchedSessionId || latestSessionId) {
-    navigate('/chat', { id: matchedSessionId || latestSessionId });
+    navigate(ROUTE_PATHS.chat, { id: matchedSessionId || latestSessionId });
     return;
   }
 
@@ -171,147 +196,129 @@ const openAgentConversation = async (agentId: string) => {
   const fallbackSessionId = fallbackCreate?.data?.id;
 
   if (fallbackSessionId) {
-    navigate('/chat', { id: fallbackSessionId });
+    navigate(ROUTE_PATHS.chat, { id: fallbackSessionId });
     return;
   }
 
-  navigate('/conversation-list');
+  navigate(ROUTE_PATHS.conversationList);
 };
 
-const routes: Record<string, RouteConfig> = {
-  '/login': { component: LoginPage, useLayout: false, public: true },
-  '/register': { component: RegisterPage, useLayout: false, public: true },
-  '/forgot-password': { component: ForgotPasswordPage, useLayout: false, public: true },
+const routes: Record<RoutePath, RouteConfig> = {
+  [ROUTE_PATHS.login]: { component: LoginPage, useLayout: false, public: true },
+  [ROUTE_PATHS.register]: { component: RegisterPage, useLayout: false, public: true },
+  [ROUTE_PATHS.forgotPassword]: { component: ForgotPasswordPage, useLayout: false, public: true },
 
-  '/': { component: ConversationListPage, showTabbar: true },
-  '/contacts': { component: ContactsPage },
-  '/discover': { component: DiscoverPage, showTabbar: true },
-  '/me': { component: MePage, showTabbar: true },
+  [ROUTE_PATHS.root]: { component: ConversationListPage, showTabbar: true },
+  [ROUTE_PATHS.contacts]: { component: ContactsPage, showTabbar: true },
+  [ROUTE_PATHS.discover]: { component: DiscoverPage, showTabbar: true },
+  [ROUTE_PATHS.me]: { component: MePage, showTabbar: true },
 
-  '/chat': { component: ChatPage },
-  '/conversation-list': { component: ConversationListPage, showTabbar: true },
-  '/chat-list': { component: () => <Redirect to="/conversation-list" />, showTabbar: true },
-  '/chat-details': { component: ChatDetailsPage },
-  '/chat-files': { component: ChatFilesPage },
+  [ROUTE_PATHS.chat]: { component: ChatPage },
+  [ROUTE_PATHS.conversationList]: { component: ConversationListPage, showTabbar: true },
+  [ROUTE_PATHS.chatDetails]: { component: ChatDetailsPage },
+  [ROUTE_PATHS.chatFiles]: { component: ChatFilesPage },
 
-  '/agents': { component: AgentsPage, showTabbar: true },
-  '/agent-details': { component: () => <Redirect to="/agents" /> },
-  '/agent-store': { component: () => <Redirect to="/agents" /> },
+  [ROUTE_PATHS.agents]: { component: AgentsPage, showTabbar: true },
+  [ROUTE_PATHS.agentDetails]: { component: () => <Redirect to={ROUTE_PATHS.agents} /> },
+  [ROUTE_PATHS.agentStore]: { component: () => <Redirect to={ROUTE_PATHS.agents} /> },
 
-  '/contact-details': { component: ContactProfilePage },
-  '/contact-profile': { component: ContactProfilePage },
-  '/contact/profile': { component: ContactProfilePage },
-  '/new-friends': { component: NewFriendsPage },
-  '/contacts/new-friends': { component: NewFriendsPage },
-  '/add-friend': { component: AddFriendPage },
-  '/contacts/add-friend': { component: AddFriendPage },
+  [ROUTE_PATHS.contactProfile]: { component: ContactProfilePage },
+  [ROUTE_PATHS.newFriends]: { component: NewFriendsPage },
+  [ROUTE_PATHS.addFriend]: { component: AddFriendPage },
 
-  '/moments': { component: MomentsPage },
-  '/channels': { component: VideosPage },
-  '/shake': { component: ShakePage },
+  [ROUTE_PATHS.moments]: { component: MomentsPage },
+  [ROUTE_PATHS.video]: { component: VideosPage },
+  [ROUTE_PATHS.videoDetails]: { component: VideosPage },
+  [ROUTE_PATHS.shake]: { component: ShakePage },
+  [ROUTE_PATHS.app]: { component: AppCenterPage },
+  [ROUTE_PATHS.skills]: { component: SkillsCenterPage },
+  [ROUTE_PATHS.skillDetail]: { component: SkillDetailPage },
 
-  '/profile-info': { component: ProfileInfoPage },
-  '/profile/self': { component: ProfileInfoPage },
-  '/my-qrcode': { component: MyQRCodePage },
-  '/profile/qrcode': { component: MyQRCodePage },
-  '/my-address': { component: MyAddressPage },
-  '/my-agents': { component: MyAgentsPage },
-  '/my-creations': { component: MyCreationsPage },
-  '/my-invoice': { component: MyInvoiceTitlePage },
-  '/profile/invoice': { component: MyInvoiceTitlePage },
+  [ROUTE_PATHS.accountSecurity]: { component: AccountSecurityPage },
+  [ROUTE_PATHS.profileInfo]: { component: ProfileInfoPage },
+  [ROUTE_PATHS.profileEdit]: { component: ProfileEditPage },
+  [ROUTE_PATHS.profileBinding]: { component: ProfileBindingEditPage },
+  [ROUTE_PATHS.myQRCode]: { component: MyQRCodePage },
+  [ROUTE_PATHS.myAddress]: { component: MyAddressPage },
+  [ROUTE_PATHS.myAgents]: { component: MyAgentsPage },
+  [ROUTE_PATHS.myCreations]: { component: MyCreationsPage },
+  [ROUTE_PATHS.myInvoice]: { component: MyInvoiceTitlePage },
+  [ROUTE_PATHS.myActivityHistory]: { component: MyActivityHistoryPage },
+  [ROUTE_PATHS.myUserSettings]: { component: MyUserSettingsPage },
+  [ROUTE_PATHS.vip]: { component: VipPage },
 
-  '/settings': { component: SettingsPage },
-  '/theme': { component: ThemePage },
-  '/chat-background': { component: ChatBackgroundPage },
-  '/general': { component: SettingsGeneralPage },
-  '/model-settings': { component: ModelSettingsPage },
-  '/model-config': { component: ModelConfigDetailPage },
-  '/feedback': { component: FeedbackPage },
+  [ROUTE_PATHS.settings]: { component: SettingsPage },
+  [ROUTE_PATHS.theme]: { component: ThemePage },
+  [ROUTE_PATHS.chatBackground]: { component: ChatBackgroundPage },
+  [ROUTE_PATHS.settingsBackground]: { component: () => <Redirect to={ROUTE_PATHS.chatBackground} /> },
+  [ROUTE_PATHS.general]: { component: SettingsGeneralPage },
+  [ROUTE_PATHS.modelSettings]: { component: ModelSettingsPage },
+  [ROUTE_PATHS.modelConfig]: { component: ModelConfigDetailPage },
+  [ROUTE_PATHS.feedback]: { component: FeedbackPage },
 
-  '/notifications': { component: NotificationPage },
+  [ROUTE_PATHS.notifications]: { component: NotificationPage },
 
-  '/wallet': { component: WalletPage },
-  '/wallet-details': { component: WalletPage },
+  [ROUTE_PATHS.wallet]: { component: WalletPage },
 
-  '/drive': { component: CloudDrivePage },
-  '/cloud-drive': { component: CloudDrivePage },
-  '/drive-files': { component: CloudDrivePage },
+  [ROUTE_PATHS.drive]: { component: CloudDrivePage },
+  [ROUTE_PATHS.nearby]: { component: NearbyPage },
 
-  '/video': { component: VideosPage },
-  '/video-channel': { component: VideosPage },
-  '/video-details': { component: VideosPage },
+  [ROUTE_PATHS.search]: { component: SearchPage },
+  [ROUTE_PATHS.scan]: { component: ScanPage, useLayout: false },
+  [ROUTE_PATHS.joinGroup]: { component: GroupJoinPage },
 
-  '/search': { component: SearchPage },
-  '/scan': { component: ScanPage },
+  [ROUTE_PATHS.creation]: { component: CreationPage, showTabbar: true },
+  [ROUTE_PATHS.creationDetail]: { component: CreationDetailPage },
+  [ROUTE_PATHS.creationSearch]: { component: CreationSearchPage },
 
-  '/creation': { component: CreationPage, showTabbar: true },
-  '/creation/detail': { component: CreationDetailPage },
-  '/creation/search': { component: CreationSearchPage },
-  '/creation-detail': { component: CreationDetailPage },
-  '/creation-search': { component: CreationSearchPage },
-  '/creation-editor': { component: CreationPage },
+  [ROUTE_PATHS.shopping]: { component: ShoppingPage },
+  [ROUTE_PATHS.category]: { component: CategoryPage },
+  [ROUTE_PATHS.product]: { component: CommerceProductDetailPage },
+  [ROUTE_PATHS.shoppingCart]: { component: ShoppingCartPage },
+  [ROUTE_PATHS.orderConfirmation]: { component: OrderConfirmationPage },
+  [ROUTE_PATHS.orders]: { component: OrderListPage },
+  [ROUTE_PATHS.orderDetail]: { component: OrderDetailPage },
+  [ROUTE_PATHS.orderCenter]: { component: OrderCenterPage },
+  [ROUTE_PATHS.gigCenter]: { component: GigCenterPage },
+  [ROUTE_PATHS.myGigs]: { component: MyGigsPage },
+  [ROUTE_PATHS.distribution]: { component: DistributionCenterPage },
+  [ROUTE_PATHS.distributionGoods]: { component: DistributionGoodsPage },
+  [ROUTE_PATHS.myTeam]: { component: MyTeamPage },
+  [ROUTE_PATHS.commission]: { component: CommissionPage },
+  [ROUTE_PATHS.distributionRank]: { component: DistributionRankPage },
+  [ROUTE_PATHS.withdraw]: { component: WithdrawPage },
+  [ROUTE_PATHS.sharePoster]: { component: SharePosterPage },
 
-  '/commerce': { component: MallPage },
-  '/commerce/mall': { component: MallPage },
-  '/mall': { component: MallPage },
-  '/shop': { component: MallPage },
-  '/category': { component: CategoryPage },
-  '/commerce/category': { component: CategoryPage },
-  '/mall-product': { component: CommerceProductDetailPage },
-  '/product': { component: CommerceProductDetailPage },
-  '/commerce/product': { component: CommerceProductDetailPage },
-  '/commerce/item': { component: CommerceProductDetailPage },
-  '/shopping-cart': { component: ShoppingCartPage },
-  '/commerce/cart': { component: ShoppingCartPage },
-  '/order-confirmation': { component: OrderConfirmationPage },
-  '/commerce/checkout': { component: OrderConfirmationPage },
-  '/orders': { component: OrderListPage },
-  '/order-detail': { component: OrderDetailPage },
-  '/orders/detail': { component: OrderDetailPage },
-  '/gig-center': { component: GigCenterPage },
-  '/my-gigs': { component: MyGigsPage },
-  '/discover/gigs': { component: GigCenterPage },
-  '/distribution': { component: DistributionCenterPage },
-  '/commerce/distribution': { component: DistributionCenterPage },
-  '/distribution-goods': { component: DistributionGoodsPage },
-  '/commerce/distribution/goods': { component: DistributionGoodsPage },
-  '/my-team': { component: MyTeamPage },
-  '/commerce/distribution/team': { component: MyTeamPage },
-  '/commission': { component: CommissionPage },
-  '/commerce/distribution/commission': { component: CommissionPage },
-  '/distribution-rank': { component: DistributionRankPage },
-  '/commerce/distribution/rank': { component: DistributionRankPage },
-  '/withdraw': { component: WithdrawPage },
-  '/commerce/distribution/withdraw': { component: WithdrawPage },
-  '/share-poster': { component: SharePosterPage },
-  '/commerce/distribution/poster': { component: SharePosterPage },
+  [ROUTE_PATHS.appointments]: { component: AppointmentsPage },
+  [ROUTE_PATHS.appointmentsDetail]: { component: AppointmentsPage },
 
-  '/appointments': { component: AppointmentsPage },
-  '/appointment-detail': { component: AppointmentsPage },
-  '/appointment-booking': { component: AppointmentsPage },
-  '/appointments/detail': { component: AppointmentsPage },
+  [ROUTE_PATHS.groupDetails]: { component: ConversationListPage },
+  [ROUTE_PATHS.favorites]: { component: FavoritesPage },
 
-  '/social': { component: MomentsPage },
-  '/group-details': { component: ConversationListPage },
-  '/favorites': { component: FavoritesPage },
+  [ROUTE_PATHS.content]: { component: ArticlesPage },
+  [ROUTE_PATHS.look]: { component: LookPage },
+  [ROUTE_PATHS.media]: { component: MediaCenterPage },
+  [ROUTE_PATHS.articleDetail]: { component: ArticlesPage },
 
-  '/content': { component: ArticlesPage },
-  '/content-details': { component: ArticlesPage },
-  '/article': { component: ArticlesPage },
-  '/article/detail': { component: ArticlesPage },
-
-  '/communication': { component: CallsPage },
-  '/call': { component: CallsPage },
-  '/video-call': { component: CallsPage },
+  [ROUTE_PATHS.communication]: { component: CallsPage },
 };
+const routeExists = (path: string): path is RoutePath => Object.prototype.hasOwnProperty.call(routes, path);
+const SETTINGS_STORAGE_KEY = 'sys_app_config_v3';
+const SETTINGS_CONFIG_ID = 'sys_global_config';
+const ROUTER_HISTORY_INDEX_KEY = '__sdkwork_route_index';
 
-const normalizePathname = (value: string): string => {
-  const trimmed = (value || '').trim();
-  const withLeadingSlash = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-  const withoutHash = withLeadingSlash.split('#')[0] || '/';
-  const compact = withoutHash.replace(/\/{2,}/g, '/');
-  if (compact.length <= 1) return '/';
-  return compact.replace(/\/+$/, '');
+const readGlobalChatBackgroundFromStorage = (): string => {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return '';
+    const raw = window.localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (!raw) return '';
+    const parsed = JSON.parse(raw) as Array<Record<string, unknown>>;
+    if (!Array.isArray(parsed)) return '';
+    const config = parsed.find((item) => item?.id === SETTINGS_CONFIG_ID);
+    return typeof config?.chatBackground === 'string' ? config.chatBackground : '';
+  } catch {
+    return '';
+  }
 };
 
 const decodeUnicodeEscapes = (value: string): string =>
@@ -342,9 +349,60 @@ const normalizeRouteParams = (params: Record<string, string>): Record<string, st
     return acc;
   }, {});
 
-let currentPath = normalizePathname(window.location.pathname);
+const resolveBackTarget = (value: string | undefined): RoutePathInput | null => {
+  const normalized = (value || '').trim();
+  if (!normalized || !normalized.startsWith(ROUTE_PATHS.root)) {
+    return null;
+  }
+
+  const queryIndex = normalized.indexOf('?');
+  const rawPath = queryIndex >= 0 ? normalized.slice(0, queryIndex) : normalized;
+  const rawQuery = queryIndex >= 0 ? normalized.slice(queryIndex + 1) : '';
+  const target = resolveRouteTarget({ rawPath, routeExists });
+  if (!target.ok) {
+    return null;
+  }
+  const targetPath = target.path as RoutePath;
+  return rawQuery ? `${targetPath}?${rawQuery}` : targetPath;
+};
+
+const readHistoryIndex = (state: unknown): number | null => {
+  if (!state || typeof state !== 'object') return null;
+  const rawValue = (state as Record<string, unknown>)[ROUTER_HISTORY_INDEX_KEY];
+  if (typeof rawValue !== 'number' || !Number.isFinite(rawValue) || rawValue < 0) {
+    return null;
+  }
+  return Math.trunc(rawValue);
+};
+
+const withHistoryIndex = (state: unknown, index: number): Record<string, unknown> => {
+  const baseState = state && typeof state === 'object'
+    ? (state as Record<string, unknown>)
+    : {};
+  return {
+    ...baseState,
+    [ROUTER_HISTORY_INDEX_KEY]: index,
+  };
+};
+
+const ensureHistoryIndex = (): number => {
+  const existingIndex = readHistoryIndex(window.history.state);
+  if (existingIndex !== null) {
+    return existingIndex;
+  }
+  const currentUrl = `${window.location.pathname}${window.location.search}`;
+  window.history.replaceState(withHistoryIndex(window.history.state, 0), '', currentUrl);
+  return 0;
+};
+
+let currentPath: RoutePath = resolveInitialPath({
+  rawPath: window.location.pathname,
+  fallbackPath: ROUTE_PATHS.root,
+  routeExists,
+}) as RoutePath;
 let currentParams: Record<string, string> = {};
 const listeners = new Set<() => void>();
+ensureHistoryIndex();
 
 const dispatchRouteChange = () => {
   window.dispatchEvent(new CustomEvent('routechange', {
@@ -352,51 +410,126 @@ const dispatchRouteChange = () => {
   }));
 };
 
-export const navigate = (path: string, params?: Record<string, string>) => {
-  if (!path) return;
-  if (!path.startsWith('/')) path = `/${path}`;
+export const navigate = (path: RoutePathInput, params?: Record<string, string>) => {
+  let targetPath = path;
+  if (!targetPath) return;
+  if (!targetPath.startsWith(ROUTE_PATHS.root)) targetPath = `/${targetPath}` as RoutePathInput;
 
-  if (path.includes('?')) {
-    const [basePath, queryString] = path.split('?');
+  let nextParams: Record<string, string>;
+  if (targetPath.includes('?')) {
+    const [basePath, queryString] = targetPath.split('?');
     const searchParams = new URLSearchParams(queryString);
     const queryParams: Record<string, string> = {};
     searchParams.forEach((value, key) => {
       queryParams[key] = value;
     });
-    currentParams = normalizeRouteParams({ ...queryParams, ...(params || {}) });
-    path = basePath;
+    nextParams = normalizeRouteParams({ ...queryParams, ...(params || {}) });
+    targetPath = basePath as RoutePathInput;
   } else {
-    currentParams = normalizeRouteParams(params || {});
+    nextParams = normalizeRouteParams(params || {});
   }
-  path = normalizePathname(path);
+  const targetRoute = resolveRouteTarget({
+    rawPath: targetPath,
+    routeExists,
+  });
+  if (!targetRoute.ok) {
+    console.warn(`[Router] Blocked navigation to unknown route: ${targetRoute.path}`);
+    return;
+  }
+  const resolvedPath = targetRoute.path as RoutePath;
+  const currentHistoryIndex = ensureHistoryIndex();
+  currentParams = nextParams;
 
   const query = Object.keys(currentParams).length > 0
     ? `?${new URLSearchParams(currentParams).toString()}`
     : '';
 
-  const nextUrl = path + query;
+  const nextUrl = resolvedPath + query;
   const currentUrl = `${window.location.pathname}${window.location.search}`;
   if (nextUrl === currentUrl) {
-    currentPath = path;
+    currentPath = resolvedPath;
     listeners.forEach((listener) => listener());
     dispatchRouteChange();
     return;
   }
 
-  window.history.pushState({}, '', nextUrl);
-  currentPath = path;
+  window.history.pushState(withHistoryIndex(window.history.state, currentHistoryIndex + 1), '', nextUrl);
+  currentPath = resolvedPath;
   listeners.forEach((listener) => listener());
   dispatchRouteChange();
 };
 
 export const getCurrentParams = () => currentParams;
 
-export const navigateBack = (fallbackPath: string = '/') => {
-  if (window.history.length > 1) {
+export const navigateBack = (fallbackPath: RoutePathInput = ROUTE_PATHS.root) => {
+  const currentHistoryIndex = readHistoryIndex(window.history.state);
+  if (currentHistoryIndex !== null && currentHistoryIndex > 0) {
     window.history.back();
-  } else {
-    navigate(fallbackPath);
+    return;
   }
+  navigate(fallbackPath);
+};
+
+type ExternalRouteParams = Record<string, unknown>;
+
+interface ExternalTargetResolution {
+  ok: boolean;
+  rawPath: string;
+  normalizedPath: string;
+  path?: RoutePath;
+  query?: string;
+}
+
+const normalizeExternalParams = (params?: ExternalRouteParams): Record<string, string> | undefined => {
+  if (!params) return undefined;
+  const normalized = Object.entries(params).reduce<Record<string, string>>((acc, [key, value]) => {
+    if (value === null || value === undefined) return acc;
+    acc[key] = typeof value === 'string' ? value : String(value);
+    return acc;
+  }, {});
+  return Object.keys(normalized).length > 0 ? normalized : undefined;
+};
+
+const resolveExternalTarget = (rawPath: string): ExternalTargetResolution => {
+  const raw = (rawPath || '').trim();
+  if (!raw) {
+    return { ok: false, rawPath: rawPath || '', normalizedPath: ROUTE_PATHS.root };
+  }
+  const queryIndex = raw.indexOf('?');
+  const rawPathPart = queryIndex >= 0 ? raw.slice(0, queryIndex) : raw;
+  const rawQueryPart = queryIndex >= 0 ? raw.slice(queryIndex + 1) : '';
+  const normalizedPath = normalizePathname(rawPathPart);
+  const target = resolveRouteTarget({ rawPath: normalizedPath, routeExists });
+  if (!target.ok) {
+    return { ok: false, rawPath: raw, normalizedPath: target.path };
+  }
+  const normalizedQuery = rawQueryPart.split('#')[0].trim();
+  return {
+    ok: true,
+    rawPath: raw,
+    normalizedPath: target.path,
+    path: target.path as RoutePath,
+    query: normalizedQuery,
+  };
+};
+
+const navigateExternal = (
+  rawPath: string,
+  params?: ExternalRouteParams,
+  fallbackPath: RoutePathInput = ROUTE_PATHS.root,
+  source = 'external'
+) => {
+  const normalizedParams = normalizeExternalParams(params);
+  const target = resolveExternalTarget(rawPath);
+  if (!target.ok || !target.path) {
+    console.warn(
+      `[Router] Blocked ${source} navigation to unknown route: ${target.normalizedPath}. Fallback: ${fallbackPath}`
+    );
+    navigate(fallbackPath, normalizedParams);
+    return;
+  }
+  const routeInput: RoutePathInput = target.query ? `${target.path}?${target.query}` : target.path;
+  navigate(routeInput, normalizedParams);
 };
 
 export const useQueryParams = () => {
@@ -423,28 +556,57 @@ const resolveGeneralSource = (value: string | undefined): GeneralSource => {
   return GENERAL_SOURCES.includes(value as GeneralSource) ? (value as GeneralSource) : 'settings';
 };
 
-const resolveGeneralFallback = (source: GeneralSource): string => {
-  if (source === 'discover') return '/discover';
-  if (source === 'me') return '/me';
-  if (source === 'favorites') return '/favorites';
-  if (source === 'contacts') return '/contacts';
-  return '/settings';
+const resolveGeneralFallback = (source: GeneralSource): RoutePath => {
+  if (source === 'discover') return ROUTE_PATHS.discover;
+  if (source === 'me') return ROUTE_PATHS.me;
+  if (source === 'favorites') return ROUTE_PATHS.favorites;
+  if (source === 'contacts') return ROUTE_PATHS.contacts;
+  return ROUTE_PATHS.settings;
+};
+
+type ProfileEditField = 'name' | 'region' | 'signature' | 'password';
+const PROFILE_EDIT_FIELDS: ProfileEditField[] = ['name', 'region', 'signature', 'password'];
+
+const resolveProfileEditField = (value: string | undefined): ProfileEditField => {
+  if (!value) return 'name';
+  return PROFILE_EDIT_FIELDS.includes(value as ProfileEditField) ? (value as ProfileEditField) : 'name';
+};
+
+type ProfileBindingField = 'phone' | 'email' | 'wechat' | 'qq';
+const PROFILE_BINDING_FIELDS: ProfileBindingField[] = ['phone', 'email', 'wechat', 'qq'];
+
+const resolveProfileBindingField = (value: string | undefined): ProfileBindingField => {
+  if (!value) return 'email';
+  return PROFILE_BINDING_FIELDS.includes(value as ProfileBindingField) ? (value as ProfileBindingField) : 'email';
+};
+
+const resolveAccountCenterFallback = (value: string | undefined): RoutePath => {
+  if (value === 'account-security') return ROUTE_PATHS.accountSecurity;
+  if (value === 'me') return ROUTE_PATHS.me;
+  return ROUTE_PATHS.profileInfo;
+};
+
+type ProfileSource = 'account-security' | 'me' | 'profile-info';
+const resolveProfileSource = (value: string | undefined): ProfileSource => {
+  if (value === 'account-security') return 'account-security';
+  if (value === 'me') return 'me';
+  return 'profile-info';
 };
 
 const buildRouteProps = (
-  path: string,
+  path: RoutePath,
   t: (key: string) => string,
   logout?: () => Promise<void>,
   setLocale?: (locale: 'zh-CN' | 'en-US') => void
 ) => {
   const commonAuthProps = {
     t,
-    onLoginSuccess: () => navigate('/'),
-    onForgotPasswordClick: () => navigate('/forgot-password'),
-    onRegisterClick: () => navigate('/register'),
-    onLoginClick: () => navigate('/login'),
-    onRegisterSuccess: () => navigate('/login'),
-    onBackToLogin: () => navigate('/login'),
+    onLoginSuccess: () => navigate(ROUTE_PATHS.root),
+    onForgotPasswordClick: () => navigate(ROUTE_PATHS.forgotPassword),
+    onRegisterClick: () => navigate(ROUTE_PATHS.register),
+    onLoginClick: () => navigate(ROUTE_PATHS.login),
+    onRegisterSuccess: () => navigate(ROUTE_PATHS.login),
+    onBackToLogin: () => navigate(ROUTE_PATHS.login),
   };
 
   const sessionId = currentParams.id || 'session_default';
@@ -459,64 +621,95 @@ const buildRouteProps = (
   const generalFallback = resolveGeneralFallback(generalSource);
   const modelDomain = currentParams.domain || 'text';
   const modelTitle = currentParams.title || t('settings.model_config.title') || 'Model Configuration';
+  const accountCenterFallback = resolveAccountCenterFallback(currentParams.from);
+  const profileSource = resolveProfileSource(currentParams.from);
+  const profileBackTarget = accountCenterFallback === ROUTE_PATHS.accountSecurity
+    ? ROUTE_PATHS.accountSecurity
+    : ROUTE_PATHS.me;
 
-  if (path === '/chat') {
+  if (path === ROUTE_PATHS.chat) {
     return {
       ...commonAuthProps,
       sessionId,
+      globalBackground: readGlobalChatBackgroundFromStorage(),
       highlightMsgId,
-      onBack: () => navigateBack('/conversation-list'),
-      onDetails: () => navigate('/chat-details', { id: sessionId }),
-      onNavigate: navigate,
+      onBack: () => navigateBack(ROUTE_PATHS.conversationList),
+      onDetails: () => navigate(ROUTE_PATHS.chatDetails, { id: sessionId }),
+      onNavigate: (rawPath: string, params?: ExternalRouteParams) =>
+        navigateExternal(rawPath, params, ROUTE_PATHS.chat, 'chat-page'),
     };
   }
 
-  if (path === '/chat-details') {
+  if (path === ROUTE_PATHS.chatDetails) {
     return {
       ...commonAuthProps,
       sessionId,
-      onBack: () => navigateBack('/chat'),
-      onNavigateToFiles: () => navigate('/chat-files', { id: sessionId }),
-      onNavigateToSearch: () => navigate('/search', { sessionId }),
-      onNavigateToBackground: () => navigate('/chat-background', { id: sessionId }),
-      onDeleteSession: () => navigate('/conversation-list'),
+      onBack: () => navigateBack(ROUTE_PATHS.chat),
+      onNavigateToFiles: () => navigate(ROUTE_PATHS.chatFiles, { id: sessionId }),
+      onNavigateToSearch: () => navigate(ROUTE_PATHS.search, { sessionId }),
+      onNavigateToGroupJoin: () => navigate(ROUTE_PATHS.joinGroup, {
+        from: 'chat-details',
+        sessionId,
+      }),
+      onNavigateToQRCode: (payload: { type: 'user' | 'group' | 'agent'; entityId?: string; name?: string }) =>
+        navigate(ROUTE_PATHS.myQRCode, {
+          from: 'chat-details',
+          type: payload.type,
+          entityId: payload.entityId || '',
+          name: payload.name || '',
+          sessionId,
+        }),
+      onNavigateToBackground: () => navigate(ROUTE_PATHS.chatBackground, {
+        id: sessionId,
+        back: `${ROUTE_PATHS.chatDetails}?id=${sessionId}`,
+      }),
+      onDeleteSession: () => navigate(ROUTE_PATHS.conversationList),
     };
   }
 
-  if (path === '/chat-files') {
+  if (path === ROUTE_PATHS.chatFiles) {
     return {
       ...commonAuthProps,
       sessionId,
-      onBack: () => navigateBack('/chat-details'),
+      onBack: () => navigateBack(ROUTE_PATHS.chatDetails),
     };
   }
 
-  if (path === '/' || path === '/conversation-list' || path === '/chat-list') {
+  if (path === ROUTE_PATHS.root || path === ROUTE_PATHS.conversationList) {
     return {
       ...commonAuthProps,
-      onNavigate: navigate,
-      onChatClick: (targetSessionId: string) => navigate('/chat', { id: targetSessionId }),
+      onNavigate: (rawPath: string, params?: ExternalRouteParams) =>
+        navigateExternal(rawPath, params, ROUTE_PATHS.conversationList, 'chat-list'),
+      onChatClick: (targetSessionId: string) => navigate(ROUTE_PATHS.chat, { id: targetSessionId }),
       showBack: false,
     };
   }
 
-  if (path === '/contacts') {
+  if (path === ROUTE_PATHS.contacts) {
     return {
       ...commonAuthProps,
       mode,
       action,
-      onBack: () => navigateBack('/'),
-      onContactClick: (contact: { id: string }) => navigate('/contact-profile', { id: contact.id }),
-      onNewFriendsClick: () => navigate('/new-friends'),
-      onGroupsClick: () => navigate('/conversation-list'),
-      onAgentsClick: () => navigate('/agents'),
-      onSearchClick: () => navigate('/search'),
-      onNavigate: navigate,
-      onConfirmSelection: () => navigateBack('/'),
+      onBack: () => navigateBack(ROUTE_PATHS.root),
+      onContactClick: (contact: { id: string }) => navigate(ROUTE_PATHS.contactProfile, { id: contact.id }),
+      onNewFriendsClick: () => navigate(ROUTE_PATHS.newFriends),
+      onGroupsClick: () => navigate(ROUTE_PATHS.conversationList),
+      onAgentsClick: () => navigate(ROUTE_PATHS.agents),
+      onSearchClick: () => navigate(ROUTE_PATHS.search),
+      onNavigate: (rawPath: string, params?: ExternalRouteParams) =>
+        navigateExternal(rawPath, params, ROUTE_PATHS.contacts, 'contacts'),
+      onConfirmSelection: () => navigateBack(ROUTE_PATHS.root),
     };
   }
 
-  if (path === '/agents') {
+  if (path === ROUTE_PATHS.agents) {
+    const scannedAgent = currentParams.scanType === 'agent'
+      ? {
+        id: currentParams.scanId || undefined,
+        name: currentParams.scanName || undefined,
+      }
+      : undefined;
+
     return {
       ...commonAuthProps,
       showBack: false,
@@ -525,241 +718,431 @@ const buildRouteProps = (
           await openAgentConversation(agentId);
         } catch (error) {
           console.error('[Router] Failed to open agent conversation:', error);
-          navigate('/conversation-list');
+          navigate(ROUTE_PATHS.conversationList);
         }
       },
-      onSearchClick: () => navigate('/search'),
-      onCreateAgentClick: () => navigate('/creation'),
+      scannedAgent,
+      onOpenScannedAgent: async (agentId: string) => {
+        try {
+          await openAgentConversation(agentId);
+        } catch (error) {
+          console.error('[Router] Failed to open scanned agent conversation:', error);
+          navigate(ROUTE_PATHS.conversationList);
+        }
+      },
+      onSearchClick: () => navigate(ROUTE_PATHS.search),
+      onCreateAgentClick: () => navigate(ROUTE_PATHS.creation),
     };
   }
 
-  if (path === '/discover') {
-    const navigateFromDiscover = (targetPath: string, params?: Record<string, string>) => {
-      if (!targetPath) return;
-      if (targetPath.startsWith('/general')) {
-        navigate(targetPath, { from: 'discover', ...(params || {}) });
+  if (path === ROUTE_PATHS.discover) {
+    const navigateFromDiscover = (rawPath: string, params?: ExternalRouteParams) => {
+      const target = resolveExternalTarget(rawPath);
+      if (!target.ok || !target.path) {
+        navigateExternal(rawPath, params, ROUTE_PATHS.discover, 'discover');
         return;
       }
-      navigate(targetPath, params);
+      if (target.path.startsWith(ROUTE_PATHS.general)) {
+        const mergedParams = { ...(params || {}), from: 'discover' };
+        const routeInput: RoutePathInput = target.query ? `${target.path}?${target.query}` : target.path;
+        navigate(routeInput, normalizeExternalParams(mergedParams));
+        return;
+      }
+      const routeInput: RoutePathInput = target.query ? `${target.path}?${target.query}` : target.path;
+      navigate(routeInput, normalizeExternalParams(params));
     };
 
     return {
       ...commonAuthProps,
       onNavigate: navigateFromDiscover,
-      onItemClick: (targetPath: string) => {
-        navigateFromDiscover(targetPath);
+      onItemClick: (rawPath: string) => {
+        navigateFromDiscover(rawPath);
       },
     };
   }
 
-  if (path === '/shake') {
+  if (path === ROUTE_PATHS.shake) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/discover'),
+      onBack: () => navigateBack(ROUTE_PATHS.discover),
     };
   }
 
-  if (['/video', '/video-channel', '/video-details', '/channels'].includes(path)) {
+  if (path === ROUTE_PATHS.skills) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/discover'),
+      onBack: () => navigateBack(ROUTE_PATHS.discover),
+      onNavigate: (rawPath: string, params?: ExternalRouteParams) =>
+        navigateExternal(rawPath, params, ROUTE_PATHS.skills, 'skills'),
+      onSkillClick: (item: { id: string; type: 'package' | 'skill' }) => {
+        navigate(ROUTE_PATHS.skillDetail, {
+          id: item.id,
+          kind: item.type,
+        });
+      },
+    };
+  }
+
+  if (path === ROUTE_PATHS.skillDetail) {
+    const skillType = currentParams.kind === 'package' ? 'package' : 'skill';
+    return {
+      ...commonAuthProps,
+      skillId: currentParams.id,
+      skillType,
+      onBack: () => navigateBack(ROUTE_PATHS.skills),
+      onNavigate: (rawPath: string, params?: ExternalRouteParams) =>
+        navigateExternal(rawPath, params, ROUTE_PATHS.skills, 'skill-detail'),
+    };
+  }
+
+  if (path === ROUTE_PATHS.video || path === ROUTE_PATHS.videoDetails) {
+    return {
+      ...commonAuthProps,
+      onBack: () => navigateBack(ROUTE_PATHS.discover),
       onVideoClick: (video: { id: string }) => {
-        if (path === '/video-details') return;
-        navigate('/video-details', { id: video.id });
+        if (path === ROUTE_PATHS.videoDetails) return;
+        navigate(ROUTE_PATHS.videoDetails, { id: video.id });
       },
     };
   }
 
-  if (path === '/moments' || path === '/social') {
+  if (path === ROUTE_PATHS.moments) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/discover'),
+      onBack: () => navigateBack(ROUTE_PATHS.discover),
       onProfileClick: async (author: string) => {
         try {
           const { contactsService } = await import('@sdkwork/react-mobile-contacts');
           const contact = await contactsService.findByName(author);
           if (contact?.id) {
-            navigate('/contact-profile', { id: contact.id });
+            navigate(ROUTE_PATHS.contactProfile, { id: contact.id });
             return;
           }
-          navigate('/profile/self');
+          navigate(ROUTE_PATHS.profileInfo);
         } catch (error) {
           console.error('[Router] Failed to open profile from moments:', error);
-          navigate('/profile/self');
+          navigate(ROUTE_PATHS.profileInfo);
         }
       },
     };
   }
 
-  if (path === '/me') {
+  if (path === ROUTE_PATHS.me) {
     return {
       ...commonAuthProps,
-      onProfileClick: () => navigate('/profile-info'),
-      onQRCodeClick: () => navigate('/my-qrcode'),
-      onWalletClick: () => navigate('/wallet'),
-      onDistributionClick: () => navigate('/distribution'),
-      onGigsClick: () => navigate('/my-gigs'),
-      onCreationsClick: () => navigate('/my-creations'),
-      onAgentsClick: () => navigate('/my-agents'),
-      onMomentsClick: () => navigate('/moments'),
-      onCartClick: () => navigate('/shopping-cart'),
-      onFavoritesClick: () => navigate('/favorites'),
-      onCardsClick: () => navigate('/general', {
+      onProfileClick: () => navigate(ROUTE_PATHS.profileInfo, { from: 'me' }),
+      onActivityHistoryClick: () => navigate(ROUTE_PATHS.myActivityHistory, { from: 'me' }),
+      onQRCodeClick: () => navigate(ROUTE_PATHS.myQRCode, { from: 'me' }),
+      onVipClick: () => navigate(ROUTE_PATHS.vip),
+      onWalletClick: () => navigate(ROUTE_PATHS.wallet),
+      onDistributionClick: () => navigate(ROUTE_PATHS.distribution),
+      onGigsClick: () => navigate(ROUTE_PATHS.myGigs),
+      onCreationsClick: () => navigate(ROUTE_PATHS.myCreations),
+      onAgentsClick: () => navigate(ROUTE_PATHS.myAgents),
+      onCartClick: () => navigate(ROUTE_PATHS.shoppingCart),
+      onFavoritesClick: () => navigate(ROUTE_PATHS.favorites),
+      onCardsClick: () => navigate(ROUTE_PATHS.general, {
         section: 'cards',
         title: t('settings.cards.title') || t('me.cards') || 'Cards',
         from: 'me',
       }),
-      onOrdersClick: () => navigate('/orders'),
-      onAppointmentsClick: () => navigate('/appointments'),
-      onSettingsClick: () => navigate('/settings'),
+      onOrdersClick: () => navigate(ROUTE_PATHS.orders),
+      onAppointmentsClick: () => navigate(ROUTE_PATHS.appointments),
+      onSettingsClick: () => navigate(ROUTE_PATHS.settings),
     };
   }
 
-  if (path === '/profile-info' || path === '/profile/self') {
+  if (path === ROUTE_PATHS.accountSecurity) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/me'),
-      onQRCodeClick: () => navigate('/my-qrcode'),
-      onAddressClick: () => navigate('/my-address'),
-      onInvoiceClick: () => navigate('/my-invoice'),
+      onBack: () => navigateBack(ROUTE_PATHS.settings),
+      onProfileInfoClick: () => navigate(ROUTE_PATHS.profileInfo, { from: 'account-security' }),
+      onQRCodeClick: () => navigate(ROUTE_PATHS.myQRCode, { from: 'account-security' }),
+      onPasswordClick: () => navigate(ROUTE_PATHS.profileEdit, { from: 'account-security', field: 'password' }),
+      onPhoneClick: () => navigate(ROUTE_PATHS.profileBinding, { from: 'account-security', field: 'phone' }),
+      onEmailClick: () => navigate(ROUTE_PATHS.profileBinding, { from: 'account-security', field: 'email' }),
+      onWechatClick: () => navigate(ROUTE_PATHS.profileBinding, { from: 'account-security', field: 'wechat' }),
+      onQqClick: () => navigate(ROUTE_PATHS.profileBinding, { from: 'account-security', field: 'qq' }),
+      onActivityHistoryClick: () => navigate(ROUTE_PATHS.myActivityHistory, { from: 'account-security' }),
+      onUserSettingsClick: () => navigate(ROUTE_PATHS.myUserSettings, { from: 'account-security' }),
+      onAddressClick: () => navigate(ROUTE_PATHS.myAddress, { from: 'account-security' }),
+      onInvoiceClick: () => navigate(ROUTE_PATHS.myInvoice, { from: 'account-security' }),
     };
   }
 
-  if (path === '/contact-profile' || path === '/contact/profile' || path === '/contact-details') {
+  if (path === ROUTE_PATHS.profileInfo) {
+    return {
+      ...commonAuthProps,
+      onBack: () => navigateBack(profileBackTarget),
+      onEditNameClick: () => navigate(ROUTE_PATHS.profileEdit, {
+        from: 'profile-info',
+        field: 'name',
+        profileFrom: profileSource,
+      }),
+      onEditRegionClick: () => navigate(ROUTE_PATHS.profileEdit, {
+        from: 'profile-info',
+        field: 'region',
+        profileFrom: profileSource,
+      }),
+      onEditSignatureClick: () => navigate(ROUTE_PATHS.profileEdit, {
+        from: 'profile-info',
+        field: 'signature',
+        profileFrom: profileSource,
+      }),
+      onEditPasswordClick: () => navigate(ROUTE_PATHS.profileEdit, {
+        from: 'profile-info',
+        field: 'password',
+        profileFrom: profileSource,
+      }),
+      onEditPhoneClick: () => navigate(ROUTE_PATHS.profileBinding, {
+        from: 'profile-info',
+        field: 'phone',
+        profileFrom: profileSource,
+      }),
+      onEditEmailClick: () => navigate(ROUTE_PATHS.profileBinding, {
+        from: 'profile-info',
+        field: 'email',
+        profileFrom: profileSource,
+      }),
+      onEditWechatClick: () => navigate(ROUTE_PATHS.profileBinding, {
+        from: 'profile-info',
+        field: 'wechat',
+        profileFrom: profileSource,
+      }),
+      onEditQqClick: () => navigate(ROUTE_PATHS.profileBinding, {
+        from: 'profile-info',
+        field: 'qq',
+        profileFrom: profileSource,
+      }),
+      onQRCodeClick: () => navigate(ROUTE_PATHS.myQRCode, { from: profileSource }),
+      onActivityHistoryClick: () => navigate(ROUTE_PATHS.myActivityHistory, { from: profileSource }),
+      onUserSettingsClick: () => navigate(ROUTE_PATHS.myUserSettings, { from: profileSource }),
+      onAddressClick: () => navigate(ROUTE_PATHS.myAddress, { from: profileSource }),
+      onInvoiceClick: () => navigate(ROUTE_PATHS.myInvoice, { from: profileSource }),
+    };
+  }
+
+  if (path === ROUTE_PATHS.profileEdit) {
+    const profileEditSource = currentParams.from === 'account-security' ? 'account-security' : 'profile-info';
+    const profileInfoFrom = resolveProfileSource(currentParams.profileFrom);
+    const profileInfoBackTarget: RoutePathInput = `${ROUTE_PATHS.profileInfo}?from=${profileInfoFrom}`;
+    const profileEditBackTarget: RoutePathInput = profileEditSource === 'account-security'
+      ? ROUTE_PATHS.accountSecurity
+      : profileInfoBackTarget;
+
+    return {
+      ...commonAuthProps,
+      field: resolveProfileEditField(currentParams.field),
+      onBack: () => navigateBack(profileEditBackTarget),
+    };
+  }
+
+  if (path === ROUTE_PATHS.profileBinding) {
+    const profileBindingSource = currentParams.from === 'account-security' ? 'account-security' : 'profile-info';
+    const profileInfoFrom = resolveProfileSource(currentParams.profileFrom);
+    const profileInfoBackTarget: RoutePathInput = `${ROUTE_PATHS.profileInfo}?from=${profileInfoFrom}`;
+    const profileBindingBackTarget: RoutePathInput = profileBindingSource === 'account-security'
+      ? ROUTE_PATHS.accountSecurity
+      : profileInfoBackTarget;
+
+    return {
+      ...commonAuthProps,
+      field: resolveProfileBindingField(currentParams.field),
+      onBack: () => navigateBack(profileBindingBackTarget),
+    };
+  }
+
+  if (path === ROUTE_PATHS.vip) {
+    return {
+      ...commonAuthProps,
+      onBack: () => navigateBack(ROUTE_PATHS.me),
+    };
+  }
+
+  if (path === ROUTE_PATHS.contactProfile) {
     return {
       ...commonAuthProps,
       contactId: currentParams.id || '',
-      onBack: () => navigateBack('/contacts'),
+      onBack: () => navigateBack(ROUTE_PATHS.contacts),
       onSendMessage: async (_contact: { id: string }) => {
         try {
           await openAgentConversation('omni_core');
         } catch (error) {
           console.error('[Router] Failed to open contact conversation:', error);
-          navigate('/conversation-list');
+          navigate(ROUTE_PATHS.conversationList);
         }
       },
-      onNavigate: navigate,
+      onNavigate: (rawPath: string, params?: ExternalRouteParams) =>
+        navigateExternal(rawPath, params, ROUTE_PATHS.contactProfile, 'contact-profile'),
     };
   }
 
-  if (path === '/new-friends' || path === '/contacts/new-friends') {
+  if (path === ROUTE_PATHS.newFriends) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/contacts'),
-      onAddFriend: () => navigate('/add-friend'),
-      onNavigate: navigate,
+      onBack: () => navigateBack(ROUTE_PATHS.contacts),
+      onAddFriend: () => navigate(ROUTE_PATHS.addFriend),
+      onNavigate: (rawPath: string, params?: ExternalRouteParams) =>
+        navigateExternal(rawPath, params, ROUTE_PATHS.newFriends, 'new-friends'),
     };
   }
 
-  if (path === '/add-friend' || path === '/contacts/add-friend') {
+  if (path === ROUTE_PATHS.addFriend) {
+    const scannedType = currentParams.scanType === 'user' ? 'user' : '';
+    const scannedUserId = (currentParams.scanId || currentParams.userId || '').trim();
+    const scannedUserName = (currentParams.scanName || currentParams.name || '').trim();
+    const scannedUser = scannedType === 'user' && (scannedUserId || scannedUserName)
+      ? {
+        id: scannedUserId || undefined,
+        name: scannedUserName || undefined,
+      }
+      : undefined;
+
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/new-friends'),
-      onNavigate: navigate,
-      onSearchClick: () => navigate('/search', { from: 'add-friend' }),
+      onBack: () => navigateBack(ROUTE_PATHS.newFriends),
+      onNavigate: (rawPath: string, params?: ExternalRouteParams) =>
+        navigateExternal(rawPath, params, ROUTE_PATHS.addFriend, 'add-friend'),
+      onSearchClick: () => navigate(ROUTE_PATHS.search, { from: 'add-friend' }),
+      scannedUser,
+      onQuickAddScannedUser: (payload: { id?: string; name?: string }) => {
+        const targetId = (payload?.id || '').trim();
+        if (targetId) {
+          navigate(ROUTE_PATHS.contactProfile, { id: targetId });
+          return;
+        }
+        navigate(ROUTE_PATHS.newFriends);
+      },
     };
   }
 
-  if (path === '/my-qrcode' || path === '/profile/qrcode') {
+  if (path === ROUTE_PATHS.myQRCode) {
+    const qrCodeFrom = (currentParams.from || '').trim();
+    const qrCodeSessionId = (currentParams.sessionId || '').trim();
+    const qrCodeFallback = qrCodeFrom === 'account-security'
+      ? ROUTE_PATHS.accountSecurity
+      : qrCodeFrom === 'profile-info'
+        ? ROUTE_PATHS.profileInfo
+        : qrCodeFrom === 'chat-details' && qrCodeSessionId
+          ? `${ROUTE_PATHS.chatDetails}?id=${qrCodeSessionId}`
+          : ROUTE_PATHS.me;
+    const qrCodeType = currentParams.type === 'group'
+      ? 'group'
+      : currentParams.type === 'agent'
+        ? 'agent'
+        : 'user';
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/me'),
-      type: currentParams.type === 'group' ? 'group' : 'user',
+      onBack: () => navigateBack(qrCodeFallback),
+      type: qrCodeType,
+      name: currentParams.name || undefined,
+      entityId: currentParams.entityId || currentParams.id || undefined,
     };
   }
 
-  if (path === '/my-address') {
+  if (
+    path === ROUTE_PATHS.myActivityHistory
+    || path === ROUTE_PATHS.myUserSettings
+    || path === ROUTE_PATHS.myAddress
+    || path === ROUTE_PATHS.myInvoice
+  ) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/profile-info'),
+      onBack: () => navigateBack(accountCenterFallback),
     };
   }
 
-  if (path === '/my-invoice' || path === '/profile/invoice') {
+  if (path === ROUTE_PATHS.myCreations) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/profile-info'),
+      onBack: () => navigateBack(ROUTE_PATHS.me),
+      onCreationClick: (id: string) => navigate(ROUTE_PATHS.creationDetail, { id }),
     };
   }
 
-  if (path === '/my-creations') {
+  if (path === ROUTE_PATHS.myAgents) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/me'),
-      onCreationClick: (id: string) => navigate('/creation/detail', { id }),
-    };
-  }
-
-  if (path === '/my-agents') {
-    return {
-      ...commonAuthProps,
-      onBack: () => navigateBack('/me'),
-      onCreateAgent: () => navigate('/creation'),
+      onBack: () => navigateBack(ROUTE_PATHS.me),
+      onCreateAgent: () => navigate(ROUTE_PATHS.creation),
       onChatWithAgent: async (agentId: string) => {
         try {
           await openAgentConversation(agentId);
         } catch (error) {
           console.error('[Router] Failed to open my-agent conversation:', error);
-          navigate('/conversation-list');
+          navigate(ROUTE_PATHS.conversationList);
         }
       },
     };
   }
 
-  if (path === '/settings') {
+  if (path === ROUTE_PATHS.settings) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/me'),
-      onAccountClick: () => navigate('/profile-info'),
-      onModelSettingsClick: () => navigate('/model-settings'),
-      onNotificationsClick: () => navigate('/general', {
+      onBack: () => navigateBack(ROUTE_PATHS.me),
+      onAccountClick: () => navigate(ROUTE_PATHS.accountSecurity),
+      onModelSettingsClick: () => navigate(ROUTE_PATHS.modelSettings),
+      onNotificationsClick: () => navigate(ROUTE_PATHS.general, {
         section: 'notifications',
         title: t('settings.notifications') || 'Notifications',
         from: 'settings',
       }),
-      onThemeClick: () => navigate('/theme'),
-      onLanguageClick: () => navigate('/general', {
+      onThemeClick: () => navigate(ROUTE_PATHS.theme),
+      onGeneralClick: () => navigate(ROUTE_PATHS.general, {
         section: 'general',
         title: t('settings.general') || 'General',
         from: 'settings',
       }),
-      onStorageClick: () => navigate('/general', {
+      onLanguageClick: () => navigate(ROUTE_PATHS.general, {
         section: 'general',
         title: t('settings.general') || 'General',
         from: 'settings',
       }),
-      onFeedbackClick: () => navigate('/feedback'),
-      onAboutClick: () => navigate('/general', {
+      onStorageClick: () => navigate(ROUTE_PATHS.general, {
+        section: 'storage',
+        title: t('settings.storage') || 'Storage',
+        from: 'settings',
+      }),
+      onFeedbackClick: () => navigate(ROUTE_PATHS.feedback),
+      onAboutClick: () => navigate(ROUTE_PATHS.general, {
         section: 'about',
         title: t('settings.about') || 'About OpenChat',
         from: 'settings',
       }),
       onLogout: async () => {
         await logout?.();
-        navigate('/login');
+        navigate(ROUTE_PATHS.login);
       },
     };
   }
 
-  if (path === '/theme') {
+  if (path === ROUTE_PATHS.theme) {
+    const explicitBackTarget = resolveBackTarget(currentParams.back);
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/settings'),
+      onBack: () => navigateBack(explicitBackTarget || ROUTE_PATHS.settings),
     };
   }
 
-  if (path === '/feedback') {
+  if (path === ROUTE_PATHS.feedback) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/settings'),
+      onBack: () => navigateBack(ROUTE_PATHS.settings),
     };
   }
 
-  if (path === '/general') {
+  if (path === ROUTE_PATHS.general) {
+    const generalBackQuery = new URLSearchParams({
+      section: generalSection,
+      title: generalTitle,
+      from: generalSource,
+    }).toString();
+
     return {
       ...commonAuthProps,
       section: generalSection,
       title: generalTitle,
+      source: generalSource,
       detailTitle: currentParams.detailTitle,
       detailContent: currentParams.detailContent,
       detailType: currentParams.detailType,
@@ -767,22 +1150,37 @@ const buildRouteProps = (
       detailTime: currentParams.detailTime,
       onSetLocale: setLocale,
       onBack: () => navigateBack(generalFallback),
-      onNavigate: (targetPath: string, params?: Record<string, string>) => {
-        if (targetPath === '/settings/background') {
-          navigate('/chat-background', {
-            ...(params || {}),
+      onNavigate: (rawPath: string, params?: ExternalRouteParams) => {
+        const target = resolveExternalTarget(rawPath);
+        if (!target.ok || !target.path) {
+          navigateExternal(rawPath, params, generalFallback, 'settings-general');
+          return;
+        }
+        if (target.path === ROUTE_PATHS.settingsBackground) {
+          navigate(ROUTE_PATHS.chatBackground, {
+            ...normalizeExternalParams(params),
             section: generalSection,
             from: generalSource,
             title: generalTitle,
+            back: `${ROUTE_PATHS.general}?${generalBackQuery}`,
           });
           return;
         }
-        navigate(targetPath, params);
+        if (target.path === ROUTE_PATHS.general) {
+          const mergedParams = { ...(params || {}), from: (params?.from as string) || generalSource };
+          const routeInput: RoutePathInput = target.query ? `${target.path}?${target.query}` : target.path;
+          navigate(routeInput, normalizeExternalParams(mergedParams));
+          return;
+        }
+        const routeInput: RoutePathInput = target.query ? `${target.path}?${target.query}` : target.path;
+        navigate(routeInput, normalizeExternalParams(params));
       },
     };
   }
 
-  if (path === '/chat-background') {
+  if (path === ROUTE_PATHS.chatBackground) {
+    const targetSessionId = (currentParams.id || '').trim() || undefined;
+    const explicitBackTarget = resolveBackTarget(currentParams.back);
     const fallbackQuery = new URLSearchParams({
       section: currentParams.section || 'general',
       title: currentParams.title || t('settings.general') || 'General',
@@ -791,92 +1189,108 @@ const buildRouteProps = (
 
     return {
       ...commonAuthProps,
-      sessionId,
-      onBack: () => navigateBack(`/general?${fallbackQuery}`),
+      sessionId: targetSessionId,
+      loadSessionBackground: async (targetSessionId: string) => {
+        const { chatService } = await import('@sdkwork/react-mobile-chat');
+        const sessionListResult = await chatService.getSessionList().catch(() => null);
+        const sessionList = sessionListResult?.success ? sessionListResult.data || [] : [];
+        return sessionList.find((item) => item.id === targetSessionId)?.sessionConfig?.backgroundImage || '';
+      },
+      saveSessionBackground: async (targetSessionId: string, background: string) => {
+        const { chatService } = await import('@sdkwork/react-mobile-chat');
+        await chatService.updateSessionConfig(targetSessionId, {
+          backgroundImage: background || undefined,
+        });
+      },
+      onBack: () => navigateBack(explicitBackTarget || `${ROUTE_PATHS.general}?${fallbackQuery}`),
     };
   }
 
-  if (path === '/model-settings') {
+  if (path === ROUTE_PATHS.modelSettings) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/settings'),
-      onModelDetail: (domain: string, title: string) => navigate('/model-config', { domain, title }),
+      onBack: () => navigateBack(ROUTE_PATHS.settings),
+      onModelDetail: (domain: string, title: string) => navigate(ROUTE_PATHS.modelConfig, { domain, title }),
     };
   }
 
-  if (path === '/model-config') {
+  if (path === ROUTE_PATHS.modelConfig) {
     return {
       ...commonAuthProps,
       domain: modelDomain,
       title: modelTitle,
-      onBack: () => navigateBack('/model-settings'),
+      onBack: () => navigateBack(ROUTE_PATHS.modelSettings),
     };
   }
 
-  if (path === '/search') {
-    const searchCancelFallback = currentParams.sessionId
-      ? `/chat-details?id=${currentParams.sessionId}`
-      : (currentParams.from === 'add-friend' ? '/add-friend' : '/');
+  if (path === ROUTE_PATHS.search) {
+    const searchCancelFallback: RoutePathInput = currentParams.sessionId
+      ? `${ROUTE_PATHS.chatDetails}?id=${currentParams.sessionId}`
+      : (currentParams.from === 'add-friend' ? ROUTE_PATHS.addFriend : ROUTE_PATHS.root);
 
     return {
       ...commonAuthProps,
       onCancel: () => navigateBack(searchCancelFallback),
-      onNavigate: navigate,
+      onNavigate: (rawPath: string, params?: ExternalRouteParams) =>
+        navigateExternal(rawPath, params, ROUTE_PATHS.search, 'search'),
       onResultClick: (result: { type: string }) => {
         if (result.type === 'contact') {
-          navigate('/contacts');
+          navigate(ROUTE_PATHS.contacts);
           return;
         }
         if (result.type === 'moment') {
-          navigate('/moments');
+          navigate(ROUTE_PATHS.moments);
           return;
         }
         if (result.type === 'favorite') {
-          navigate('/favorites');
+          navigate(ROUTE_PATHS.favorites);
           return;
         }
-        navigate('/conversation-list');
+        navigate(ROUTE_PATHS.conversationList);
       },
     };
   }
 
-  if (path === '/content' || path === '/article' || path === '/article/detail' || path === '/content-details') {
+  if (path === ROUTE_PATHS.content || path === ROUTE_PATHS.articleDetail || path === ROUTE_PATHS.look) {
     return {
       ...commonAuthProps,
       articleId: currentParams.id,
-      onBack: () => navigateBack('/discover'),
-      onArticleClick: (id: string) => navigate('/article/detail', { id }),
+      onBack: () => navigateBack(ROUTE_PATHS.discover),
+      onArticleClick: (id: string) => navigate(ROUTE_PATHS.articleDetail, { id }),
     };
   }
 
-  if (path === '/creation') {
+  if (path === ROUTE_PATHS.creation) {
     return {
       ...commonAuthProps,
-      onSearchClick: () => navigate('/creation/search'),
-      onDetailClick: (id: string) => navigate('/creation/detail', { id }),
-      onNavigate: navigate,
+      onSearchClick: () => navigate(ROUTE_PATHS.creationSearch),
+      onDetailClick: (id: string) => navigate(ROUTE_PATHS.creationDetail, { id }),
+      onNavigate: (rawPath: string, params?: ExternalRouteParams) =>
+        navigateExternal(rawPath, params, ROUTE_PATHS.creation, 'creation'),
     };
   }
 
-  if (path === '/creation/search' || path === '/creation-search') {
+  if (path === ROUTE_PATHS.creationSearch) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/creation'),
-      onDetailClick: (id: string) => navigate('/creation/detail', { id }),
-      onNavigate: navigate,
+      onBack: () => navigateBack(ROUTE_PATHS.creation),
+      onDetailClick: (id: string) => navigate(ROUTE_PATHS.creationDetail, { id }),
+      onNavigate: (rawPath: string, params?: ExternalRouteParams) =>
+        navigateExternal(rawPath, params, ROUTE_PATHS.creationSearch, 'creation-search'),
     };
   }
 
-  if (path === '/creation/detail' || path === '/creation-detail') {
+  if (path === ROUTE_PATHS.creationDetail) {
     return {
       ...commonAuthProps,
       id: currentParams.id,
-      onBack: () => navigateBack('/creation'),
-      onNavigate: navigate,
+      onBack: () => navigateBack(ROUTE_PATHS.creation),
+      onNavigate: (rawPath: string, params?: ExternalRouteParams) =>
+        navigateExternal(rawPath, params, ROUTE_PATHS.creationDetail, 'creation-detail'),
     };
   }
 
-  if (path === '/wallet' || path === '/wallet-details') {
+  if (path === ROUTE_PATHS.wallet) {
     const walletServiceTitleMap: Record<string, string> = {
       pay: t('wallet.pay'),
       credit_card: t('wallet.services.credit_card'),
@@ -891,24 +1305,24 @@ const buildRouteProps = (
 
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/me'),
-      onMoreClick: () => navigate('/general', {
+      onBack: () => navigateBack(ROUTE_PATHS.me),
+      onMoreClick: () => navigate(ROUTE_PATHS.general, {
         section: 'generic',
         title: t('wallet.title') || 'Wallet',
         from: 'me',
       }),
       onServiceClick: (service: string) => {
         if (service === 'orders') {
-          navigate('/orders');
+          navigate(ROUTE_PATHS.orders);
           return;
         }
 
         if (service === 'pay') {
-          navigate('/scan');
+          navigate(ROUTE_PATHS.scan);
           return;
         }
 
-        navigate('/general', {
+        navigate(ROUTE_PATHS.general, {
           section: 'generic',
           title: walletServiceTitleMap[service] || service,
           from: 'me',
@@ -917,73 +1331,98 @@ const buildRouteProps = (
     };
   }
 
-  if (path === '/drive' || path === '/cloud-drive' || path === '/drive-files') {
+  if (path === ROUTE_PATHS.drive) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/discover'),
+      onBack: () => navigateBack(ROUTE_PATHS.discover),
     };
   }
 
-  if (
-    path === '/appointments' ||
-    path === '/appointment-detail' ||
-    path === '/appointment-booking' ||
-    path === '/appointments/detail'
-  ) {
+  if (path === ROUTE_PATHS.nearby) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/me'),
+      onBack: () => navigateBack(ROUTE_PATHS.discover),
     };
   }
 
-  if (['/commerce', '/commerce/mall', '/mall', '/shop'].includes(path)) {
+  if (path === ROUTE_PATHS.app) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/discover'),
-      onProductClick: (productId: string) => navigate('/product', { id: productId }),
-      onCartClick: () => navigate('/shopping-cart'),
-      onCategoryClick: () => navigate('/commerce/category'),
+      onBack: () => navigateBack(ROUTE_PATHS.discover),
+      onOpenApp: (appType: string) => {
+        navigate(ROUTE_PATHS.general, {
+          section: 'generic',
+          title: t('discover.miniapp') || 'App Center',
+          detailTitle: appType,
+          from: 'discover',
+        });
+      },
+      onOpenSite: (siteId: string) => {
+        navigate(ROUTE_PATHS.general, {
+          section: 'generic',
+          title: t('discover.miniapp') || 'App Center',
+          detailTitle: siteId,
+          from: 'discover',
+        });
+      },
     };
   }
 
-  if (['/category', '/commerce/category'].includes(path)) {
+  if (path === ROUTE_PATHS.appointments || path === ROUTE_PATHS.appointmentsDetail) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/commerce/mall'),
-      onProductClick: (productId: string) => navigate('/product', { id: productId }),
-      onSearchClick: () => navigate('/commerce/mall'),
+      onBack: () => navigateBack(ROUTE_PATHS.me),
     };
   }
 
-  if (['/product', '/mall-product', '/commerce/product', '/commerce/item'].includes(path)) {
+  if (path === ROUTE_PATHS.shopping) {
+    return {
+      ...commonAuthProps,
+      onBack: () => navigateBack(ROUTE_PATHS.discover),
+      onProductClick: (productId: string) => navigate(ROUTE_PATHS.product, { id: productId }),
+      onCartClick: () => navigate(ROUTE_PATHS.shoppingCart),
+      onCategoryClick: () => navigate(ROUTE_PATHS.category),
+    };
+  }
+
+  if (path === ROUTE_PATHS.category) {
+    return {
+      ...commonAuthProps,
+      onBack: () => navigateBack(ROUTE_PATHS.shopping),
+      onProductClick: (productId: string) => navigate(ROUTE_PATHS.product, { id: productId }),
+      onSearchClick: () => navigate(ROUTE_PATHS.shopping),
+    };
+  }
+
+  if (path === ROUTE_PATHS.product) {
     return {
       ...commonAuthProps,
       productId: currentParams.id,
-      onBack: () => navigateBack('/commerce/mall'),
-      onCartClick: () => navigate('/shopping-cart'),
-      onBuyNow: (_productId: string) => navigate('/order-confirmation'),
+      onBack: () => navigateBack(ROUTE_PATHS.shopping),
+      onCartClick: () => navigate(ROUTE_PATHS.shoppingCart),
+      onBuyNow: (_productId: string) => navigate(ROUTE_PATHS.orderConfirmation),
     };
   }
 
-  if (path === '/shopping-cart' || path === '/commerce/cart') {
+  if (path === ROUTE_PATHS.shoppingCart) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/me'),
-      onCheckout: () => navigate('/order-confirmation'),
-      onProductClick: (productId: string) => navigate('/product', { id: productId }),
-      onContinueShopping: () => navigate('/commerce/mall'),
+      onBack: () => navigateBack(ROUTE_PATHS.me),
+      onCheckout: () => navigate(ROUTE_PATHS.orderConfirmation),
+      onProductClick: (productId: string) => navigate(ROUTE_PATHS.product, { id: productId }),
+      onContinueShopping: () => navigate(ROUTE_PATHS.shopping),
     };
   }
 
-  if (path === '/order-confirmation' || path === '/commerce/checkout') {
+  if (path === ROUTE_PATHS.orderConfirmation) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/shopping-cart'),
-      onOrderCreated: (orderId: string) => navigate('/order-detail', { id: orderId }),
+      onBack: () => navigateBack(ROUTE_PATHS.shoppingCart),
+      onOrderCreated: (orderId: string) => navigate(ROUTE_PATHS.orderDetail, { id: orderId }),
     };
   }
 
-  if (path === '/orders') {
+  if (path === ROUTE_PATHS.orders) {
     const orderStatusCandidates = [
       'pending_payment',
       'paid',
@@ -1002,112 +1441,113 @@ const buildRouteProps = (
     return {
       ...commonAuthProps,
       initialStatus,
-      onBack: () => navigateBack('/me'),
-      onOrderClick: (orderId: string) => navigate('/order-detail', { id: orderId }),
+      onBack: () => navigateBack(ROUTE_PATHS.me),
+      onOrderClick: (orderId: string) => navigate(ROUTE_PATHS.orderDetail, { id: orderId }),
     };
   }
 
-  if (path === '/order-detail' || path === '/orders/detail') {
+  if (path === ROUTE_PATHS.orderDetail) {
     return {
       ...commonAuthProps,
       orderId: currentParams.id,
-      onBack: () => navigateBack('/orders'),
+      onBack: () => navigateBack(ROUTE_PATHS.orders),
     };
   }
 
-  if (path === '/discover/gigs' || path === '/gig-center') {
+  if (path === ROUTE_PATHS.gigCenter || path === ROUTE_PATHS.orderCenter) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/discover'),
-      onGigClick: (_gigId: string) => navigate('/my-gigs'),
+      onBack: () => navigateBack(ROUTE_PATHS.discover),
+      onGigClick: (_gigId: string) => navigate(ROUTE_PATHS.myGigs),
     };
   }
 
-  if (path === '/my-gigs') {
+  if (path === ROUTE_PATHS.myGigs) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/me'),
+      onBack: () => navigateBack(ROUTE_PATHS.me),
     };
   }
 
-  if (path === '/distribution' || path === '/commerce/distribution') {
+  if (path === ROUTE_PATHS.distribution) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/me'),
-      onNavigate: (targetPath: string) => navigate(targetPath),
+      onBack: () => navigateBack(ROUTE_PATHS.me),
+      onNavigate: (rawPath: string, params?: ExternalRouteParams) =>
+        navigateExternal(rawPath, params, ROUTE_PATHS.distribution, 'distribution'),
     };
   }
 
-  if (path === '/distribution-goods' || path === '/commerce/distribution/goods') {
+  if (path === ROUTE_PATHS.distributionGoods) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/distribution'),
+      onBack: () => navigateBack(ROUTE_PATHS.distribution),
     };
   }
 
-  if (path === '/my-team' || path === '/commerce/distribution/team') {
+  if (path === ROUTE_PATHS.myTeam) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/distribution'),
+      onBack: () => navigateBack(ROUTE_PATHS.distribution),
     };
   }
 
-  if (path === '/commission' || path === '/commerce/distribution/commission') {
+  if (path === ROUTE_PATHS.commission) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/distribution'),
+      onBack: () => navigateBack(ROUTE_PATHS.distribution),
     };
   }
 
-  if (path === '/distribution-rank' || path === '/commerce/distribution/rank') {
+  if (path === ROUTE_PATHS.distributionRank) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/distribution'),
+      onBack: () => navigateBack(ROUTE_PATHS.distribution),
     };
   }
 
-  if (path === '/withdraw' || path === '/commerce/distribution/withdraw') {
+  if (path === ROUTE_PATHS.withdraw) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/distribution'),
+      onBack: () => navigateBack(ROUTE_PATHS.distribution),
     };
   }
 
-  if (path === '/share-poster' || path === '/commerce/distribution/poster') {
+  if (path === ROUTE_PATHS.sharePoster) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/distribution'),
+      onBack: () => navigateBack(ROUTE_PATHS.distribution),
     };
   }
 
-  if (path === '/notifications') {
+  if (path === ROUTE_PATHS.notifications) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/'),
+      onBack: () => navigateBack(ROUTE_PATHS.root),
       onNotificationClick: (notification: { type: string }) => {
         if (notification.type === 'chat') {
-          navigate('/conversation-list');
+          navigate(ROUTE_PATHS.conversationList);
           return;
         }
         if (notification.type === 'social') {
-          navigate('/moments');
+          navigate(ROUTE_PATHS.moments);
           return;
         }
         if (notification.type === 'commerce') {
-          navigate('/orders');
+          navigate(ROUTE_PATHS.orders);
           return;
         }
-        navigate('/discover');
+        navigate(ROUTE_PATHS.discover);
       },
     };
   }
 
-  if (path === '/favorites') {
+  if (path === ROUTE_PATHS.favorites) {
     return {
       ...commonAuthProps,
-      onBack: () => navigateBack('/me'),
+      onBack: () => navigateBack(ROUTE_PATHS.me),
       onItemClick: (item: any) =>
-        navigate('/general', {
+        navigate(ROUTE_PATHS.general, {
           section: 'favorite-detail',
           title: t('settings.favorite_detail_title') || 'Favorite Detail',
           detailTitle: item?.title || t('settings.favorite_detail_default_title') || 'Favorite Content',
@@ -1117,6 +1557,86 @@ const buildRouteProps = (
           detailTime: item?.createTime ? new Date(item.createTime).toLocaleString() : '',
           from: 'favorites',
         }),
+    };
+  }
+
+  if (path === ROUTE_PATHS.communication) {
+    return {
+      ...commonAuthProps,
+      onBack: () => navigateBack(ROUTE_PATHS.discover),
+    };
+  }
+
+  if (path === ROUTE_PATHS.scan) {
+    return {
+      ...commonAuthProps,
+      onBack: () => navigateBack(ROUTE_PATHS.discover),
+      onScanResult: (result: string) => {
+        const intent = resolveScanRouteIntent(result);
+
+        if (intent.type === 'user') {
+          navigate(ROUTE_PATHS.addFriend, {
+            from: 'scan',
+            scanType: 'user',
+            scanId: intent.id || '',
+            scanName: intent.name || '',
+            qr: result,
+          });
+          return;
+        }
+
+        if (intent.type === 'agent') {
+          navigate(ROUTE_PATHS.agents, {
+            from: 'scan',
+            scanType: 'agent',
+            scanId: intent.id || '',
+            scanName: intent.name || '',
+            qr: result,
+          });
+          return;
+        }
+
+        navigate(ROUTE_PATHS.joinGroup, {
+          from: 'scan',
+          scanType: intent.type === 'group' ? 'group' : 'unknown',
+          groupId: intent.id || '',
+          groupName: intent.name || '',
+          qr: result,
+        });
+      },
+    };
+  }
+
+  if (path === ROUTE_PATHS.joinGroup) {
+    const joinSource = currentParams.from === 'scan' ? 'scan' : 'chat-details';
+    const joinSessionId = (currentParams.sessionId || '').trim();
+    const joinBackTarget: RoutePathInput = joinSource === 'scan'
+      ? ROUTE_PATHS.scan
+      : (joinSessionId ? `${ROUTE_PATHS.chatDetails}?id=${joinSessionId}` : ROUTE_PATHS.conversationList);
+
+    return {
+      ...commonAuthProps,
+      source: joinSource,
+      sessionId: joinSessionId || undefined,
+      scanGroupId: currentParams.groupId || undefined,
+      scanGroupName: currentParams.groupName || undefined,
+      scanResult: currentParams.qr || undefined,
+      onBack: () => navigateBack(joinBackTarget),
+    };
+  }
+
+  if (path === ROUTE_PATHS.media) {
+    return {
+      ...commonAuthProps,
+      onBack: () => navigateBack(ROUTE_PATHS.discover),
+      onOpenChannel: (channelId: string) => {
+        navigate(ROUTE_PATHS.general, {
+          section: 'generic',
+          title: t('discover.listen') || 'Media Center',
+          detailTitle: channelId,
+          from: 'discover',
+        });
+      },
     };
   }
 
@@ -1133,7 +1653,18 @@ export const Router: React.FC = () => {
 
   useEffect(() => {
     const syncRouteState = () => {
-      currentPath = normalizePathname(window.location.pathname);
+      const rawPath = normalizePathname(window.location.pathname);
+      const safePath = resolveInitialPath({
+        rawPath,
+        fallbackPath: ROUTE_PATHS.root,
+        routeExists,
+      });
+      if (safePath !== rawPath) {
+        const replacementUrl = `${safePath}${window.location.search || ''}`;
+        const currentHistoryIndex = readHistoryIndex(window.history.state) ?? 0;
+        window.history.replaceState(withHistoryIndex(window.history.state, currentHistoryIndex), '', replacementUrl);
+      }
+      currentPath = safePath as RoutePath;
       const searchParams = new URLSearchParams(window.location.search);
       const queryParams: Record<string, string> = {};
       searchParams.forEach((value, key) => {
@@ -1182,15 +1713,26 @@ export const Router: React.FC = () => {
   }, []);
 
   const path = locationState.path;
-  const route = routes[path] || routes['/'];
+  const route = routes[path];
+  if (!route) {
+    console.warn(`[Router] No route config found for path: ${path}, redirecting to root`);
+    return <Redirect to={ROUTE_PATHS.root} />;
+  }
   const Component = route.component;
+  const shouldShowTabbar = useMemo(() => {
+    if (path === ROUTE_PATHS.contacts && currentParams.mode === 'select') {
+      return false;
+    }
+    return !!route.showTabbar;
+  }, [path, route.showTabbar, locationState.search]);
+  const disableLayoutBottomSafeArea = path === ROUTE_PATHS.chat;
   const routeProps = useMemo(
     () => buildRouteProps(path, t, logout, setLocale),
     [path, locationState.search, t, logout, setLocale]
   );
   const pageProps = useMemo(
-    () => (route.showTabbar ? { ...routeProps, showBack: false } : routeProps),
-    [route.showTabbar, routeProps]
+    () => (shouldShowTabbar ? { ...routeProps, showBack: false } : routeProps),
+    [shouldShowTabbar, routeProps]
   );
 
   if (isLoading) {
@@ -1211,11 +1753,11 @@ export const Router: React.FC = () => {
   }
 
   if (!route.public && !isAuthenticated) {
-    return <Redirect to="/login" />;
+    return <Redirect to={ROUTE_PATHS.login} />;
   }
 
-  if (route.public && isAuthenticated && (path === '/login' || path === '/register' || path === '/forgot-password')) {
-    return <Redirect to="/" />;
+  if (route.public && isAuthenticated && (path === ROUTE_PATHS.login || path === ROUTE_PATHS.register || path === ROUTE_PATHS.forgotPassword)) {
+    return <Redirect to={ROUTE_PATHS.root} />;
   }
 
   const content = (
@@ -1240,7 +1782,7 @@ export const Router: React.FC = () => {
 
   if (route.useLayout !== false) {
     return (
-      <MobileLayout showTabbar={!!route.showTabbar}>
+      <MobileLayout showTabbar={shouldShowTabbar} disableBottomSafeArea={disableLayoutBottomSafeArea}>
         {content}
       </MobileLayout>
     );
@@ -1250,5 +1792,3 @@ export const Router: React.FC = () => {
 };
 
 export default Router;
-
-

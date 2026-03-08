@@ -1,10 +1,9 @@
-import { resolveServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
+import { APP_SDK_AUTH_TOKEN_STORAGE_KEY, createAppSdkCoreConfig, getAppSdkCoreClientWithSession, resolveServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
 import type { ServiceFactoryDeps, ServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
+import type { SdkworkAppClient } from '@sdkwork/app-sdk';
 import type { Agent } from '../config/agentRegistry';
 
 const TAG = 'ChatSdkService';
-const APP_API_PREFIX = '/app/v3/api';
-const AUTH_TOKEN_STORAGE_KEY = 'sys_auth_token';
 
 interface SdkApiResult<T> {
   data: T;
@@ -59,85 +58,32 @@ class ChatSdkServiceImpl implements IChatSdkService {
     this.deps = resolveServiceFactoryRuntimeDeps(deps);
   }
 
-  private resolveEnv(name: string): string | undefined {
-    const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env;
-    return env?.[name];
-  }
-
-  private resolveBaseUrl(): string {
-    const value = this.resolveEnv('VITE_API_BASE_URL') || '';
-    return value.trim().replace(/\/+$/g, '');
+  private async getClient(): Promise<SdkworkAppClient> {
+    return getAppSdkCoreClientWithSession({
+      storage: this.deps.storage,
+      authStorageKey: APP_SDK_AUTH_TOKEN_STORAGE_KEY,
+    });
   }
 
   hasSdkBaseUrl(): boolean {
-    return this.resolveBaseUrl().length > 0;
-  }
-
-  private buildAppApiPath(path: string): string {
-    const normalizedPrefixRaw = APP_API_PREFIX.trim();
-    const normalizedPrefix = normalizedPrefixRaw ? `/${normalizedPrefixRaw.replace(/^\/+|\/+$/g, '')}` : '';
-    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-    if (!normalizedPrefix || normalizedPrefix === '/') return normalizedPath;
-    if (normalizedPath === normalizedPrefix || normalizedPath.startsWith(`${normalizedPrefix}/`)) return normalizedPath;
-    return `${normalizedPrefix}${normalizedPath}`;
-  }
-
-  private buildUrl(path: string): string {
-    return `${this.resolveBaseUrl()}${this.buildAppApiPath(path)}`;
-  }
-
-  private async resolveAuthHeaders(): Promise<Record<string, string>> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    const accessTokenEnv = this.resolveEnv('VITE_ACCESS_TOKEN');
-    const accessTokenStorage = await Promise.resolve(this.deps.storage.get<string>(AUTH_TOKEN_STORAGE_KEY));
-    const accessToken = (accessTokenEnv || accessTokenStorage || '').trim();
-
-    if (accessToken) {
-      headers.Authorization = `Bearer ${accessToken}`;
-      return headers;
-    }
-    return headers;
+    return (createAppSdkCoreConfig().baseUrl || '').trim().length > 0;
   }
 
   private isSuccessCode(code: string | undefined): boolean {
     return code === '2000';
   }
 
-  private async requestJson<T>(path: string, init: RequestInit): Promise<T> {
-    if (typeof fetch !== 'function') {
-      throw new Error('Global fetch is not available');
-    }
-
-    const headers = await this.resolveAuthHeaders();
-    const response = await fetch(this.buildUrl(path), {
-      ...init,
-      headers: {
-        ...headers,
-        ...(init.headers || {}),
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} ${response.statusText}`);
-    }
-
-    return (await response.json()) as T;
-  }
-
   private async ensureRemoteSession(request: ChatSdkRequest): Promise<string | null> {
     const mappedSessionId = this.sessionMap.get(request.localSessionId);
     if (mappedSessionId) return mappedSessionId;
 
-    const sessionResult = await this.requestJson<SdkApiResult<SdkChatSessionVO>>('/chat/sessions', {
-      method: 'POST',
-      body: JSON.stringify({
-        title: request.agent?.name || 'Chat Session',
-        agentId: request.agent?.id,
-      }),
-    });
+    const client = await this.getClient();
+    const sessionResult = await client.chat.createSession({
+      name: request.agent?.name || 'Chat Session',
+      type: 'chat',
+      description: request.agent?.description,
+      modelId: request.agent?.id,
+    }) as SdkApiResult<SdkChatSessionVO>;
 
     if (!this.isSuccessCode(sessionResult.code)) {
       this.deps.logger.warn(TAG, 'Create session failed', {
@@ -182,22 +128,12 @@ class ChatSdkServiceImpl implements IChatSdkService {
       const remoteSessionId = await this.ensureRemoteSession(request);
       if (!remoteSessionId) return null;
 
-      const payload = {
-        role: 'user',
+      const client = await this.getClient();
+      const messageResult = await client.chat.sendMessage(remoteSessionId, {
         content: request.prompt,
-        images: (request.images || []).map((item) => ({
-          mimeType: item.mimeType,
-          data: item.data,
-        })),
-      };
-
-      const messageResult = await this.requestJson<SdkApiResult<SdkChatMessageVO>>(
-        `/chat/sessions/${encodeURIComponent(remoteSessionId)}/messages`,
-        {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        },
-      );
+        type: request.images && request.images.length > 0 ? 'image' : 'text',
+        format: 'markdown',
+      }) as SdkApiResult<SdkChatMessageVO>;
 
       if (!this.isSuccessCode(messageResult.code)) {
         this.deps.logger.warn(TAG, 'Send message failed', {

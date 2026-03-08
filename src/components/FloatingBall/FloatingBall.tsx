@@ -1,6 +1,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { navigate } from '../../router';
+import { ROUTE_PATHS } from '../../router/paths';
 import { Platform } from '../../platform';
 import { ActionSheet } from '../ActionSheet';
 import { openOmniChat } from '../../navigation/openChatNavigation';
@@ -125,16 +126,16 @@ export const FloatingBall: React.FC = () => {
                 await openOmniChat();
                 break;
             case 'agents':
-                navigate('/agents');
+                navigate(ROUTE_PATHS.agents);
                 break;
             case 'creation':
-                navigate('/creation');
+                navigate(ROUTE_PATHS.creation);
                 break;
             case 'scan':
-                navigate('/scan');
+                navigate(ROUTE_PATHS.scan);
                 break;
             case 'search':
-                navigate('/search');
+                navigate(ROUTE_PATHS.search);
                 break;
         }
     };

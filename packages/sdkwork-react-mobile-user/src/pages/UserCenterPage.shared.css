@@ -1,0 +1,17 @@
+.user-center-page {
+  min-height: 100%;
+  background: var(--bg-body);
+  display: flex;
+  flex-direction: column;
+}
+
+.user-center-page__scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(var(--user-center-scroll-bottom, 12px) + env(safe-area-inset-bottom));
+}
+
+.user-center-page .c-cell-group {
+  margin-bottom: var(--user-center-group-gap, 8px);
+}

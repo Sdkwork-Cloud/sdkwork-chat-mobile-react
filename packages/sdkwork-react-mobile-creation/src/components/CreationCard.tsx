@@ -11,13 +11,26 @@ const typeLabelMap: Record<Creation['type'], string> = {
   video: '视频',
   music: '音乐',
   text: '文本',
+  short_drama: '短剧',
+  collection: '合集',
 };
 
 const fallbackBackground = (type: Creation['type']) => {
   if (type === 'video') return 'linear-gradient(135deg, #2b0aff, #fa5151)';
   if (type === 'music') return 'linear-gradient(135deg, #1f1c2c, #928dab)';
   if (type === 'text') return 'linear-gradient(135deg, #fff1eb, #ace0f9)';
+  if (type === 'short_drama') return 'linear-gradient(135deg, #111827, #ef4444)';
+  if (type === 'collection') return 'linear-gradient(135deg, #0f766e, #14b8a6)';
   return 'linear-gradient(135deg, #1f56d2, #4f8dff)';
+};
+
+const typeEmojiMap: Record<Creation['type'], string> = {
+  image: '🎨',
+  video: '🎬',
+  music: '🎵',
+  text: '📝',
+  short_drama: '🎞️',
+  collection: '🗂️',
 };
 
 const formatCount = (count: number) => (count > 999 ? `${(count / 1000).toFixed(1)}k` : `${count}`);
@@ -65,7 +78,7 @@ export const CreationCard: React.FC<CreationCardProps> = ({ item, onClick }) => 
               fontSize: '34px',
             }}
           >
-            {item.type === 'video' ? '🎬' : item.type === 'music' ? '🎵' : item.type === 'text' ? '📝' : '🎨'}
+            {typeEmojiMap[item.type]}
           </div>
         )}
         <span

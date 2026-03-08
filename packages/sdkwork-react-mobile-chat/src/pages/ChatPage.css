@@ -3,29 +3,33 @@
   z-index: 1;
   display: flex;
   flex-direction: column;
+  width: 100%;
   height: 100%;
   isolation: isolate;
+  overflow: hidden;
+}
+
+.chat-page-root .page-scroll-content {
+  padding: 0 !important;
+  padding-bottom: 0 !important;
+  overflow: hidden !important;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.chat-page::before {
+  content: none;
 }
 
 .chat-page--default-bg {
-  background: linear-gradient(
-    180deg,
-    rgba(245, 248, 253, 0.96) 0%,
-    rgba(244, 247, 252, 0.9) 32%,
-    rgba(249, 251, 255, 0.92) 62%,
-    rgba(255, 255, 255, 0.98) 100%
-  );
+  background: var(--bg-body);
 }
 
 [data-theme="wechat-dark"] .chat-page--default-bg,
 [data-theme="dark"] .chat-page--default-bg,
 [data-theme="midnight-blue"] .chat-page--default-bg {
-  background: linear-gradient(
-    180deg,
-    rgba(21, 24, 31, 0.94) 0%,
-    rgba(18, 20, 26, 0.9) 38%,
-    rgba(17, 18, 23, 0.95) 100%
-  );
+  background: var(--bg-body);
 }
 
 .chat-page__bg-mask {
@@ -46,7 +50,8 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  min-width: 54px;
+  width: 44px;
+  height: 44px;
 }
 
 .chat-page__nav-btn,
@@ -58,19 +63,26 @@
 }
 
 .chat-page__nav-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 11px;
+  width: 44px;
+  height: 44px;
+  margin-right: -10px;
+  border-radius: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(120, 129, 145, 0.12);
-  transition: background 0.18s ease, transform 0.18s ease;
+  background: transparent;
+  border: none;
+  transition: background-color 0.16s ease;
 }
 
 .chat-page__nav-btn:active {
-  background: var(--bg-cell-active);
-  transform: scale(0.97);
+  background: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="wechat-dark"] .chat-page__nav-btn:active,
+[data-theme="dark"] .chat-page__nav-btn:active,
+[data-theme="midnight-blue"] .chat-page__nav-btn:active {
+  background: rgba(255, 255, 255, 0.13);
 }
 
 .chat-page__nav-link {
@@ -86,7 +98,7 @@
   justify-content: center;
   height: 100%;
   padding: 24px 16px;
-  background: linear-gradient(180deg, #f7faff 0%, #f2f6fc 40%, #ffffff 100%);
+  background: var(--bg-body);
 }
 
 .chat-page__empty-skeletons {
@@ -125,4 +137,53 @@
 .chat-page__empty-action:active {
   transform: translateY(1px);
   background: rgba(41, 121, 255, 0.14);
+}
+
+.flash-highlight {
+  animation: chat-flash-highlight 0.58s ease-out;
+}
+
+@keyframes chat-flash-highlight {
+  0% {
+    background: rgba(41, 121, 255, 0.2);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+@keyframes chat-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes chat-thinking-dot {
+  0% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.8;
+    transform: translateY(-1px);
+  }
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+}
+
+@keyframes chat-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes chat-pop-in {
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+  }
 }

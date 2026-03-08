@@ -1,8 +1,13 @@
 import React from 'react';
+import { EditorContent, useEditor } from '@tiptap/react';
+import type { Editor, JSONContent } from '@tiptap/core';
+import StarterKit from '@tiptap/starter-kit';
+import Placeholder from '@tiptap/extension-placeholder';
 import { Toast, Icon } from '@sdkwork/react-mobile-commons';
 import { ChatActionPanel } from './ChatActionPanel';
 import { ChatEmojiPanel } from './ChatEmojiPanel';
 import { VoiceOverlay } from './VoiceOverlay';
+import { resolveChatInputEditorMetrics } from './chatInputEditorMetrics';
 import type { Message } from '../types';
 import { useChatComposerController } from '../hooks/useChatComposerController';
 import './ChatInput.css';
@@ -15,6 +20,25 @@ interface ChatInputProps {
   replyMessage: Message | null;
   onCancelReply: () => void;
 }
+
+const EDITOR_MIN_HEIGHT = 24;
+const EDITOR_MAX_HEIGHT = 136;
+
+const buildPlainTextContent = (text: string): JSONContent => {
+  const lines = text.split('\n');
+  return {
+    type: 'doc',
+    content: lines.map((line) => {
+      if (!line) {
+        return { type: 'paragraph' };
+      }
+      return {
+        type: 'paragraph',
+        content: [{ type: 'text', text: line }],
+      };
+    }),
+  };
+};
 
 export const ChatInput: React.FC<ChatInputProps> = ({
   t,
@@ -33,8 +57,27 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     [t]
   );
   const voicePointerIdRef = React.useRef<number | null>(null);
-  const inputBarRef = React.useRef<HTMLDivElement>(null);
-  const [voiceOverlayBottom, setVoiceOverlayBottom] = React.useState(112);
+  const editorRef = React.useRef<Editor | null>(null);
+  const [editorHeight, setEditorHeight] = React.useState(EDITOR_MIN_HEIGHT);
+  const [editorOverflow, setEditorOverflow] = React.useState(false);
+
+  const requestFocusText = React.useCallback(() => {
+    editorRef.current?.commands.focus('end');
+  }, []);
+
+  const requestBlurText = React.useCallback(() => {
+    editorRef.current?.commands.blur();
+  }, []);
+
+  const syncEditorMetrics = React.useCallback((currentEditor?: Editor | null) => {
+    const targetEditor = currentEditor ?? editorRef.current;
+    if (!targetEditor) return;
+    const dom = targetEditor.view.dom as HTMLElement;
+    if (!dom) return;
+    const metrics = resolveChatInputEditorMetrics(dom.scrollHeight, EDITOR_MIN_HEIGHT, EDITOR_MAX_HEIGHT);
+    setEditorHeight((prev) => (prev === metrics.height ? prev : metrics.height));
+    setEditorOverflow((prev) => (prev === metrics.overflow ? prev : metrics.overflow));
+  }, []);
 
   const {
     input,
@@ -43,10 +86,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     activePanel,
     isRecording,
     cancelVoice,
-    textareaRef,
     handleSend,
-    handleEmojiSelect,
-    handleKeyDown,
     togglePanel,
     toggleMode,
     startVoiceRecording,
@@ -60,7 +100,106 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     onCancelReply,
     onVoiceSent: () => Toast.success(tr('chat.voice_sent', 'Voice message sent')),
     onVoiceCancelled: () => Toast.info(tr('chat.voice_cancelled', 'Cancelled')),
+    onRequestFocusText: requestFocusText,
+    onRequestBlurText: requestBlurText,
   });
+
+  const handleEmojiSelect = React.useCallback(
+    (emoji: string) => {
+      if (!editorRef.current || mode !== 'text') return;
+      if (navigator.vibrate) navigator.vibrate(5);
+      editorRef.current.chain().focus().insertContent(emoji).run();
+      syncEditorMetrics(editorRef.current);
+    },
+    [mode, syncEditorMetrics]
+  );
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: false,
+        blockquote: false,
+        bulletList: false,
+        orderedList: false,
+        listItem: false,
+        codeBlock: false,
+        code: false,
+        horizontalRule: false,
+        bold: false,
+        italic: false,
+        strike: false,
+      }),
+      Placeholder.configure({
+        placeholder: tr('chat.input_placeholder', 'Type a message...'),
+        emptyEditorClass: 'is-editor-empty',
+      }),
+    ],
+    content: '',
+    editorProps: {
+      attributes: {
+        class: 'chat-input__prosemirror',
+      },
+      handleKeyDown: (_view, event) => {
+        if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !event.isComposing) {
+          event.preventDefault();
+          handleSend();
+          return true;
+        }
+        return false;
+      },
+      handleDOMEvents: {
+        focus: () => {
+          handleTextFocus();
+          return false;
+        },
+      },
+    },
+    onCreate: ({ editor: instance }) => {
+      editorRef.current = instance;
+      syncEditorMetrics(instance);
+    },
+    onUpdate: ({ editor: instance }) => {
+      const text = instance.getText({ blockSeparator: '\n' });
+      setInput(text);
+      syncEditorMetrics(instance);
+    },
+    onDestroy: () => {
+      editorRef.current = null;
+    },
+    immediatelyRender: false,
+  });
+
+  React.useEffect(() => {
+    if (!editor) return;
+    const editable = mode === 'text' && !isLoading;
+    editor.setEditable(editable);
+  }, [editor, mode, isLoading]);
+
+  React.useEffect(() => {
+    if (!editor) return;
+    const currentText = editor.getText({ blockSeparator: '\n' });
+    if (currentText === input) return;
+    if (!input) {
+      editor.commands.clearContent();
+      syncEditorMetrics(editor);
+      return;
+    }
+    editor.commands.setContent(buildPlainTextContent(input), { emitUpdate: false });
+    syncEditorMetrics(editor);
+  }, [editor, input, syncEditorMetrics]);
+
+  React.useEffect(() => {
+    if (!editor || mode !== 'text' || activePanel !== 'none') return;
+    window.setTimeout(() => {
+      editor.commands.focus('end');
+    }, 40);
+  }, [activePanel, editor, mode]);
+
+  React.useEffect(() => {
+    const onResize = () => syncEditorMetrics();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [syncEditorMetrics]);
 
   const handleSendImage = React.useCallback(
     (file: File) => {
@@ -82,12 +221,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       event.preventDefault();
       voicePointerIdRef.current = event.pointerId;
       event.currentTarget.setPointerCapture?.(event.pointerId);
-      const rect = inputBarRef.current?.getBoundingClientRect();
-      if (rect) {
-        // Keep voice overlay anchored above the composer across viewport/keyboard changes.
-        const anchoredBottom = Math.round(window.innerHeight - rect.top + 16);
-        setVoiceOverlayBottom(Math.max(96, Math.min(188, anchoredBottom)));
-      }
       startVoiceRecording(event.clientY);
     },
     [startVoiceRecording]
@@ -119,37 +252,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   const showSendButton = mode === 'text' && input.trim().length > 0;
 
-  React.useEffect(() => {
-    const updateVoiceOverlayBottom = () => {
-      const rect = inputBarRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const anchoredBottom = Math.round(window.innerHeight - rect.top + 16);
-      setVoiceOverlayBottom((prev) => {
-        const next = Math.max(96, Math.min(188, anchoredBottom));
-        return prev === next ? prev : next;
-      });
-    };
-
-    updateVoiceOverlayBottom();
-    window.addEventListener('resize', updateVoiceOverlayBottom);
-    window.addEventListener('orientationchange', updateVoiceOverlayBottom);
-    window.visualViewport?.addEventListener('resize', updateVoiceOverlayBottom);
-    window.visualViewport?.addEventListener('scroll', updateVoiceOverlayBottom);
-
-    return () => {
-      window.removeEventListener('resize', updateVoiceOverlayBottom);
-      window.removeEventListener('orientationchange', updateVoiceOverlayBottom);
-      window.visualViewport?.removeEventListener('resize', updateVoiceOverlayBottom);
-      window.visualViewport?.removeEventListener('scroll', updateVoiceOverlayBottom);
-    };
-  }, []);
-
   return (
-    <div className={`chat-input${activePanel !== 'none' ? ' is-panel-open' : ''}`}>
+    <div className={`chat-input${activePanel !== 'none' ? ' is-panel-open' : ''}${mode === 'voice' ? ' is-voice-mode' : ''}`}>
       <VoiceOverlay
         isRecording={isRecording}
         cancelVoice={cancelVoice}
-        bottomOffset={voiceOverlayBottom}
         recordingHint={tr('chat.swipe_to_cancel', 'Swipe up to cancel')}
         cancelHint={tr('chat.voice_release_cancel', 'Release to cancel')}
       />
@@ -168,28 +275,25 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         </div>
       )}
 
-      <div className="chat-input-bar" ref={inputBarRef}>
+      <div className={`chat-input-bar${showSendButton ? ' has-send' : ''}`}>
         <button
           type="button"
-          className="chat-input__icon-btn"
+          className="chat-input__icon-btn chat-input__mode-btn"
           onClick={toggleMode}
           aria-label={mode === 'text' ? 'voice-mode' : 'text-mode'}
         >
-          <Icon name={mode === 'text' ? 'voice' : 'keyboard'} size={24} />
+          <Icon name={mode === 'text' ? 'voice' : 'keyboard'} size={22} />
         </button>
 
         <div className={`chat-input__editor-wrap${mode === 'voice' ? ' is-voice' : ''}`}>
           {mode === 'text' ? (
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onFocus={handleTextFocus}
-              placeholder={tr('chat.input_placeholder', 'Type a message...')}
-              rows={1}
-              className="chat-input__textarea"
-            />
+            <div
+              className={`chat-input__editor-host${editorOverflow ? ' is-overflow' : ''}`}
+              style={{ '--chat-editor-height': `${editorHeight}px` } as React.CSSProperties}
+              onClick={() => editor?.commands.focus('end')}
+            >
+              <EditorContent editor={editor} className="chat-input__editor-content" />
+            </div>
           ) : (
             <button
               type="button"
@@ -206,11 +310,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
         <button
           type="button"
-          className={`chat-input__icon-btn${activePanel === 'emoji' ? ' is-active' : ''}`}
+          className={`chat-input__icon-btn chat-input__emoji-btn${activePanel === 'emoji' ? ' is-active' : ''}`}
           onClick={() => togglePanel('emoji')}
           aria-label="emoji-panel"
         >
-          <Icon name="emoji" size={24} />
+          <Icon name="emoji" size={22} />
         </button>
 
         {showSendButton ? (
@@ -225,11 +329,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         ) : (
           <button
             type="button"
-            className={`chat-input__icon-btn chat-input__plus-btn${activePanel === 'action' ? ' is-rotated' : ''}`}
+            className={`chat-input__icon-btn chat-input__plus-btn${activePanel === 'action' ? ' is-rotated is-active' : ''}`}
             onClick={() => togglePanel('action')}
             aria-label="action-panel"
           >
-            <Icon name="plus" size={24} />
+            <Icon name="plus" size={22} />
           </button>
         )}
       </div>

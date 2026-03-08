@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Overlay } from '../Overlay/Overlay';
 import { useScrollLock } from '../../hooks/useScrollLock';
+import { resolvePopupMaskZIndex, resolvePopupZIndex } from './popupLayerZIndex';
 
 export type PopupPosition = 'center' | 'bottom' | 'top' | 'left' | 'right';
 
@@ -11,7 +12,7 @@ export interface PopupProps {
     onClose?: () => void;
     children: React.ReactNode;
     position?: PopupPosition;
-    zIndex?: number;
+    zIndex?: React.CSSProperties['zIndex'];
     mask?: boolean;
     maskClosable?: boolean;
     round?: boolean; // Rounded corners
@@ -117,13 +118,13 @@ export const Popup: React.FC<PopupProps> = ({
     if (!render && destroyOnClose) return null;
 
     // --- Style Logic ---
-    const finalZIndex = zIndex !== undefined ? zIndex : 'var(--z-popup)';
+    const finalZIndex = resolvePopupZIndex(zIndex);
 
     const getBaseStyle = (): React.CSSProperties => {
         const base: React.CSSProperties = {
             position: 'fixed',
             background: 'var(--bg-card)',
-            zIndex: finalZIndex as any,
+            zIndex: finalZIndex,
             willChange: 'transform',
             ...style
         };
@@ -171,7 +172,7 @@ export const Popup: React.FC<PopupProps> = ({
         if (maskClosable && onClose) onClose();
     };
 
-    const maskZIndex = typeof finalZIndex === 'number' ? finalZIndex - 1 : `calc(${finalZIndex} - 1)`;
+    const maskZIndex = resolvePopupMaskZIndex(finalZIndex);
 
     // Calculate mask opacity based on drag
     const maskOpacity = active ? Math.max(0, 1 - offsetY / 600) : 0; // Fade out as you drag down
@@ -182,7 +183,7 @@ export const Popup: React.FC<PopupProps> = ({
                 <Overlay 
                     visible={active} // Overlay handles its own enter animation, but we control fade out on drag
                     onClick={handleMaskClick} 
-                    zIndex={maskZIndex as any} 
+                    zIndex={maskZIndex} 
                     customStyle={{ 
                         opacity: maskOpacity, 
                         transition: isDragging ? 'none' : 'opacity 0.3s' 

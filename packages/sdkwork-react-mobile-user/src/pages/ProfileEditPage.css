@@ -1,0 +1,116 @@
+@import './UserCenterPage.shared.css';
+
+.profile-edit-page {
+  --user-center-scroll-bottom: 16px;
+}
+
+.profile-edit-page__scroll {
+  background: var(--bg-body);
+}
+
+.profile-edit-page__save-btn {
+  border: 0;
+  background: transparent;
+  color: var(--primary-color);
+  font-size: 16px;
+  line-height: 1.2;
+  padding: 4px 2px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.profile-edit-page__save-btn:disabled {
+  color: var(--text-disabled, #9ca3af);
+  cursor: not-allowed;
+}
+
+.profile-edit-page__save-btn:not(:disabled):active {
+  opacity: 0.72;
+}
+
+.profile-edit-page__alert {
+  margin: 12px 12px 8px;
+  padding: 10px 12px;
+  border: 0.5px solid var(--border-color);
+  background: var(--bg-card);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-edit-page__alert-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.profile-edit-page__alert-retry {
+  border: 0;
+  background: transparent;
+  color: var(--primary-color);
+  font-size: 13px;
+  line-height: 1.3;
+  padding: 2px 0;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.profile-edit-page__alert-retry:active {
+  opacity: 0.72;
+}
+
+.profile-edit-page__skeleton {
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border-bottom: 0.5px solid var(--border-color);
+}
+
+.profile-edit-page__skeleton--last {
+  border-bottom: none;
+}
+
+.profile-edit-page__form {
+  margin-top: 8px;
+  border-top: 0.5px solid var(--border-color);
+  border-bottom: 0.5px solid var(--border-color);
+  background: var(--bg-card);
+}
+
+.profile-edit-page__input,
+.profile-edit-page__textarea {
+  width: 100%;
+  border: 0;
+  border-bottom: 0.5px solid var(--border-color);
+  background: transparent;
+  color: var(--text-primary);
+  padding: 12px 16px;
+  font-size: 16px;
+  line-height: 1.45;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.profile-edit-page__textarea {
+  resize: none;
+  min-height: 120px;
+}
+
+.profile-edit-page__input::placeholder,
+.profile-edit-page__textarea::placeholder {
+  color: var(--text-secondary);
+}
+
+.profile-edit-page__input--last {
+  border-bottom: none;
+}
+
+.profile-edit-page__hint {
+  padding: 10px 16px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+}

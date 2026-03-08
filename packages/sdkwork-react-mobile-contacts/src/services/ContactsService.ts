@@ -1,6 +1,16 @@
-﻿import { resolveServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
+import {
+  APP_SDK_AUTH_TOKEN_STORAGE_KEY,
+  getAppSdkCoreClientWithSession,
+  resolveServiceFactoryRuntimeDeps,
+} from '@sdkwork/react-mobile-core';
 import type { ServiceFactoryDeps, ServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
-import type { Contact, FriendRequest, IContactsService } from '../types';
+import type {
+  FriendRemarkUpdateForm,
+  FriendRequestCreateForm,
+  FriendRequestProcessForm,
+  QueryParams,
+} from '@sdkwork/app-sdk';
+import type { Contact, FriendRequest, FriendRequestStatus, IContactsService } from '../types';
 
 const STORAGE_KEYS = {
   CONTACTS: 'sys_contacts_v2',
@@ -16,18 +26,90 @@ const CONTACTS_EVENTS = {
   FRIEND_REQUEST_REJECTED: 'contacts:friend_request_rejected',
 } as const;
 
-const SEED_CONTACTS: Partial<Contact>[] = [
+const DEV_SEED_CONTACTS: Partial<Contact>[] = [
   { id: '1', name: 'Alice', avatar: 'https://api.dicebear.com/7.x/identicon/svg?seed=Alice', wxid: 'alice_01', region: 'USA' },
   { id: '2', name: 'Agent Smith', avatar: 'https://api.dicebear.com/7.x/identicon/svg?seed=Agent', wxid: 'matrix_001', region: 'Matrix' },
   { id: '3', name: 'Bob', avatar: 'https://api.dicebear.com/7.x/identicon/svg?seed=Bob', wxid: 'bob_builder', region: 'UK' },
-  { id: '4', name: 'Catherine', avatar: 'https://api.dicebear.com/7.x/identicon/svg?seed=Catherine', wxid: 'cat_00', region: 'France' },
-  { id: '5', name: 'David', avatar: 'https://api.dicebear.com/7.x/identicon/svg?seed=David', wxid: 'dave_x', region: 'USA' },
-  { id: '6', name: 'Elon', avatar: 'https://api.dicebear.com/7.x/identicon/svg?seed=Elon', wxid: 'mars_king', region: 'Mars' },
-  { id: '7', name: 'Felix', avatar: 'https://api.dicebear.com/7.x/identicon/svg?seed=Felix', wxid: 'felix_cat', region: 'Germany' },
-  { id: '8', name: 'George', avatar: 'https://api.dicebear.com/7.x/identicon/svg?seed=George', wxid: 'geo_jungle', region: 'Africa' },
-  { id: '9', name: 'Harry', avatar: 'https://api.dicebear.com/7.x/identicon/svg?seed=Harry', wxid: 'wizard_h', region: 'UK' },
-  { id: '10', name: 'Ivy', avatar: 'https://api.dicebear.com/7.x/identicon/svg?seed=Ivy', wxid: 'poison_ivy', region: 'Gotham' },
 ];
+
+const DEV_SEED_REQUESTS: Partial<FriendRequest>[] = [
+  {
+    id: 'fr-seed-ethan',
+    fromUserId: 'new_friend_1',
+    fromUserName: 'Ethan',
+    fromUserAvatar: 'https://api.dicebear.com/7.x/identicon/svg?seed=Ethan',
+    message: 'Hi, I am Ethan. Nice to meet you!',
+    status: 'pending',
+  },
+  {
+    id: 'fr-seed-luna',
+    fromUserId: 'new_friend_2',
+    fromUserName: 'Luna',
+    fromUserAvatar: 'https://api.dicebear.com/7.x/identicon/svg?seed=Luna',
+    message: 'Can we become friends?',
+    status: 'pending',
+  },
+];
+
+type AnyRecord = Record<string, unknown>;
+
+function toRecord(value: unknown): AnyRecord {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+  return value as AnyRecord;
+}
+
+function toText(value: unknown): string {
+  if (typeof value !== 'string') {
+    return '';
+  }
+  return value.trim();
+}
+
+function toEpoch(value: unknown, fallback: number): number {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value > 10_000_000_000 ? value : value * 1000;
+  }
+  const text = toText(value);
+  if (!text) {
+    return fallback;
+  }
+  const asNumber = Number(text);
+  if (Number.isFinite(asNumber)) {
+    return asNumber > 10_000_000_000 ? asNumber : asNumber * 1000;
+  }
+  const asDate = Date.parse(text);
+  if (!Number.isNaN(asDate)) {
+    return asDate;
+  }
+  return fallback;
+}
+
+function normalizeStatus(value: unknown): FriendRequestStatus {
+  const normalized = toText(value).toLowerCase();
+  if (normalized === 'accepted' || normalized === 'approved' || normalized === 'accept' || normalized === 'pass') {
+    return 'accepted';
+  }
+  if (normalized === 'rejected' || normalized === 'reject' || normalized === 'denied') {
+    return 'rejected';
+  }
+  return 'pending';
+}
+
+function isDevRuntime(): boolean {
+  const importMetaEnv = (import.meta as unknown as { env?: Record<string, unknown> }).env;
+  if (importMetaEnv?.DEV === true) {
+    return true;
+  }
+  const mode = String(importMetaEnv?.MODE ?? '').trim().toLowerCase();
+  if (mode === 'development' || mode === 'dev' || mode === 'test') {
+    return true;
+  }
+  const processEnv = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
+  const nodeEnv = String(processEnv?.NODE_ENV ?? '').trim().toLowerCase();
+  return nodeEnv !== 'production';
+}
 
 class ContactsServiceImpl implements IContactsService {
   private initialized = false;
@@ -41,19 +123,137 @@ class ContactsServiceImpl implements IContactsService {
     return this.deps.clock.now();
   }
 
+  private async getSdkClient() {
+    return getAppSdkCoreClientWithSession({
+      storage: this.deps.storage,
+      authStorageKey: APP_SDK_AUTH_TOKEN_STORAGE_KEY,
+    });
+  }
+
+  private createAvatar(seed: string): string {
+    const normalized = (seed || '').trim() || 'Unknown';
+    return `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(normalized)}`;
+  }
+
+  private mapRemoteContact(raw: unknown): Contact {
+    const source = toRecord(raw);
+    const now = this.now();
+    const name =
+      toText(source.name) ||
+      toText(source.nickname) ||
+      toText(source.remark) ||
+      toText(source.username) ||
+      'Unknown';
+    const id =
+      toText(source.id) ||
+      toText(source.contactId) ||
+      toText(source.userId) ||
+      toText(source.wxid) ||
+      this.deps.idGenerator.next('contact');
+    const wxid =
+      toText(source.wxid) ||
+      toText(source.userId) ||
+      toText(source.id) ||
+      id;
+    const avatar = toText(source.avatar) || this.createAvatar(name);
+    const createTime = toEpoch(source.createTime ?? source.createdAt, now);
+    const updateTime = toEpoch(source.updateTime ?? source.updatedAt, now);
+
+    return {
+      id,
+      name,
+      avatar,
+      wxid,
+      region: toText(source.region) || 'Unknown',
+      phone: toText(source.phone) || undefined,
+      email: toText(source.email) || undefined,
+      remark: toText(source.remark) || undefined,
+      createTime,
+      updateTime,
+      createdAt: createTime,
+    };
+  }
+
+  private mapRemoteRequest(raw: unknown): FriendRequest {
+    const source = toRecord(raw);
+    const now = this.now();
+    const fromUserName =
+      toText(source.fromUserName) ||
+      toText(source.fromName) ||
+      toText(source.nickname) ||
+      toText(source.name) ||
+      'Unknown';
+    const fromUserId =
+      toText(source.fromUserId) ||
+      toText(source.fromId) ||
+      toText(source.userId) ||
+      this.deps.idGenerator.next('friend');
+    const createTime = toEpoch(source.createTime ?? source.createdAt, now);
+    const updateTime = toEpoch(source.updateTime ?? source.updatedAt, now);
+
+    return {
+      id: toText(source.id) || toText(source.requestId) || this.deps.idGenerator.next('fr'),
+      fromUserId,
+      fromUserName,
+      fromUserAvatar: toText(source.fromUserAvatar) || toText(source.fromAvatar) || this.createAvatar(fromUserName),
+      message: toText(source.message) || '',
+      status: normalizeStatus(source.status),
+      createTime,
+      updateTime,
+    };
+  }
+
+  private unwrapResult<T>(response: unknown, fallback: T, fallbackMessage: string): T {
+    if (response === undefined || response === null) {
+      return fallback;
+    }
+
+    const payload = toRecord(response);
+    if (Object.keys(payload).length === 0) {
+      return response as T;
+    }
+
+    const code = toText(payload.code);
+    if (code && !code.startsWith('2')) {
+      const message = toText(payload.msg) || toText(payload.message) || fallbackMessage;
+      throw new Error(message);
+    }
+
+    if ('data' in payload) {
+      const data = payload.data as T | undefined;
+      return (data ?? fallback) as T;
+    }
+
+    return response as T;
+  }
+
+  private normalizeContactList(raw: unknown): Contact[] {
+    return Array.isArray(raw) ? raw.map((item) => this.mapRemoteContact(item)) : [];
+  }
+
+  private normalizeRequestList(raw: unknown): FriendRequest[] {
+    if (!Array.isArray(raw)) {
+      return [];
+    }
+    return raw
+      .map((item) => this.mapRemoteRequest(item))
+      .sort((left, right) => right.createTime - left.createTime);
+  }
+
   private async getContactsFromStorage(): Promise<Contact[]> {
     const data = await Promise.resolve(this.deps.storage.get<Contact[] | string>(STORAGE_KEYS.CONTACTS));
-    if (!data) return [];
-
+    if (!data) {
+      return [];
+    }
     if (typeof data === 'string') {
       try {
-        return JSON.parse(data) as Contact[];
+        const parsed = JSON.parse(data) as unknown;
+        return Array.isArray(parsed) ? parsed.map((item) => this.mapRemoteContact(item)) : [];
       } catch {
         return [];
       }
     }
-
-    return data;
+    return Array.isArray(data) ? data.map((item) => this.mapRemoteContact(item)) : [];
   }
 
   private async saveContactsToStorage(contacts: Contact[]): Promise<void> {
@@ -62,73 +262,84 @@ class ContactsServiceImpl implements IContactsService {
 
   private async getFriendRequestsFromStorage(): Promise<FriendRequest[]> {
     const data = await Promise.resolve(this.deps.storage.get<FriendRequest[] | string>(STORAGE_KEYS.FRIEND_REQUESTS));
-    if (!data) return [];
-
+    if (!data) {
+      return [];
+    }
     if (typeof data === 'string') {
       try {
-        return JSON.parse(data) as FriendRequest[];
+        const parsed = JSON.parse(data) as unknown;
+        return this.normalizeRequestList(parsed);
       } catch {
         return [];
       }
     }
-
-    return data;
+    return this.normalizeRequestList(data);
   }
 
   private async saveFriendRequestsToStorage(requests: FriendRequest[]): Promise<void> {
     await Promise.resolve(this.deps.storage.set(STORAGE_KEYS.FRIEND_REQUESTS, requests));
   }
 
-  async init(): Promise<void> {
-    if (this.initialized) return;
+  private async upsertContact(contact: Contact): Promise<void> {
+    const list = await this.getContactsFromStorage();
+    const next = list.some((item) => item.id === contact.id)
+      ? list.map((item) => (item.id === contact.id ? { ...item, ...contact, updateTime: this.now() } : item))
+      : [contact, ...list];
+    await this.saveContactsToStorage(next);
+  }
 
-    const contactsData = await Promise.resolve(this.deps.storage.get<unknown>(STORAGE_KEYS.CONTACTS));
-    if (!contactsData) {
-      const now = this.now();
-      const contacts = SEED_CONTACTS.map((c) => ({
-        ...c,
-        createTime: now,
-        updateTime: now,
-      })) as Contact[];
-      await this.saveContactsToStorage(contacts);
+  private async upsertRequest(request: FriendRequest): Promise<void> {
+    const list = await this.getFriendRequestsFromStorage();
+    const next = list.some((item) => item.id === request.id)
+      ? list.map((item) => (item.id === request.id ? { ...item, ...request } : item))
+      : [request, ...list];
+    await this.saveFriendRequestsToStorage(next.sort((left, right) => right.createTime - left.createTime));
+  }
+
+  private async updateRequestStatus(
+    requestId: string,
+    status: FriendRequestStatus,
+  ): Promise<FriendRequest | null> {
+    const list = await this.getFriendRequestsFromStorage();
+    const now = this.now();
+    let target: FriendRequest | null = null;
+    const next = list.map((item) => {
+      if (item.id !== requestId) {
+        return item;
+      }
+      const updated: FriendRequest = { ...item, status, updateTime: now };
+      target = updated;
+      return updated;
+    });
+    await this.saveFriendRequestsToStorage(next);
+    return target;
+  }
+
+  async init(): Promise<void> {
+    if (this.initialized) {
+      return;
     }
 
-    const friendRequestsData = await Promise.resolve(this.deps.storage.get<unknown>(STORAGE_KEYS.FRIEND_REQUESTS));
-    if (!friendRequestsData) {
-      const now = this.now();
-      const friendRequests: FriendRequest[] = [
-        {
-          id: this.deps.idGenerator.next('fr'),
-          fromUserId: 'new_friend_1',
-          fromUserName: 'Ethan',
-          fromUserAvatar: 'https://api.dicebear.com/7.x/identicon/svg?seed=Ethan',
-          message: 'Hi, I am Ethan. Nice to meet you!',
-          status: 'pending',
-          createTime: now - 1000 * 60 * 35,
-          updateTime: now - 1000 * 60 * 35,
-        },
-        {
-          id: this.deps.idGenerator.next('fr'),
-          fromUserId: 'new_friend_2',
-          fromUserName: 'Luna',
-          fromUserAvatar: 'https://api.dicebear.com/7.x/identicon/svg?seed=Luna',
-          message: 'Can we become friends?',
-          status: 'pending',
-          createTime: now - 1000 * 60 * 120,
-          updateTime: now - 1000 * 60 * 120,
-        },
-        {
-          id: this.deps.idGenerator.next('fr'),
-          fromUserId: 'new_friend_3',
-          fromUserName: 'Mason',
-          fromUserAvatar: 'https://api.dicebear.com/7.x/identicon/svg?seed=Mason',
-          message: 'Already connected before.',
-          status: 'accepted',
-          createTime: now - 1000 * 60 * 60 * 12,
-          updateTime: now - 1000 * 60 * 60 * 12,
-        },
-      ];
-      await this.saveFriendRequestsToStorage(friendRequests);
+    if (isDevRuntime()) {
+      const contactsData = await Promise.resolve(this.deps.storage.get<unknown>(STORAGE_KEYS.CONTACTS));
+      if (!contactsData) {
+        const now = this.now();
+        const contacts = DEV_SEED_CONTACTS.map((item) => this.mapRemoteContact({ ...item, createTime: now, updateTime: now }));
+        await this.saveContactsToStorage(contacts);
+      }
+
+      const requestsData = await Promise.resolve(this.deps.storage.get<unknown>(STORAGE_KEYS.FRIEND_REQUESTS));
+      if (!requestsData) {
+        const now = this.now();
+        const requests = DEV_SEED_REQUESTS.map((item, index) =>
+          this.mapRemoteRequest({
+            ...item,
+            createTime: now - (index + 1) * 60 * 60 * 1000,
+            updateTime: now - (index + 1) * 60 * 60 * 1000,
+          }),
+        );
+        await this.saveFriendRequestsToStorage(requests);
+      }
     }
 
     this.initialized = true;
@@ -136,83 +347,132 @@ class ContactsServiceImpl implements IContactsService {
 
   async getContacts(): Promise<Contact[]> {
     await this.init();
-    return this.getContactsFromStorage();
+    const client = await this.getSdkClient();
+    const response = await client.social.listContacts();
+    const data = this.unwrapResult<unknown[]>(response, [], 'Failed to load contacts');
+    const contacts = this.normalizeContactList(data);
+    await this.saveContactsToStorage(contacts);
+    return contacts;
   }
 
   async getContactById(id: string): Promise<Contact | null> {
-    const contacts = await this.getContacts();
-    return contacts.find((c) => c.id === id) || null;
+    await this.init();
+    const client = await this.getSdkClient();
+    const response = await client.social.getContactDetail(id);
+    const data = this.unwrapResult<unknown>(response, null, 'Failed to load contact detail');
+    if (!data) {
+      return null;
+    }
+    const contact = this.mapRemoteContact(data);
+    await this.upsertContact(contact);
+    return contact;
   }
 
   async findByName(name: string): Promise<Contact | null> {
-    const contacts = await this.getContacts();
-    return contacts.find((c) => c.name === name) || null;
+    await this.init();
+    const keyword = (name || '').trim();
+    if (!keyword) {
+      return null;
+    }
+
+    const client = await this.getSdkClient();
+    const params: QueryParams = { keyword };
+    const response = await client.social.listContacts(params);
+    const data = this.unwrapResult<unknown[]>(response, [], 'Failed to search contacts');
+    const contacts = this.normalizeContactList(data);
+    return contacts.find((item) => item.name === keyword) || contacts[0] || null;
   }
 
   async addContact(contact: Partial<Contact>): Promise<Contact> {
-    const contacts = await this.getContacts();
-
-    const exists = contacts.some((c) => c.name === contact.name);
-    if (exists) throw new Error('Contact already exists');
-
+    await this.init();
     const now = this.now();
-    const displayName = (contact.name || '').trim() || 'Unknown';
-    const newContact: Contact = {
+    const target = toText(contact.wxid) || toText(contact.id) || toText(contact.name);
+    if (!target) {
+      throw new Error('Contact target is required');
+    }
+
+    const draft: Contact = this.mapRemoteContact({
       ...contact,
-      id: contact.id || this.deps.idGenerator.next('contact'),
-      name: contact.name || displayName,
-      avatar: contact.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(displayName)}`,
-      wxid: contact.wxid || `wx_${this.deps.idGenerator.next('wx')}`,
-      region: contact.region || 'Unknown',
-      createTime: contact.createTime || now,
+      id: toText(contact.id) || target,
+      wxid: target,
+      name: toText(contact.name) || target,
+      avatar: toText(contact.avatar),
+      createTime: now,
       updateTime: now,
-    } as Contact;
+    });
 
-    contacts.push(newContact);
-    await this.saveContactsToStorage(contacts);
-
-    this.deps.eventBus.emit(CONTACTS_EVENTS.CONTACT_ADDED, { contact: newContact });
-    return newContact;
+    const client = await this.getSdkClient();
+    const message = toText(contact.remark) || `Hi, I am ${draft.name}`;
+    const requestBody: FriendRequestCreateForm = {
+      toUserId: target,
+      message,
+    };
+    const response = await client.social.sendFriendRequest(requestBody);
+    this.unwrapResult<unknown>(response, undefined, 'Failed to send friend request');
+    await this.upsertContact(draft);
+    this.deps.eventBus.emit(CONTACTS_EVENTS.CONTACT_ADDED, { contact: draft });
+    return draft;
   }
 
   async updateContact(id: string, updates: Partial<Contact>): Promise<void> {
-    const contacts = await this.getContacts();
-    const index = contacts.findIndex((c) => c.id === id);
-    if (index === -1) throw new Error('Contact not found');
+    await this.init();
+    if (updates.remark !== undefined) {
+      const client = await this.getSdkClient();
+      const requestBody: FriendRemarkUpdateForm = {
+        remark: updates.remark || '',
+      };
+      const response = await client.social.updateFriendRemark(id, requestBody);
+      this.unwrapResult<unknown>(response, undefined, 'Failed to update contact remark');
+    }
 
-    contacts[index] = { ...contacts[index], ...updates, updateTime: this.now() };
+    const contacts = await this.getContactsFromStorage();
+    const index = contacts.findIndex((item) => item.id === id);
+    if (index < 0) {
+      throw new Error('Contact not found');
+    }
+    contacts[index] = this.mapRemoteContact({
+      ...contacts[index],
+      ...updates,
+      updateTime: this.now(),
+    });
     await this.saveContactsToStorage(contacts);
-
     this.deps.eventBus.emit(CONTACTS_EVENTS.CONTACT_UPDATED, { contact: contacts[index] });
   }
 
   async deleteContact(id: string): Promise<void> {
-    const contacts = await this.getContacts();
-    const filtered = contacts.filter((c) => c.id !== id);
-    await this.saveContactsToStorage(filtered);
+    await this.init();
+    const client = await this.getSdkClient();
+    const response = await client.social.deleteContact(id);
+    this.unwrapResult<unknown>(response, undefined, 'Failed to delete contact');
 
+    const contacts = await this.getContactsFromStorage();
+    const filtered = contacts.filter((item) => item.id !== id);
+    await this.saveContactsToStorage(filtered);
     this.deps.eventBus.emit(CONTACTS_EVENTS.CONTACT_DELETED, { id });
   }
 
   async getGroupedContacts(): Promise<{ groups: Record<string, Contact[]>; sortedKeys: string[] }> {
     const contacts = await this.getContacts();
-
-    contacts.sort((a, b) => a.name.localeCompare(b.name));
+    contacts.sort((left, right) => left.name.localeCompare(right.name));
 
     const groups: Record<string, Contact[]> = {};
-
     contacts.forEach((contact) => {
-      const firstChar = contact.name[0].toUpperCase();
+      const firstChar = (contact.name[0] || '#').toUpperCase();
       const key = /[A-Z]/.test(firstChar) ? firstChar : '#';
-
-      if (!groups[key]) groups[key] = [];
+      if (!groups[key]) {
+        groups[key] = [];
+      }
       groups[key].push(contact);
     });
 
-    const sortedKeys = Object.keys(groups).sort((a, b) => {
-      if (a === '#') return 1;
-      if (b === '#') return -1;
-      return a.localeCompare(b);
+    const sortedKeys = Object.keys(groups).sort((left, right) => {
+      if (left === '#') {
+        return 1;
+      }
+      if (right === '#') {
+        return -1;
+      }
+      return left.localeCompare(right);
     });
 
     return { groups, sortedKeys };
@@ -220,74 +480,83 @@ class ContactsServiceImpl implements IContactsService {
 
   async getFriendRequests(): Promise<FriendRequest[]> {
     await this.init();
-    const requests = await this.getFriendRequestsFromStorage();
-    return [...requests].sort((a, b) => b.createTime - a.createTime);
+    const client = await this.getSdkClient();
+    const response = await client.social.listFriendRequests();
+    const data = this.unwrapResult<unknown[]>(response, [], 'Failed to load friend requests');
+    const requests = this.normalizeRequestList(data);
+    await this.saveFriendRequestsToStorage(requests);
+    return requests;
   }
 
   async sendFriendRequest(toUserId: string, message: string): Promise<FriendRequest> {
-    const requests = await this.getFriendRequests();
-    const displayName = (toUserId || '').trim() || 'Unknown';
+    await this.init();
     const now = this.now();
-    const newRequest: FriendRequest = {
+    const requestDraft = this.mapRemoteRequest({
       id: this.deps.idGenerator.next('fr'),
-      fromUserId: toUserId || `friend_${this.deps.idGenerator.next('friend')}`,
-      fromUserName: displayName,
-      fromUserAvatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(displayName)}`,
+      fromUserId: toUserId,
+      fromUserName: toUserId,
       message,
       status: 'pending',
       createTime: now,
       updateTime: now,
+    });
+
+    const client = await this.getSdkClient();
+    const requestBody: FriendRequestCreateForm = {
+      toUserId,
+      message,
     };
-
-    requests.push(newRequest);
-    await this.saveFriendRequestsToStorage(requests);
-
-    this.deps.eventBus.emit(CONTACTS_EVENTS.FRIEND_REQUEST_RECEIVED, { request: newRequest });
-    return newRequest;
+    const response = await client.social.sendFriendRequest(requestBody);
+    const data = this.unwrapResult<unknown>(response, requestDraft, 'Failed to send friend request');
+    const request = this.mapRemoteRequest(data);
+    await this.upsertRequest(request);
+    this.deps.eventBus.emit(CONTACTS_EVENTS.FRIEND_REQUEST_RECEIVED, { request });
+    return request;
   }
 
   async acceptFriendRequest(requestId: string): Promise<void> {
-    const requests = await this.getFriendRequests();
-    const index = requests.findIndex((r) => r.id === requestId);
-    if (index === -1) throw new Error('Request not found');
+    await this.init();
+    const client = await this.getSdkClient();
+    const requestBody: FriendRequestProcessForm = { action: 'accept' };
+    const response = await client.social.processFriendRequest(requestId, requestBody);
+    this.unwrapResult<unknown>(response, undefined, 'Failed to accept friend request');
 
-    const now = this.now();
-    const acceptedRequest: FriendRequest = { ...requests[index], status: 'accepted', updateTime: now };
-    requests[index] = acceptedRequest;
-    await this.saveFriendRequestsToStorage(requests);
-
-    const contacts = await this.getContacts();
-    const exists = contacts.some(
-      (contact) =>
-        contact.wxid === acceptedRequest.fromUserId ||
-        contact.name === acceptedRequest.fromUserName,
-    );
-
-    if (!exists) {
-      contacts.unshift({
-        id: this.deps.idGenerator.next('contact'),
-        name: acceptedRequest.fromUserName,
-        avatar: acceptedRequest.fromUserAvatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${acceptedRequest.fromUserName}`,
-        wxid: acceptedRequest.fromUserId,
-        region: 'Unknown',
-        createTime: now,
-        updateTime: now,
-      });
-      await this.saveContactsToStorage(contacts);
+    const accepted = await this.updateRequestStatus(requestId, 'accepted');
+    if (accepted) {
+      const contacts = await this.getContactsFromStorage();
+      const exists = contacts.some(
+        (item) =>
+          item.wxid === accepted.fromUserId ||
+          item.id === accepted.fromUserId ||
+          item.name === accepted.fromUserName,
+      );
+      if (!exists) {
+        const now = this.now();
+        const contact = this.mapRemoteContact({
+          id: accepted.fromUserId,
+          name: accepted.fromUserName,
+          avatar: accepted.fromUserAvatar,
+          wxid: accepted.fromUserId,
+          createTime: now,
+          updateTime: now,
+        });
+        await this.upsertContact(contact);
+      }
+      this.deps.eventBus.emit(CONTACTS_EVENTS.FRIEND_REQUEST_ACCEPTED, { request: accepted });
     }
-
-    this.deps.eventBus.emit(CONTACTS_EVENTS.FRIEND_REQUEST_ACCEPTED, { request: requests[index] });
   }
 
   async rejectFriendRequest(requestId: string): Promise<void> {
-    const requests = await this.getFriendRequests();
-    const index = requests.findIndex((r) => r.id === requestId);
-    if (index === -1) throw new Error('Request not found');
+    await this.init();
+    const client = await this.getSdkClient();
+    const requestBody: FriendRequestProcessForm = { action: 'reject' };
+    const response = await client.social.processFriendRequest(requestId, requestBody);
+    this.unwrapResult<unknown>(response, undefined, 'Failed to reject friend request');
 
-    requests[index] = { ...requests[index], status: 'rejected', updateTime: this.now() };
-    await this.saveFriendRequestsToStorage(requests);
-
-    this.deps.eventBus.emit(CONTACTS_EVENTS.FRIEND_REQUEST_REJECTED, { request: requests[index] });
+    const rejected = await this.updateRequestStatus(requestId, 'rejected');
+    if (rejected) {
+      this.deps.eventBus.emit(CONTACTS_EVENTS.FRIEND_REQUEST_REJECTED, { request: rejected });
+    }
   }
 }
 

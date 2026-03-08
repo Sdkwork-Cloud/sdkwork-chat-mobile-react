@@ -1,7 +1,8 @@
-
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Navbar, Toast } from '@sdkwork/react-mobile-commons';
+import { CellGroup, CellItem, Icon, Navbar, Toast } from '@sdkwork/react-mobile-commons';
 import { creationService, type Creation, type CreationType } from '@sdkwork/react-mobile-creation';
+import { formatCreationDate, getCreationCover, getCreationTypeMeta } from './myCreationsListModel';
+import './MyCreationsPage.css';
 
 interface MyCreationsPageProps {
   t?: (key: string) => string;
@@ -9,37 +10,13 @@ interface MyCreationsPageProps {
   onCreationClick?: (id: string) => void;
 }
 
-const formatDate = (value: string): string => {
-  try {
-    return new Date(value).toLocaleDateString();
-  } catch {
-    return '--';
-  }
-};
-
-const getCreationCover = (item: Creation): string => {
-  if (item.type === 'image') {
-    return item.result?.thumbnailUrl || item.result?.url || '';
-  }
-  if (item.type === 'video') {
-    return item.result?.thumbnailUrl || '';
-  }
-  return '';
-};
-
-const getPlaceholder = (type: CreationType): string => {
-  if (type === 'music') return '🎵';
-  if (type === 'text') return '📝';
-  if (type === 'video') return '🎬';
-  return '🎨';
-};
-
 export const MyCreationsPage: React.FC<MyCreationsPageProps> = ({ t, onBack, onCreationClick }) => {
   const [activeTab, setActiveTab] = useState<'all' | CreationType>('all');
   const [isManageMode, setIsManageMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [creations, setCreations] = useState<Creation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
   const tr = React.useCallback(
     (key: string, fallback: string) => {
       const value = t?.(key);
@@ -54,19 +31,11 @@ export const MyCreationsPage: React.FC<MyCreationsPageProps> = ({ t, onBack, onC
       { id: 'all', label: tr('creations.tabs.all', 'All') },
       { id: 'image', label: tr('creations.tabs.image', 'Image') },
       { id: 'video', label: tr('creations.tabs.video', 'Video') },
+      { id: 'short_drama', label: tr('creations.tabs.short_drama', 'Short Drama') },
+      { id: 'collection', label: tr('creations.tabs.collection', 'Collection') },
       { id: 'music', label: tr('creations.tabs.music', 'Music') },
       { id: 'text', label: tr('creations.tabs.text', 'Text') },
     ],
-    [tr]
-  );
-
-  const typeLabels = useMemo<Record<CreationType, string>>(
-    () => ({
-      image: tr('creations.tabs.image', 'Image'),
-      video: tr('creations.tabs.video', 'Video'),
-      music: tr('creations.tabs.music', 'Music'),
-      text: tr('creations.tabs.text', 'Text'),
-    }),
     [tr]
   );
 
@@ -82,6 +51,7 @@ export const MyCreationsPage: React.FC<MyCreationsPageProps> = ({ t, onBack, onC
     } catch (error) {
       console.error('[MyCreationsPage] load creations failed:', error);
       Toast.error(tr('creations.errors.load_failed', 'Failed to load creations. Please try again.'));
+      setCreations([]);
     } finally {
       setIsLoading(false);
     }
@@ -101,8 +71,11 @@ export const MyCreationsPage: React.FC<MyCreationsPageProps> = ({ t, onBack, onC
   const toggleSelection = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };
@@ -110,9 +83,11 @@ export const MyCreationsPage: React.FC<MyCreationsPageProps> = ({ t, onBack, onC
   const handleDelete = async () => {
     if (selectedIds.size === 0) return;
     const confirmTemplate = t?.('creations.confirm_delete');
-    const confirmText = confirmTemplate && confirmTemplate !== 'creations.confirm_delete'
-      ? confirmTemplate.replace('{count}', String(selectedIds.size))
-      : `Delete ${selectedIds.size} selected items?`;
+    const confirmText =
+      confirmTemplate && confirmTemplate !== 'creations.confirm_delete'
+        ? confirmTemplate.replace('{count}', String(selectedIds.size))
+        : `Delete ${selectedIds.size} selected items?`;
+
     const confirmed = window.confirm(confirmText);
     if (!confirmed) return;
 
@@ -135,55 +110,57 @@ export const MyCreationsPage: React.FC<MyCreationsPageProps> = ({ t, onBack, onC
     ? `${tr('creations.selected_prefix', 'Selected')} ${selectedIds.size}`
     : tr('creations.title', 'My Creations');
 
-  const grid = useMemo(() => {
+  const content = useMemo(() => {
     if (isLoading) {
       return (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-          {Array.from({ length: 6 }).map((_, index) => (
-            <div
-              key={`creation-skeleton-${index}`}
-              style={{
-                borderRadius: '12px',
-                border: '0.5px solid var(--border-color)',
-                background: 'linear-gradient(120deg, var(--bg-card), var(--bg-body), var(--bg-card))',
-                height: '190px',
-              }}
-            />
-          ))}
-        </div>
+        <CellGroup>
+          <CellItem title={tr('creations.loading', 'Loading creations...')} noBorder />
+        </CellGroup>
       );
     }
 
     if (creations.length === 0) {
       return (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '60%',
-            opacity: 0.6,
-          }}
-        >
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎨</div>
-          <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-            {tr('creations.empty', 'No creations yet')}
-          </div>
-        </div>
+        <CellGroup>
+          <CellItem
+            title={tr('creations.empty', 'No creations yet')}
+            description={tr('creations.empty_desc', 'Create your first work and it will appear here')}
+            noBorder
+          />
+        </CellGroup>
       );
     }
 
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-        {creations.map((item) => {
+      <CellGroup>
+        {creations.map((item, index) => {
           const cover = getCreationCover(item);
+          const typeMeta = getCreationTypeMeta(item.type, tr);
           const selected = selectedIds.has(item.id);
+          const icon = cover ? (
+            <span
+              className="my-creations-page__thumb"
+              style={{
+                backgroundImage: `url(${cover})`,
+              }}
+            />
+          ) : (
+            <span className="my-creations-page__thumb my-creations-page__thumb--placeholder">
+              <Icon name={typeMeta.iconName} size={16} color="var(--text-secondary)" />
+            </span>
+          );
 
           return (
-            <button
-              type="button"
+            <CellItem
               key={item.id}
+              icon={icon}
+              title={item.title}
+              description={item.description?.trim() || typeMeta.label}
+              value={<span className="my-creations-page__meta">{formatCreationDate(item.createdAt)}</span>}
+              isLink={!isManageMode}
+              className={`my-creations-page__item ${
+                isManageMode && selected ? 'is-manage-selected' : ''
+              }`}
               onClick={() => {
                 if (isManageMode) {
                   toggleSelection(item.id);
@@ -191,166 +168,67 @@ export const MyCreationsPage: React.FC<MyCreationsPageProps> = ({ t, onBack, onC
                 }
                 onCreationClick?.(item.id);
               }}
-              style={{
-                border: '0.5px solid var(--border-color)',
-                borderRadius: '12px',
-                overflow: 'hidden',
-                background: 'var(--bg-card)',
-                cursor: 'pointer',
-                textAlign: 'left',
-                position: 'relative',
-              }}
-            >
-              {isManageMode && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: '8px',
-                    left: '8px',
-                    width: '24px',
-                    height: '24px',
-                    borderRadius: '50%',
-                    border: `2px solid ${selected ? 'var(--primary-color)' : 'white'}`,
-                    background: selected ? 'var(--primary-color)' : 'rgba(0,0,0,0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 1,
-                  }}
-                >
-                  {selected ? (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
-                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                    </svg>
-                  ) : null}
-                </div>
-              )}
-              <div
-                style={{
-                  aspectRatio: '1',
-                  background: cover ? `url(${cover}) center/cover no-repeat` : 'var(--bg-body)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '30px',
-                }}
-              >
-                {cover ? null : getPlaceholder(item.type)}
-              </div>
-              <div style={{ padding: '10px' }}>
-                <div
-                  style={{
-                    fontSize: '14px',
-                    color: 'var(--text-primary)',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    marginBottom: '6px',
-                  }}
-                >
-                  {item.title}
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)' }}>
-                  <span>{typeLabels[item.type]}</span>
-                  <span>{formatDate(item.createdAt)}</span>
-                </div>
-              </div>
-            </button>
+              rightSlot={
+                isManageMode ? (
+                  <span className={`my-creations-page__selector ${selected ? 'is-selected' : ''}`}>
+                    {selected ? <Icon name="check" size={14} color="white" /> : null}
+                  </span>
+                ) : undefined
+              }
+              noBorder={index === creations.length - 1}
+            />
           );
         })}
-      </div>
+      </CellGroup>
     );
-  }, [creations, isLoading, isManageMode, onCreationClick, selectedIds, tr, typeLabels]);
+  }, [creations, isLoading, isManageMode, onCreationClick, selectedIds, tr]);
 
   return (
-    <div style={{ minHeight: '100%', background: 'var(--bg-body)', display: 'flex', flexDirection: 'column' }}>
+    <div className="my-creations-page user-center-page">
       <Navbar
         title={navTitle}
         onBack={isManageMode ? handleManageToggle : onBack}
         rightElement={
-          <button
-            type="button"
-            onClick={handleManageToggle}
-            style={{
-              padding: '0 12px',
-              border: 'none',
-              background: 'transparent',
-              fontSize: '15px',
-              color: 'var(--text-primary)',
-              cursor: 'pointer',
-            }}
-          >
+          <button type="button" onClick={handleManageToggle} className="my-creations-page__navbar-btn">
             {isManageMode ? tr('common.finish', 'Done') : tr('common.manage', 'Manage')}
           </button>
         }
       />
 
-      <div
-        style={{
-          display: 'flex',
-          gap: '12px',
-          padding: '10px 16px',
-          background: 'var(--bg-card)',
-          borderBottom: '0.5px solid var(--border-color)',
-          overflowX: 'auto',
-        }}
-      >
+      <div className="my-creations-page__tabs" role="tablist" aria-label="creation types">
         {tabs.map((tab) => (
           <button
             type="button"
             key={tab.id}
+            id={`my-creations-tab-${tab.id}`}
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            aria-controls="my-creations-tabpanel"
+            tabIndex={activeTab === tab.id ? 0 : -1}
             onClick={() => setActiveTab(tab.id)}
-            style={{
-              padding: '6px 14px',
-              borderRadius: '10px',
-              whiteSpace: 'nowrap',
-              border: 'none',
-              background: activeTab === tab.id ? 'var(--primary-color)' : 'var(--bg-body)',
-              color: activeTab === tab.id ? 'white' : 'var(--text-secondary)',
-              fontSize: '14px',
-              cursor: 'pointer',
-            }}
-            >
-              {tab.label}
-            </button>
+            className={`my-creations-page__tab-btn ${activeTab === tab.id ? 'is-active' : ''}`}
+          >
+            {tab.label}
+          </button>
         ))}
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px', paddingBottom: isManageMode ? '78px' : '20px' }}>
-        {grid}
+      <div
+        id="my-creations-tabpanel"
+        role="tabpanel"
+        aria-labelledby={`my-creations-tab-${activeTab}`}
+        className={`my-creations-page__scroll user-center-page__scroll ${isManageMode ? 'is-manage-mode' : ''}`}
+      >
+        {content}
       </div>
 
       {isManageMode ? (
-        <div
-          style={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            background: 'var(--bg-card)',
-            borderTop: '0.5px solid var(--border-color)',
-            display: 'flex',
-            gap: '12px',
-            padding: '12px 16px',
-            paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
-          }}
-        >
+        <div className="my-creations-page__actions">
           <button
             type="button"
-            onClick={handleDelete}
+            onClick={() => void handleDelete()}
             disabled={selectedIds.size === 0}
-            style={{
-              flex: 1,
-              padding: '14px',
-              background: selectedIds.size > 0 ? 'var(--danger)' : 'var(--bg-body)',
-              color: selectedIds.size > 0 ? 'white' : 'var(--text-secondary)',
-              border: 'none',
-              borderRadius: '12px',
-              fontSize: '16px',
-              fontWeight: 600,
-              cursor: selectedIds.size > 0 ? 'pointer' : 'not-allowed',
-              opacity: selectedIds.size > 0 ? 1 : 0.5,
-            }}
+            className={`my-creations-page__delete-btn ${selectedIds.size > 0 ? 'is-enabled' : ''}`}
           >
             {tr('common.delete', 'Delete')} ({selectedIds.size})
           </button>

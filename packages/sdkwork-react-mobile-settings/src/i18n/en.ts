@@ -43,6 +43,26 @@ export default {
     labels: {
       config_center_desc: 'System mode, preset, accent color, font style and scale',
     },
+    storage_usage: 'Local usage',
+    storage_clean: 'Refresh estimate',
+    storage_clean_desc: 'Scan current local cache and media usage',
+    background: {
+      saved_current: 'Applied to current chat',
+      saved_global: 'Applied globally',
+      save_failed: 'Failed to save background',
+    },
+    model_config: {
+      api_key_required: 'Please enter API Key',
+      endpoint_required: 'Please enter Base URL',
+      base_url: 'Base URL',
+      base_url_placeholder_local: 'http://localhost:11434',
+      base_url_placeholder_cloud: 'https://api.openai.com/v1',
+      api_key: 'API Key',
+      default_params_title: 'Default Parameters',
+      max_tokens: 'Max Tokens',
+      max_tokens_placeholder: '2048',
+      save_failed: 'Failed to save configuration',
+    },
     themes: {
       light: 'Light',
       dark: 'Dark',

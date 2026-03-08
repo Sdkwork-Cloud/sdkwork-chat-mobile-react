@@ -4,6 +4,7 @@ import { Toast, Avatar, useLongPress } from '@sdkwork/react-mobile-commons';
 import { MessageContent } from './MessageContent';
 import { ChatContextMenu } from './ChatContextMenu';
 import { parseMessage } from '../utils/messageParser';
+import { resolveChatMessageLayout } from './chatMessageLayout';
 
 interface ChatMessageItemProps {
   t?: (key: string) => string;
@@ -39,6 +40,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = React.memo(
     t,
     message,
     config,
+    isGroupStart,
     selectionMode,
     isSelected,
     isHighlighted,
@@ -157,8 +159,22 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = React.memo(
     };
 
     const replyTo = message.replyTo || (message as any).replyContext;
-    const bubbleBg = isRichMedia ? 'transparent' : isUser ? 'var(--bubble-me)' : 'var(--bg-card)';
-    const textColor = isUser ? 'var(--bubble-me-text)' : 'var(--text-primary)';
+    const bubbleBg = isRichMedia
+      ? 'transparent'
+      : isUser
+        ? 'var(--bubble-me, #2a7cff)'
+        : 'color-mix(in srgb, var(--bg-card) 94%, #ffffff)';
+    const textColor = isUser ? 'var(--bubble-me-text, #ffffff)' : 'var(--text-primary)';
+    const layout = resolveChatMessageLayout({
+      showAvatar,
+      isRichMedia,
+      hasReply: Boolean(replyTo),
+    });
+    const showOuterStatusIndicator = isUser && (isSending || isError);
+    const showThinkingState = !isUser && isSending;
+    const showModelErrorState = !isUser && isError;
+    const thinkingLabel = tr('chat.thinking', 'Thinking');
+    const statusOffset = showAvatar ? '-24px' : '4px';
 
     return (
       <div
@@ -167,8 +183,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = React.memo(
         style={{
           display: 'flex',
           width: '100%',
-          padding: '2px 12px',
-          marginBottom: '14px',
+          padding: layout.rowPadding,
+          marginBottom: isGroupStart ? '12px' : '7px',
           flexDirection: 'row',
           alignItems: 'flex-start',
           position: 'relative',
@@ -212,8 +228,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = React.memo(
                 width: 36,
                 height: 36,
                 flexShrink: 0,
-                marginLeft: isUser ? '10px' : 0,
-                marginRight: isUser ? 0 : '10px',
+                marginLeft: isUser ? '8px' : 0,
+                marginRight: isUser ? 0 : '8px',
                 position: 'relative',
                 zIndex: 1,
                 marginTop: 'auto',
@@ -225,46 +241,47 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = React.memo(
                 size="lg"
               />
             </div>
-          ) : (
-            <div style={{ width: 0 }} />
-          )}
+          ) : null}
 
           <div
-            style={{
-              maxWidth: isRichMedia ? '80%' : '78%',
-              flex: 'none',
-              display: 'flex',
-              flexDirection: 'column',
+              style={{
+                maxWidth: layout.bubbleContainerMaxWidth,
+                flex: layout.bubbleContainerFlex,
+                width: layout.bubbleContainerWidth,
+                display: 'flex',
+                flexDirection: 'column',
               alignItems: isUser ? 'flex-end' : 'flex-start',
               minWidth: 0,
               position: 'relative',
             }}
           >
-            <div
-              style={{
-                position: 'absolute',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                [isUser ? 'left' : 'right']: '-24px',
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
-              {isSending && (
-                <div
-                  style={{
-                    width: '14px',
-                    height: '14px',
-                    marginRight: '8px',
-                    border: '2px solid rgba(0,0,0,0.1)',
-                    borderTopColor: 'var(--text-secondary)',
-                    borderRadius: '50%',
-                    animation: 'spin 0.8s linear infinite',
-                  }}
-                />
-              )}
-              {isError && <span style={{ color: '#fa5151', fontSize: '14px' }}>!</span>}
-            </div>
+            {showOuterStatusIndicator ? (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  [isUser ? 'left' : 'right']: statusOffset,
+                  display: 'flex',
+                  alignItems: 'center',
+                  pointerEvents: 'none',
+                }}
+              >
+                {isSending ? (
+                  <div
+                    style={{
+                      width: '14px',
+                      height: '14px',
+                      border: '2px solid rgba(0,0,0,0.1)',
+                      borderTopColor: 'var(--text-secondary)',
+                      borderRadius: '50%',
+                      animation: 'chat-spin 0.8s linear infinite',
+                    }}
+                  />
+                ) : null}
+                {isError ? <span style={{ color: '#fa5151', fontSize: '14px' }}>!</span> : null}
+              </div>
+            ) : null}
 
             <div
               ref={bubbleRef}
@@ -300,14 +317,18 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = React.memo(
                 position: 'relative',
                 backgroundColor: bubbleBg,
                 color: isRichMedia ? 'inherit' : textColor,
-                borderRadius: isRichMedia ? '14px' : isUser ? '14px 4px 14px 14px' : '4px 14px 14px 14px',
-                padding: isRichMedia ? 0 : '10px 14px',
-                boxShadow: !isUser && !isRichMedia ? '0 4px 12px rgba(18, 30, 54, 0.06)' : 'none',
-                border: !isUser && !isRichMedia ? '0.5px solid rgba(120, 132, 155, 0.2)' : 'none',
+                borderRadius: isRichMedia ? '14px' : isUser ? '16px 6px 16px 16px' : '6px 16px 16px 16px',
+                padding: isRichMedia ? 0 : '10px 13px',
+                boxShadow: isRichMedia
+                  ? 'none'
+                  : isUser
+                    ? '0 8px 16px rgba(55, 87, 210, 0.2)'
+                    : '0 4px 12px rgba(18, 30, 54, 0.06)',
+                border: 'none',
                 fontSize: '15px',
                 lineHeight: '1.55',
                 minHeight: '34px',
-                width: 'auto',
+                width: layout.bubbleWidth,
                 maxWidth: '100%',
                 display: 'flex',
                 flexDirection: 'column',
@@ -337,7 +358,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = React.memo(
                     justifyContent: 'center',
                     boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
                     zIndex: 10,
-                    animation: 'popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    animation: 'chat-pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                   }}
                 >
                   <span style={{ fontSize: '14px' }}>❤️</span>
@@ -358,10 +379,11 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = React.memo(
                   <div
                     style={{
                       fontSize: '11px',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      maxWidth: '200px',
+                      whiteSpace: layout.preferFullReplyWidth ? 'pre-wrap' : 'nowrap',
+                      overflow: layout.preferFullReplyWidth ? 'visible' : 'hidden',
+                      textOverflow: layout.preferFullReplyWidth ? 'clip' : 'ellipsis',
+                      maxWidth: layout.preferFullReplyWidth ? 'none' : '100%',
+                      wordBreak: 'break-word',
                     }}
                   >
                     {replyTo.content}
@@ -370,10 +392,45 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = React.memo(
               )}
 
               <div style={{ position: 'relative', zIndex: 1, width: '100%' }}>
-                <MessageContent t={t} content={messageContent} message={message} isUser={isUser} onInteract={onInteract} />
+                {showThinkingState && !messageContent.trim() ? (
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      color: 'var(--text-secondary)',
+                      fontSize: '12px',
+                      lineHeight: '16px',
+                      minHeight: '16px',
+                    }}
+                  >
+                    <span>{thinkingLabel}</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }} aria-hidden="true">
+                      {[0, 1, 2].map((dotIndex) => (
+                        <span
+                          key={`thinking-dot-${dotIndex}`}
+                          style={{
+                            width: '4px',
+                            height: '4px',
+                            borderRadius: '50%',
+                            background: 'currentColor',
+                            opacity: 0.35,
+                            animation: `chat-thinking-dot 1.1s ${dotIndex * 0.15}s infinite ease-in-out`,
+                          }}
+                        />
+                      ))}
+                    </span>
+                  </div>
+                ) : showModelErrorState && !messageContent.trim() ? (
+                  <span style={{ color: '#fa5151', fontSize: '13px', lineHeight: '18px' }}>
+                    {tr('chat.send_failed', 'Send failed')}
+                  </span>
+                ) : (
+                  <MessageContent t={t} content={messageContent} message={message} isUser={isUser} onInteract={onInteract} />
+                )}
               </div>
 
-              {message.isStreaming && (
+              {message.isStreaming && !(showThinkingState && !messageContent.trim()) && (
                 <span
                   style={{
                     display: 'inline-block',
@@ -382,7 +439,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = React.memo(
                     background: 'currentColor',
                     marginLeft: '4px',
                     verticalAlign: 'text-bottom',
-                    animation: 'blink 1s step-end infinite',
+                    animation: 'chat-blink 1s step-end infinite',
                   }}
                 />
               )}
@@ -402,14 +459,6 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = React.memo(
           isUser={isUser}
           canRecall={canRecall}
         />
-
-        <style>{`
-          @keyframes spin { to { transform: rotate(360deg); } }
-          @keyframes blink { 50% { opacity: 0; } }
-          @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
-          .flash-highlight { animation: flash 0.5s ease-out; }
-          @keyframes flash { 0% { background: rgba(41, 121, 255, 0.2); } 100% { background: transparent; } }
-        `}</style>
       </div>
     );
   }

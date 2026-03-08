@@ -1,6 +1,5 @@
-
-import React, { useEffect, useState } from 'react';
-import { Navbar, Toast } from '@sdkwork/react-mobile-commons';
+﻿import React, { useEffect, useState } from 'react';
+import { CellGroup, CellItem, Navbar, Switch, Toast } from '@sdkwork/react-mobile-commons';
 import { useSettings } from '../hooks/useSettings';
 import { settingsService } from '../services/SettingsService';
 
@@ -11,6 +10,7 @@ interface SettingsPageProps {
   onModelSettingsClick?: () => void;
   onNotificationsClick?: () => void;
   onThemeClick?: () => void;
+  onGeneralClick?: () => void;
   onLanguageClick?: () => void;
   onStorageClick?: () => void;
   onFeedbackClick?: () => void;
@@ -23,7 +23,7 @@ const formatBytes = (bytes: number): string => {
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 };
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({
@@ -33,6 +33,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   onModelSettingsClick,
   onNotificationsClick,
   onThemeClick,
+  onGeneralClick,
   onLanguageClick,
   onStorageClick,
   onFeedbackClick,
@@ -72,7 +73,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   const handleClean = () => {
     Toast.loading(tr('settings.storage_cleaning', 'Cleaning cache...'));
     setTimeout(() => {
-      Toast.success(tr('settings.storage_cleaned', 'Freed storage') + ` ${storageSize}`);
+      Toast.success(`${tr('settings.storage_cleaned', 'Freed storage')} ${storageSize}`);
       setStorageSize('0 B');
     }, 1500);
   };
@@ -85,16 +86,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
     handleClean();
   };
 
-  const handleToggleOpenAIAssistant = () => {
-    const next = !openAIAssistantEnabled;
-    setOpenAIAssistantEnabled(next);
-    void updateConfig({ openAIAssistantEnabled: next });
+  const handleToggleOpenAIAssistant = (checked: boolean) => {
+    setOpenAIAssistantEnabled(checked);
+    void updateConfig({ openAIAssistantEnabled: checked });
   };
 
   const handleLogout = async () => {
     if (window.confirm(tr('settings.logout_confirm', 'Are you sure you want to log out?'))) {
       Toast.loading(tr('common.loading', 'Loading...'));
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 500));
       Toast.success(tr('settings.logout_success', 'Logged out'));
       onLogout?.();
     }
@@ -103,153 +103,89 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   const renderCell = (
     title: string,
     options?: {
-      label?: string;
-      value?: string;
+      description?: string;
+      value?: React.ReactNode;
       isLink?: boolean;
       toggle?: boolean;
       checked?: boolean;
-      onToggle?: () => void;
+      onToggle?: (checked: boolean) => void;
       onClick?: () => void;
+      noBorder?: boolean;
+      danger?: boolean;
+      center?: boolean;
     }
-  ) => (
-    <div
-      onClick={options?.toggle ? undefined : options?.onClick}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        padding: '14px 16px',
-        background: 'var(--bg-card)',
-        cursor: options?.onClick ? 'pointer' : 'default',
-        borderBottom: '0.5px solid var(--border-color)',
-      }}
-    >
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: '16px', color: 'var(--text-primary)' }}>{title}</div>
-        {options?.label && (
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-            {options.label}
-          </div>
-        )}
-      </div>
-      {options?.toggle ? (
-        <div
-          onClick={options.onToggle}
-          style={{
-            width: '44px',
-            height: '24px',
-            borderRadius: '12px',
-            background: options.checked ? 'var(--primary-color)' : 'var(--border-color)',
-            position: 'relative',
-            cursor: 'pointer',
-            transition: 'background 0.2s',
-          }}
-        >
-          <div
-            style={{
-              position: 'absolute',
-              top: '2px',
-              left: options.checked ? '22px' : '2px',
-              width: '20px',
-              height: '20px',
-              borderRadius: '50%',
-              background: 'white',
-              transition: 'left 0.2s',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-            }}
-          />
-        </div>
-      ) : null}
-      {options?.value && !options.toggle ? (
-        <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginRight: options.isLink ? '4px' : 0 }}>
-          {options.value}
-        </div>
-      ) : null}
-      {options?.isLink && !options.toggle ? (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2" style={{ opacity: 0.5 }}>
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-      ) : null}
-    </div>
-  );
+  ) => {
+    const rightValue = options?.toggle ? (
+      <Switch checked={!!options.checked} onChange={(next) => options.onToggle?.(next)} />
+    ) : (
+      options?.value
+    );
 
-  const renderCellGroup = (title: string, children: React.ReactNode) => (
-    <div style={{ marginBottom: '12px' }}>
-      <div style={{ padding: '8px 16px', fontSize: '13px', color: 'var(--text-secondary)', background: 'var(--bg-body)' }}>
-        {title}
-      </div>
-      <div style={{ background: 'var(--bg-card)' }}>
-        {children}
-      </div>
-    </div>
-  );
+    return (
+      <CellItem
+        title={title}
+        description={options?.description}
+        value={rightValue}
+        isLink={Boolean(options?.isLink && !options?.toggle)}
+        onClick={options?.toggle ? undefined : options?.onClick}
+        noBorder={options?.noBorder}
+        danger={options?.danger}
+        center={options?.center}
+      />
+    );
+  };
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-body)' }}>
       <Navbar title={tr('settings.title', 'Settings')} onBack={onBack} />
 
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {renderCellGroup(tr('settings.groups.account', 'Account & Security'), (
-          <>
-            {renderCell(tr('settings.account', 'Account'), { isLink: true, onClick: onAccountClick })}
-            {renderCell(
-              tr('settings.model_settings', 'Model Settings'),
-              {
-                label: tr('settings.labels.model_desc', 'Configure AI model services and parameters'),
-                isLink: true,
-                onClick: onModelSettingsClick,
-              }
-            )}
-          </>
-        ))}
+        <CellGroup title={tr('settings.groups.account', 'Account & Security')}>
+          {renderCell(tr('settings.account', 'Account'), { isLink: true, onClick: onAccountClick })}
+          {renderCell(tr('settings.model_settings', 'Model Settings'), {
+            description: tr('settings.labels.model_desc', 'Configure AI model services and parameters'),
+            isLink: true,
+            onClick: onModelSettingsClick,
+            noBorder: true,
+          })}
+        </CellGroup>
 
-        {renderCellGroup(tr('settings.groups.general', 'General'), (
-          <>
-            {renderCell(tr('settings.notifications', 'Notifications'), { isLink: true, onClick: onNotificationsClick })}
-            {renderCell(tr('settings.openai_assistant', 'OpenChat AI Assistant'), {
-              label: tr('settings.openai_assistant_desc', 'Show floating assistant button on every page'),
-              toggle: true,
-              checked: openAIAssistantEnabled,
-              onToggle: handleToggleOpenAIAssistant,
-            })}
-            {renderCell(
-              tr('settings.config_center.title', 'Configuration Center'),
-              {
-                label: tr('settings.labels.config_center_desc', 'System mode, preset, accent color, font style and scale'),
-                isLink: true,
-                onClick: onThemeClick,
-              }
-            )}
-            {renderCell(tr('settings.language', 'Language'), { isLink: true, onClick: onLanguageClick })}
-          </>
-        ))}
+        <CellGroup title={tr('settings.groups.general', 'General')}>
+          {renderCell(tr('settings.general', 'General'), { isLink: true, onClick: onGeneralClick })}
+          {renderCell(tr('settings.notifications', 'Notifications'), { isLink: true, onClick: onNotificationsClick })}
+          {renderCell(tr('settings.openai_assistant', 'OpenChat AI Assistant'), {
+            description: tr('settings.openai_assistant_desc', 'Show floating assistant button on every page'),
+            toggle: true,
+            checked: openAIAssistantEnabled,
+            onToggle: handleToggleOpenAIAssistant,
+          })}
+          {renderCell(tr('settings.config_center.title', 'Configuration Center'), {
+            description: tr('settings.labels.config_center_desc', 'System mode, preset, accent color, font style and scale'),
+            isLink: true,
+            onClick: onThemeClick,
+          })}
+          {renderCell(tr('settings.language', 'Language'), { isLink: true, onClick: onLanguageClick, noBorder: true })}
+        </CellGroup>
 
-        {renderCellGroup(tr('settings.groups.system', 'System'), (
-          <>
-            {renderCell(tr('settings.storage', 'Storage'), { value: storageSize, isLink: true, onClick: handleStorageClick })}
-            {renderCell(tr('settings.feedback', 'Feedback'), { isLink: true, onClick: onFeedbackClick })}
-            {renderCell(tr('settings.about', 'About'), { value: tr('settings.version', 'v3.0.0 Stable'), isLink: true, onClick: onAboutClick })}
-          </>
-        ))}
+        <CellGroup title={tr('settings.groups.system', 'System')}>
+          {renderCell(tr('settings.storage', 'Storage'), { value: storageSize, isLink: true, onClick: handleStorageClick })}
+          {renderCell(tr('settings.feedback', 'Feedback'), { isLink: true, onClick: onFeedbackClick })}
+          {renderCell(tr('settings.about', 'About'), {
+            value: tr('settings.version', 'v3.0.0 Stable'),
+            isLink: true,
+            onClick: onAboutClick,
+            noBorder: true,
+          })}
+        </CellGroup>
 
-        <div style={{ marginTop: '32px', padding: '0 16px' }}>
-          <button
-            onClick={handleLogout}
-            style={{
-              width: '100%',
-              padding: '14px',
-              background: 'var(--bg-card)',
-              border: 'none',
-              borderRadius: '12px',
-              fontSize: '16px',
-              fontWeight: 600,
-              color: 'var(--danger)',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-              cursor: 'pointer',
-            }}
-          >
-            {tr('settings.logout', 'Log Out')}
-          </button>
-        </div>
+        <CellGroup>
+          {renderCell(tr('settings.logout', 'Log Out'), {
+            onClick: handleLogout,
+            noBorder: true,
+            danger: true,
+            center: true,
+          })}
+        </CellGroup>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Toast } from '@sdkwork/react-mobile-commons';
 import { ChatPanelContainer } from './ChatPanelContainer';
+import './ChatActionPanel.css';
 
 interface ChatActionPanelProps {
   t?: (key: string) => string;
@@ -100,44 +101,20 @@ export const ChatActionPanel: React.FC<ChatActionPanelProps> = ({ t, visible = f
   ];
 
   return (
-    <ChatPanelContainer visible={visible} height={220} style={{ padding: visible ? '16px' : '0 16px' }}>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: '16px',
-        }}
-      >
+    <ChatPanelContainer visible={visible} height={232} className="chat-input-panel chat-input-panel--action">
+      <div className="chat-action-panel">
         {actions.map((action) => (
-          <div
+          <button
+            type="button"
             key={action.label}
+            className="chat-action-panel__item"
             onClick={() => {
               void action.onClick();
             }}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '8px',
-              cursor: 'pointer',
-            }}
           >
-            <div
-              style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '12px',
-                background: 'var(--bg-body)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '24px',
-              }}
-            >
-              {action.icon}
-            </div>
-            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{action.label}</span>
-          </div>
+            <span className="chat-action-panel__icon">{action.icon}</span>
+            <span className="chat-action-panel__label">{action.label}</span>
+          </button>
         ))}
       </div>
     </ChatPanelContainer>

@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { navigate } from '../router';
+import { ROUTE_PATHS } from '../router/paths';
 import { useChatStoreActions } from '../stores/chatStore';
 import { useAuth } from '../contexts/AuthContext';
 import { Toast } from '../components/Toast';
@@ -65,27 +66,27 @@ export const SettingsPage: React.FC = () => {
 
   return (
     <div style={{ minHeight: '100%', background: 'var(--bg-body)', paddingBottom: '40px' }}>
-      <Navbar title={t('settings.title')} onBack={() => navigate('/me')} />
+      <Navbar title={t('settings.title')} onBack={() => navigate(ROUTE_PATHS.me)} />
       
       <CleaningModal visible={isCleaning} onComplete={() => {}} />
 
       <div style={{ marginTop: '12px' }}>
         <CellGroup>
-            <Cell title={t('settings.account')} isLink onClick={() => navigate('/general', { title: t('settings.account') })} />
+            <Cell title={t('settings.account')} isLink onClick={() => navigate(ROUTE_PATHS.accountSecurity)} />
         </CellGroup>
       </div>
 
       <div style={{ marginTop: '12px' }}>
         <CellGroup>
-            <Cell title={t('settings.model_settings')} value="AI Configuration" isLink onClick={() => navigate('/settings/models')} />
+            <Cell title={t('settings.model_settings')} value="AI Configuration" isLink onClick={() => navigate(ROUTE_PATHS.modelSettings)} />
         </CellGroup>
       </div>
 
       <div style={{ marginTop: '12px' }}>
         <CellGroup>
-            <Cell title={t('settings.notifications')} isLink onClick={() => navigate('/general', { title: t('settings.notifications') })} />
-            <Cell title={t('settings.general')} isLink onClick={() => navigate('/general', { title: '通用' })} />
-            <Cell title={t('settings.theme')} value="Tech Blue / Dark" isLink onClick={() => navigate('/settings/theme')} />
+            <Cell title={t('settings.notifications')} isLink onClick={() => navigate(ROUTE_PATHS.general, { title: t('settings.notifications') })} />
+            <Cell title={t('settings.general')} isLink onClick={() => navigate(ROUTE_PATHS.general, { title: '通用' })} />
+            <Cell title={t('settings.theme')} value="Tech Blue / Dark" isLink onClick={() => navigate(ROUTE_PATHS.theme)} />
         </CellGroup>
       </div>
       
@@ -97,7 +98,7 @@ export const SettingsPage: React.FC = () => {
 
       <div style={{ marginTop: '12px' }}>
         <CellGroup>
-            <Cell title={t('settings.about')} value="v2.1.0" isLink onClick={() => navigate('/general', { title: '关于 OpenChat' })} />
+            <Cell title={t('settings.about')} value="v2.1.0" isLink onClick={() => navigate(ROUTE_PATHS.general, { title: '关于 OpenChat' })} />
         </CellGroup>
       </div>
 

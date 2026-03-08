@@ -54,7 +54,7 @@ class AddressServiceImpl extends AbstractStorageService<Address> implements IAdd
       const list = [...remoteList];
       this.cache = list;
       await this.commit();
-      return list.sort((a, b) => {
+      return list.sort((a: Address, b: Address) => {
         if (a.isDefault) return -1;
         if (b.isDefault) return 1;
         return 0;
@@ -67,7 +67,7 @@ class AddressServiceImpl extends AbstractStorageService<Address> implements IAdd
 
     const addresses = page.content;
 
-    return addresses.sort((a, b) => {
+    return addresses.sort((a: Address, b: Address) => {
       if (a.isDefault) return -1;
       if (b.isDefault) return 1;
       return 0;

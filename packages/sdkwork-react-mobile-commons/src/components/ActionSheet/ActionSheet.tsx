@@ -1,175 +1,157 @@
 import React from 'react';
 import { Popup } from '../Popup';
+import {
+  DEFAULT_ACTION_SHEET_VARIANT,
+  resolveActionSheetVariantClass,
+  resolveDefaultCancelText,
+  type ActionSheetAction,
+  type ActionSheetShowOptions,
+  type ActionSheetVariant,
+} from './actionSheetConfig';
+import './ActionSheet.css';
 
 interface ActionSheetProps {
-    visible: boolean;
-    onClose: () => void;
-    children: React.ReactNode;
-    title?: React.ReactNode;
-    height?: string | number; 
-    zIndex?: number;
+  visible: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+  title?: React.ReactNode;
+  height?: string | number;
+  zIndex?: number;
+  className?: string;
+  variant?: ActionSheetVariant;
 }
 
 export const ActionSheet: React.FC<ActionSheetProps> & {
-    showActions: (options: { 
-        title?: string; 
-        actions: Array<{ text: string; key?: string; color?: string; disabled?: boolean }>;
-        cancelText?: string;
-    }) => Promise<{ text: string; key?: string; color?: string; disabled?: boolean } | null>;
-} = ({ 
-    visible, 
-    onClose, 
-    children, 
-    title,
-    height,
-    zIndex
+  showActions: (options: ActionSheetShowOptions) => Promise<ActionSheetAction | null>;
+} = ({
+  visible,
+  onClose,
+  children,
+  title,
+  height,
+  zIndex,
+  className = '',
+  variant = DEFAULT_ACTION_SHEET_VARIANT,
 }) => {
-    return (
-        <Popup 
-            visible={visible} 
-            onClose={onClose} 
-            position="bottom" 
-            round 
-            zIndex={zIndex}
-            style={{ height: height }}
-        >
-            <div style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: 'inherit' }}>
-                <div style={{ width: '100%', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'var(--border-color)', opacity: 0.6 }} />
-                </div>
+  const popupClassName = ['c-action-sheet-popup', resolveActionSheetVariantClass(variant), className]
+    .filter(Boolean)
+    .join(' ');
 
-                {title && (
-                    <div style={{ 
-                        padding: '0 20px 16px 20px', 
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        borderBottom: '0.5px solid var(--border-color)',
-                        fontSize: '17px', fontWeight: 600,
-                        color: 'var(--text-primary)',
-                        flexShrink: 0
-                    }}>
-                        <div style={{flex: 1}}>{title}</div>
-                        <div 
-                            onClick={onClose} 
-                            style={{ 
-                                padding: '4px', cursor: 'pointer', 
-                                background: 'var(--bg-body)', borderRadius: '50%',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                width: '28px', height: '28px', marginLeft: '12px'
-                            }}
-                        >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                        </div>
-                    </div>
-                )}
-                
-                <div style={{ flex: 1, overflowY: 'auto', overscrollBehavior: 'contain' }}>
-                    {children}
-                </div>
-            </div>
-        </Popup>
-    );
-};
+  return (
+    <Popup
+      visible={visible}
+      onClose={onClose}
+      position="bottom"
+      round
+      zIndex={zIndex}
+      style={height ? { height } : undefined}
+      className={popupClassName}
+    >
+      <div className="c-action-sheet">
+        <div className="c-action-sheet__handle-wrap">
+          <div className="c-action-sheet__handle" />
+        </div>
 
-interface ActionSheetAction {
-    text: string;
-    key?: string;
-    color?: string;
-    disabled?: boolean;
-}
+        {title ? (
+          <div className="c-action-sheet__title-row">
+            <div className="c-action-sheet__title">{title}</div>
+            <button
+              type="button"
+              className="c-action-sheet__close-btn"
+              onClick={onClose}
+              aria-label="close action sheet"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+        ) : null}
 
-const resolveDefaultCancelText = (): string => {
-    const htmlLang = (document.documentElement.lang || '').toLowerCase();
-    const navLang = (navigator.language || '').toLowerCase();
-    const lang = htmlLang || navLang;
-    return lang.startsWith('en') ? 'Cancel' : '取消';
+        <div className="c-action-sheet__body">{children}</div>
+      </div>
+    </Popup>
+  );
 };
 
 let actionSheetResolver: ((value: ActionSheetAction | null) => void) | null = null;
 let currentActions: ActionSheetAction[] = [];
-let currentTitle: string = '';
-let currentCancelText: string = resolveDefaultCancelText();
+let currentTitle = '';
+let currentCancelText = resolveDefaultCancelText();
+let currentVariant: ActionSheetVariant = DEFAULT_ACTION_SHEET_VARIANT;
 let actionSheetVisible = false;
 let actionSheetListeners: Array<() => void> = [];
 
 const notifyListeners = () => {
-    actionSheetListeners.forEach(l => l());
+  actionSheetListeners.forEach((listener) => listener());
 };
 
 export const ActionSheetContainer: React.FC = () => {
-    const [, forceUpdate] = React.useReducer(x => x + 1, 0);
-    
-    React.useEffect(() => {
-        actionSheetListeners.push(forceUpdate);
-        return () => {
-            actionSheetListeners = actionSheetListeners.filter(l => l !== forceUpdate);
-        };
-    }, []);
+  const [, forceUpdate] = React.useReducer((value) => value + 1, 0);
 
-    const handleActionClick = (action: ActionSheetAction) => {
-        actionSheetVisible = false;
-        actionSheetResolver?.(action);
-        notifyListeners();
+  React.useEffect(() => {
+    actionSheetListeners.push(forceUpdate);
+    return () => {
+      actionSheetListeners = actionSheetListeners.filter((listener) => listener !== forceUpdate);
     };
+  }, []);
 
-    const handleClose = () => {
-        actionSheetVisible = false;
-        actionSheetResolver?.(null);
-        notifyListeners();
-    };
+  const handleActionClick = (action: ActionSheetAction) => {
+    if (action.disabled) return;
+    actionSheetVisible = false;
+    actionSheetResolver?.(action);
+    notifyListeners();
+  };
 
-    if (!actionSheetVisible) return null;
+  const handleClose = () => {
+    actionSheetVisible = false;
+    actionSheetResolver?.(null);
+    notifyListeners();
+  };
 
-    return (
-        <ActionSheet visible={actionSheetVisible} onClose={handleClose} title={currentTitle}>
-            <div style={{ padding: '8px 0' }}>
-                {currentActions.map((action, idx) => (
-                    <div
-                        key={action.key || idx}
-                        onClick={() => !action.disabled && handleActionClick(action)}
-                        style={{
-                            padding: '16px 20px',
-                            textAlign: 'center',
-                            fontSize: '17px',
-                            color: action.color || 'var(--text-primary)',
-                            cursor: action.disabled ? 'not-allowed' : 'pointer',
-                            opacity: action.disabled ? 0.5 : 1,
-                            borderBottom: idx < currentActions.length - 1 ? '0.5px solid var(--border-color)' : 'none'
-                        }}
-                    >
-                        {action.text}
-                    </div>
-                ))}
-                <div style={{ height: '8px', background: 'var(--bg-body)' }} />
-                <div
-                    onClick={handleClose}
-                    style={{
-                        padding: '16px 20px',
-                        textAlign: 'center',
-                        fontSize: '17px',
-                        color: 'var(--text-secondary)',
-                        cursor: 'pointer',
-                        fontWeight: 600
-                    }}
-                >
-                    {currentCancelText}
-                </div>
-            </div>
-        </ActionSheet>
-    );
+  if (!actionSheetVisible) return null;
+
+  return (
+    <ActionSheet
+      visible={actionSheetVisible}
+      onClose={handleClose}
+      title={currentTitle}
+      variant={currentVariant}
+    >
+      <div className="c-action-sheet-list">
+        {currentActions.map((action, index) => (
+          <button
+            type="button"
+            key={action.key || index}
+            onClick={() => handleActionClick(action)}
+            className="c-action-sheet-list__item"
+            style={action.color ? { color: action.color } : undefined}
+            disabled={action.disabled}
+          >
+            {action.text}
+          </button>
+        ))}
+
+        <div className="c-action-sheet-list__gap" />
+
+        <button type="button" className="c-action-sheet-list__cancel" onClick={handleClose}>
+          {currentCancelText}
+        </button>
+      </div>
+    </ActionSheet>
+  );
 };
 
-ActionSheet.showActions = async (options: { 
-    title?: string; 
-    actions: ActionSheetAction[];
-    cancelText?: string;
-}): Promise<ActionSheetAction | null> => {
-    currentTitle = options.title || '';
-    currentActions = options.actions;
-    currentCancelText = options.cancelText || resolveDefaultCancelText();
-    actionSheetVisible = true;
-    notifyListeners();
-    
-    return new Promise((resolve) => {
-        actionSheetResolver = resolve;
-    });
+ActionSheet.showActions = async (options: ActionSheetShowOptions): Promise<ActionSheetAction | null> => {
+  currentTitle = options.title || '';
+  currentActions = options.actions;
+  currentCancelText = options.cancelText || resolveDefaultCancelText();
+  currentVariant = options.variant || DEFAULT_ACTION_SHEET_VARIANT;
+  actionSheetVisible = true;
+  notifyListeners();
+
+  return new Promise((resolve) => {
+    actionSheetResolver = resolve;
+  });
 };

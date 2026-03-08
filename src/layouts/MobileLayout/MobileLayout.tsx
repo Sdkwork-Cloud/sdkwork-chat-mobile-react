@@ -12,12 +12,14 @@ interface MobileLayoutProps {
   children: React.ReactNode;
   showTabbar?: boolean;
   showFloatingBall?: boolean;
+  disableBottomSafeArea?: boolean;
 }
 
 export const MobileLayout: React.FC<MobileLayoutProps> = ({
   children,
   showTabbar = true,
   showFloatingBall = showTabbar,
+  disableBottomSafeArea = false,
 }) => {
   const config = useSettingsStore((state) => state.config);
   const loadConfig = useSettingsStore((state) => state.loadConfig);
@@ -33,7 +35,15 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
 
   return (
     <div className="mobile-layout">
-      <main className={`mobile-layout__content ${showTabbar ? 'mobile-layout__content--with-tabbar' : ''}`}>
+      <main
+        className={[
+          'mobile-layout__content',
+          showTabbar ? 'mobile-layout__content--with-tabbar' : '',
+          disableBottomSafeArea ? 'mobile-layout__content--no-bottom-safe-area' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+      >
         {children}
       </main>
       

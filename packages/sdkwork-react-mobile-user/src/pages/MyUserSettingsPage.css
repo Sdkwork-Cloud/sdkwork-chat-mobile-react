@@ -1,0 +1,19 @@
+@import './UserCenterPage.shared.css';
+
+.my-user-settings-page {
+  --user-center-group-gap: 8px;
+  --user-center-scroll-bottom: 80px;
+}
+
+.my-user-settings-page__actions {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg-card);
+  border-top: 0.5px solid var(--border-color);
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+}
