@@ -68,6 +68,40 @@ export interface ShareResult {
 }
 
 // ============================================
+// Geolocation Types
+// ============================================
+
+export interface GeolocationOptions {
+  enableHighAccuracy?: boolean;
+  timeout?: number;
+  maximumAge?: number;
+}
+
+export interface GeolocationCoordinates {
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+  altitude?: number | null;
+  altitudeAccuracy?: number | null;
+  heading?: number | null;
+  speed?: number | null;
+}
+
+export interface GeolocationResult {
+  success: boolean;
+  position?: GeolocationCoordinates;
+  timestamp?: number;
+  error?: string;
+}
+
+export interface GeolocationPermissionResult {
+  location: boolean;
+  coarseLocation: boolean;
+}
+
+export type GeolocationWatcher = (result: GeolocationResult) => void;
+
+// ============================================
 // User Profile Types
 // ============================================
 

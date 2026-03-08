@@ -6,6 +6,7 @@
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { AppLauncher } from '@capacitor/app-launcher';
+import { Browser } from '@capacitor/browser';
 import { Device } from '@capacitor/device';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Clipboard } from '@capacitor/clipboard';
@@ -48,6 +49,8 @@ import type {
   PaymentChannel,
   PaymentLaunchRequest,
   PaymentLaunchResult,
+  AppListenerEvent,
+  AppListenerPayloadMap,
 } from './types';
 
 const PAYMENT_SUPPORTED_CHANNELS: ReadonlySet<PaymentChannel> = new Set([
@@ -67,6 +70,24 @@ function normalizePushPermissionState(value: string | undefined): PushPermission
 function createNotificationId(): number {
   // Capacitor local notification id is an integer. Keep it stable and bounded.
   return Number(String(Date.now()).slice(-9));
+}
+
+interface BarcodeScannerPermissionResult {
+  granted?: boolean;
+  denied?: boolean;
+  restricted?: boolean;
+}
+
+interface BarcodeScannerScanResult {
+  content?: string | null;
+}
+
+interface BarcodeScannerPluginLike {
+  checkPermission(options?: { force?: boolean }): Promise<BarcodeScannerPermissionResult>;
+  startScan(options?: Record<string, unknown>): Promise<BarcodeScannerScanResult>;
+  stopScan(): Promise<void>;
+  hideBackground(): Promise<void>;
+  showBackground(): Promise<void>;
 }
 
 class CapacitorDevice implements IDevice {
@@ -130,6 +151,15 @@ class CapacitorClipboard implements IClipboard {
 }
 
 class CapacitorCamera implements ICamera {
+  private async loadBarcodeScanner(): Promise<BarcodeScannerPluginLike> {
+    const module = await import('@capacitor-community/barcode-scanner').catch(() => null);
+    const scanner = (module as { BarcodeScanner?: BarcodeScannerPluginLike } | null)?.BarcodeScanner;
+    if (!scanner) {
+      throw new Error('QR scanner plugin is missing. Install @capacitor-community/barcode-scanner and sync native.');
+    }
+    return scanner;
+  }
+
   async takePhoto(): Promise<string> {
     const photo = await Camera.getPhoto({
       quality: 90,
@@ -151,7 +181,37 @@ class CapacitorCamera implements ICamera {
   }
 
   async scanQRCode(): Promise<string> {
-    throw new Error('QR Code scanning requires @capacitor-community/barcode-scanner');
+    const scanner = await this.loadBarcodeScanner();
+    const permission = await scanner.checkPermission({ force: true });
+    if (!permission.granted || permission.denied || permission.restricted) {
+      throw new Error('Camera permission denied for QR scanning');
+    }
+
+    let backgroundHidden = false;
+    try {
+      await scanner.hideBackground();
+      backgroundHidden = true;
+
+      const result = await scanner.startScan();
+      const content = (result?.content || '').trim();
+      if (!content) {
+        throw new Error('No QR content detected');
+      }
+      return content;
+    } finally {
+      try {
+        await scanner.stopScan();
+      } catch {
+        // Ignore cleanup failures from scanner runtime.
+      }
+      if (backgroundHidden) {
+        try {
+          await scanner.showBackground();
+        } catch {
+          // Ignore cleanup failures from scanner runtime.
+        }
+      }
+    }
   }
 }
 
@@ -400,7 +460,14 @@ class CapacitorPayment implements IPayment {
     }
 
     try {
-      await AppLauncher.openUrl({ url: paymentUrl });
+      if (/^https?:\/\//i.test(paymentUrl)) {
+        await Browser.open({
+          url: paymentUrl,
+          presentationStyle: 'fullscreen',
+        });
+      } else {
+        await AppLauncher.openUrl({ url: paymentUrl });
+      }
       return {
         success: true,
         status: 'launched',
@@ -522,9 +589,19 @@ class CapacitorApp implements IApp {
     await App.exitApp();
   }
 
-  async addListener(_event: 'appStateChange', callback: (state: { isActive: boolean }) => void): Promise<() => void> {
-    const listener = await App.addListener('appStateChange', ({ isActive }) => {
-      callback({ isActive });
+  async addListener<E extends AppListenerEvent>(
+    event: E,
+    callback: (payload: AppListenerPayloadMap[E]) => void,
+  ): Promise<() => void> {
+    if (event === 'appStateChange') {
+      const listener = await App.addListener('appStateChange', ({ isActive }) => {
+        callback({ isActive } as AppListenerPayloadMap[E]);
+      });
+      return () => listener.remove();
+    }
+
+    const listener = await App.addListener('appUrlOpen', ({ url }) => {
+      callback({ url } as AppListenerPayloadMap[E]);
     });
     return () => listener.remove();
   }

@@ -12,10 +12,12 @@
   "peerDependencies": {
     "react": "catalog:",
     "react-dom": "catalog:",
+    "@capacitor/geolocation": "catalog:",
     "@sdkwork/react-mobile-core": "workspace:*",
     "@sdkwork/react-mobile-commons": "workspace:*",
     "@sdkwork/react-mobile-chat": "workspace:*",
     "@sdkwork/react-mobile-creation": "workspace:*",
+    "qrcode": "^1.5.4",
     "zustand": "catalog:",
     "react-i18next": "catalog:",
     "i18next": "catalog:",

@@ -60,6 +60,27 @@ Implementation contract:
 - `pnpm cap:run:android`
 - `pnpm cap:run:ios`
 - `pnpm cap:doctor`
+- `pnpm audit:capacitor:capabilities`
+
+## Capability Audit Workflow
+
+Run:
+
+1. `pnpm audit:capacitor:capabilities`
+2. Review P0/P1/P2 statuses in the console report.
+3. For any `MISSING` or `PARTIAL` item:
+   - Add plugin to `pnpm-workspace.yaml` catalog.
+   - Reference plugin in root/core `package.json` with `catalog:`.
+   - Implement bridge/runtime integration in `packages/sdkwork-react-mobile-core/src/platform/`.
+4. Run `pnpm install && pnpm cap:sync`.
+
+Default audit coverage includes:
+
+- Push notifications / local notifications
+- Payment launch bridge / deep-link callback
+- Geolocation / browser OAuth fallback
+- File picker / barcode scanner
+- Secure storage / biometric auth / in-app update
 
 ## Packaging Flows
 

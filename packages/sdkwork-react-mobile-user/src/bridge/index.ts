@@ -12,17 +12,26 @@ export type {
   FileResult,
   DirectoryResult,
   FileInfo,
+  ShareOptions,
+  ShareResult,
+  GeolocationOptions,
+  GeolocationCoordinates,
+  GeolocationResult,
+  GeolocationPermissionResult,
+  GeolocationWatcher,
 } from './types';
 
 // Export native bridges
 export { CameraBridge } from './native/camera';
 export { FileSystemBridge } from './native/fileSystem';
 export { ShareBridge } from './native/share';
+export { GeolocationBridge } from './native/geolocation';
 
 // Export hooks
 export { useCamera } from './hooks/useCamera';
 export { useFileSystem } from './hooks/useFileSystem';
 export { useShare } from './hooks/useShare';
+export { useGeolocation } from './hooks/useGeolocation';
 
 /**
  * Check if running in native environment
