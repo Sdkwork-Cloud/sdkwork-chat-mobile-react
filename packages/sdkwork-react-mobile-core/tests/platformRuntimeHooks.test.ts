@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   createDefaultPlatformRuntimeHooks,
   flushDefaultPlatformRuntimeHookQueue,
+  inspectDefaultPlatformRuntimeHookQueue,
   PLATFORM_RUNTIME_HOOK_EVENTS,
 } from '../src/platform/runtimeHooks';
 import type { PaymentCallbackPayload, PushTokenUpdatedPayload } from '../src/platform/runtime';
@@ -431,5 +432,96 @@ describe('platform runtime hooks', () => {
     expect(
       emitted.some((item) => item.event === PLATFORM_RUNTIME_HOOK_EVENTS.PAYMENT_RETRY_DROPPED),
     ).toBe(true);
+  });
+
+  it('inspects retry queue snapshot with classified states', async () => {
+    vi.useFakeTimers();
+    try {
+      const now = new Date('2026-03-09T00:00:00.000Z');
+      vi.setSystemTime(now);
+
+      const { platform, storageMap } = createRuntimeHookPlatform('auth-token');
+      storageMap.set('sys_platform_push_retry_queue_v1', [
+        {
+          payload: {
+            token: 'push-ready',
+            previousToken: null,
+            source: 'registration',
+          },
+          queuedAt: now.getTime() - 30_000,
+          attempts: 1,
+          nextRetryAt: now.getTime() - 1,
+        },
+        {
+          payload: {
+            token: 'push-backoff',
+            previousToken: null,
+            source: 'registration',
+          },
+          queuedAt: now.getTime() - 30_000,
+          attempts: 2,
+          nextRetryAt: now.getTime() + 60_000,
+        },
+        {
+          payload: {
+            token: 'push-expired',
+            previousToken: null,
+            source: 'registration',
+          },
+          queuedAt: now.getTime() - 500_000,
+          attempts: 1,
+        },
+      ]);
+      storageMap.set('sys_platform_payment_retry_queue_v1', [
+        {
+          payload: {
+            rawUrl: 'openchat://payment/callback?orderId=SO-5005&status=paid',
+            orderId: 'SO-5005',
+            success: true,
+            status: 'paid',
+          },
+          queuedAt: now.getTime() - 5_000,
+          attempts: 1,
+        },
+        {
+          payload: {
+            rawUrl: 'openchat://payment/callback?orderId=SO-5006&status=paid',
+            orderId: 'SO-5006',
+            success: true,
+            status: 'paid',
+          },
+          queuedAt: now.getTime() - 5_000,
+          attempts: 3,
+        },
+      ]);
+
+      const snapshot = await inspectDefaultPlatformRuntimeHookQueue({
+        platform,
+        pushRetryPolicy: {
+          ttlMs: 120_000,
+          maxAttempts: 4,
+        },
+        paymentRetryPolicy: {
+          ttlMs: 120_000,
+          maxAttempts: 3,
+        },
+      });
+
+      expect(snapshot.push.total).toBe(3);
+      expect(snapshot.push.ready).toBe(1);
+      expect(snapshot.push.inBackoff).toBe(1);
+      expect(snapshot.push.expired).toBe(1);
+      expect(snapshot.push.maxAttemptsReached).toBe(0);
+      expect(snapshot.push.earliestNextRetryAt).toBe(now.getTime() + 60_000);
+
+      expect(snapshot.payment.total).toBe(2);
+      expect(snapshot.payment.ready).toBe(1);
+      expect(snapshot.payment.inBackoff).toBe(0);
+      expect(snapshot.payment.expired).toBe(0);
+      expect(snapshot.payment.maxAttemptsReached).toBe(1);
+      expect(snapshot.payment.earliestNextRetryAt).toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

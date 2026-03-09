@@ -15,6 +15,7 @@ export {
   initializePlatformRuntime,
   createDefaultPlatformRuntimeHooks,
   flushDefaultPlatformRuntimeHookQueue,
+  inspectDefaultPlatformRuntimeHookQueue,
   type Platform,
   type PlatformType,
   type PlatformCapabilityReport,
@@ -25,6 +26,9 @@ export {
   type PushTokenUpdatedPayload,
   type DefaultPlatformRuntimeHooksOptions,
   type RuntimeRetryFlushResult,
+  type RuntimeRetryPolicyOptions,
+  type RuntimeRetryQueueSnapshotBucket,
+  type RuntimeRetryQueueSnapshot,
 } from './platform';
 
 export { platformService } from './platform/platformService';

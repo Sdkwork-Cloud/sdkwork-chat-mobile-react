@@ -18,8 +18,15 @@ export {
   PLATFORM_RUNTIME_HOOK_EVENTS,
   createDefaultPlatformRuntimeHooks,
   flushDefaultPlatformRuntimeHookQueue,
+  inspectDefaultPlatformRuntimeHookQueue,
 } from './runtimeHooks';
-export type { DefaultPlatformRuntimeHooksOptions, RuntimeRetryFlushResult } from './runtimeHooks';
+export type {
+  DefaultPlatformRuntimeHooksOptions,
+  RuntimeRetryFlushResult,
+  RuntimeRetryPolicyOptions,
+  RuntimeRetryQueueSnapshotBucket,
+  RuntimeRetryQueueSnapshot,
+} from './runtimeHooks';
 
 let platformInstance: IPlatform | null = null;
 let initializationPromise: Promise<void> | null = null;

@@ -70,7 +70,7 @@ export interface DefaultPlatformRuntimeHooksOptions {
   paymentRetryPolicy?: Partial<RuntimeRetryPolicyOptions>;
 }
 
-interface RuntimeRetryPolicyOptions {
+export interface RuntimeRetryPolicyOptions {
   maxAttempts: number;
   ttlMs: number;
   backoffBaseMs: number;
@@ -106,6 +106,21 @@ interface RuntimeHookContext {
 export interface RuntimeRetryFlushResult {
   push: number;
   payment: number;
+}
+
+export interface RuntimeRetryQueueSnapshotBucket {
+  total: number;
+  ready: number;
+  inBackoff: number;
+  expired: number;
+  maxAttemptsReached: number;
+  earliestNextRetryAt?: number;
+}
+
+export interface RuntimeRetryQueueSnapshot {
+  generatedAt: number;
+  push: RuntimeRetryQueueSnapshotBucket;
+  payment: RuntimeRetryQueueSnapshotBucket;
 }
 
 function readRuntimeEnv(name: string): string | undefined {
@@ -279,6 +294,53 @@ function resolveRetryPolicy(
     ttlMs,
     backoffBaseMs,
     backoffMaxMs,
+  };
+}
+
+function summarizeRetryQueue<Item extends { queuedAt: number; attempts?: number; nextRetryAt?: number }>(
+  items: Item[],
+  policy: RuntimeRetryPolicyOptions,
+  now: number,
+): RuntimeRetryQueueSnapshotBucket {
+  let ready = 0;
+  let inBackoff = 0;
+  let expired = 0;
+  let maxAttemptsReached = 0;
+  let earliestNextRetryAt: number | undefined;
+
+  for (const item of items) {
+    const attempts = resolveRetryAttempts(item.attempts);
+    const queuedAt = item.queuedAt ?? now;
+    const nextRetryAt = item.nextRetryAt ?? queuedAt;
+    const isExpired = now - queuedAt > policy.ttlMs;
+    const reachedMaxAttempts = attempts >= policy.maxAttempts;
+
+    if (isExpired) {
+      expired += 1;
+      continue;
+    }
+    if (reachedMaxAttempts) {
+      maxAttemptsReached += 1;
+      continue;
+    }
+    if (nextRetryAt > now) {
+      inBackoff += 1;
+      earliestNextRetryAt =
+        typeof earliestNextRetryAt === 'number'
+          ? Math.min(earliestNextRetryAt, nextRetryAt)
+          : nextRetryAt;
+      continue;
+    }
+    ready += 1;
+  }
+
+  return {
+    total: items.length,
+    ready,
+    inBackoff,
+    expired,
+    maxAttemptsReached,
+    earliestNextRetryAt,
   };
 }
 
@@ -514,6 +576,21 @@ export async function flushDefaultPlatformRuntimeHookQueue(
   return {
     push: pushSuccess,
     payment: paymentSuccess,
+  };
+}
+
+export async function inspectDefaultPlatformRuntimeHookQueue(
+  options: DefaultPlatformRuntimeHooksOptions,
+): Promise<RuntimeRetryQueueSnapshot> {
+  const context = createRuntimeHookContext(options);
+  const now = Date.now();
+  const pushQueue = await readQueue<PushRetryItem>(context.storage, PUSH_RETRY_QUEUE_KEY);
+  const paymentQueue = await readQueue<PaymentRetryItem>(context.storage, PAYMENT_RETRY_QUEUE_KEY);
+
+  return {
+    generatedAt: now,
+    push: summarizeRetryQueue(pushQueue, context.pushRetryPolicy, now),
+    payment: summarizeRetryQueue(paymentQueue, context.paymentRetryPolicy, now),
   };
 }
 
