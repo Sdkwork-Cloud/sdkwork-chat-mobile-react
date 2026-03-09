@@ -94,6 +94,14 @@ function hasRequestedTrack(stream: MediaStream, name: MediaPermissionName): bool
   return stream.getAudioTracks().length > 0;
 }
 
+async function resolveMissingTrackState(name: MediaPermissionName): Promise<CallMediaPermissionState> {
+  const state = await queryMediaPermission(name);
+  if (state === 'denied' || state === 'prompt') {
+    return state;
+  }
+  return 'unsupported';
+}
+
 export async function inspectCallMediaPermissions(
   request?: CallMediaPermissionRequest,
 ): Promise<CallMediaPermissionStatus> {
@@ -139,11 +147,13 @@ export async function requestCallMediaPermissions(
 
     const hasCameraTrack = !normalized.requireCamera || hasRequestedTrack(stream, 'camera');
     const hasMicrophoneTrack = !normalized.requireMicrophone || hasRequestedTrack(stream, 'microphone');
+    const cameraState = hasCameraTrack ? 'granted' : await resolveMissingTrackState('camera');
+    const microphoneState = hasMicrophoneTrack ? 'granted' : await resolveMissingTrackState('microphone');
 
     return {
       supported: true,
-      camera: hasCameraTrack ? 'granted' : 'unsupported',
-      microphone: hasMicrophoneTrack ? 'granted' : 'unsupported',
+      camera: cameraState,
+      microphone: microphoneState,
     };
   } catch (error) {
     return {

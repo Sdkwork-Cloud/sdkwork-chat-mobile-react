@@ -45,6 +45,33 @@ describe('requestCallMediaPermissions', () => {
     expect(audioTrack.stop).toHaveBeenCalledTimes(1);
   });
 
+  it('uses denied state when permission api reports denied for a missing track', async () => {
+    const audioTrack = createTrack('audio');
+    const getUserMedia = vi.fn().mockResolvedValue(createStream([audioTrack]));
+    const query = vi.fn().mockResolvedValue({ state: 'denied' });
+
+    vi.stubGlobal('navigator', {
+      mediaDevices: {
+        getUserMedia,
+      },
+      permissions: {
+        query,
+      },
+    });
+
+    const result = await requestCallMediaPermissions({
+      requireCamera: true,
+      requireMicrophone: true,
+    });
+
+    expect(result).toEqual({
+      supported: true,
+      camera: 'denied',
+      microphone: 'granted',
+    });
+    expect(audioTrack.stop).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps both permissions granted when requested tracks are present', async () => {
     const audioTrack = createTrack('audio');
     const videoTrack = createTrack('video');
