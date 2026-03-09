@@ -66,6 +66,15 @@ export interface DefaultPlatformRuntimeHooksOptions {
   retryTtlMs?: number;
   retryBackoffBaseMs?: number;
   retryBackoffMaxMs?: number;
+  pushRetryPolicy?: Partial<RuntimeRetryPolicyOptions>;
+  paymentRetryPolicy?: Partial<RuntimeRetryPolicyOptions>;
+}
+
+interface RuntimeRetryPolicyOptions {
+  maxAttempts: number;
+  ttlMs: number;
+  backoffBaseMs: number;
+  backoffMaxMs: number;
 }
 
 interface PushRetryItem {
@@ -90,10 +99,8 @@ interface RuntimeHookContext {
   emit: RuntimeEmitter;
   resolveClient: RuntimeClientResolver;
   appVersion?: string;
-  retryMaxAttempts: number;
-  retryTtlMs: number;
-  retryBackoffBaseMs: number;
-  retryBackoffMaxMs: number;
+  pushRetryPolicy: RuntimeRetryPolicyOptions;
+  paymentRetryPolicy: RuntimeRetryPolicyOptions;
 }
 
 export interface RuntimeRetryFlushResult {
@@ -165,13 +172,13 @@ function resolveRetryAttempts(value?: number): number {
   return 1;
 }
 
-function resolveNextRetryAt(context: RuntimeHookContext, attempts: number, now: number): number {
-  if (context.retryBackoffBaseMs <= 0 || context.retryBackoffMaxMs <= 0) {
+function resolveNextRetryAt(policy: RuntimeRetryPolicyOptions, attempts: number, now: number): number {
+  if (policy.backoffBaseMs <= 0 || policy.backoffMaxMs <= 0) {
     return now;
   }
   const safeAttempt = Math.min(Math.max(attempts, 1), 16);
-  const exponentialDelay = context.retryBackoffBaseMs * 2 ** (safeAttempt - 1);
-  const cappedDelay = Math.min(exponentialDelay, context.retryBackoffMaxMs);
+  const exponentialDelay = policy.backoffBaseMs * 2 ** (safeAttempt - 1);
+  const cappedDelay = Math.min(exponentialDelay, policy.backoffMaxMs);
   return now + Math.max(0, cappedDelay);
 }
 
@@ -239,21 +246,39 @@ async function writeQueue<T>(storage: ServiceStorageAdapter, key: string, queue:
 }
 
 function createRuntimeHookContext(options: DefaultPlatformRuntimeHooksOptions): RuntimeHookContext {
-  const retryBackoffBaseMs = resolveRetryBackoffBaseMs(options.retryBackoffBaseMs);
-  const retryBackoffMaxMs = Math.max(
-    retryBackoffBaseMs,
-    resolveRetryBackoffMaxMs(options.retryBackoffMaxMs),
-  );
+  const globalRetryPolicy = resolveRetryPolicy({
+    maxAttempts: options.retryMaxAttempts,
+    ttlMs: options.retryTtlMs,
+    backoffBaseMs: options.retryBackoffBaseMs,
+    backoffMaxMs: options.retryBackoffMaxMs,
+  });
   return {
     platform: options.platform,
     storage: options.platform.storage as ServiceStorageAdapter,
     emit: options.emit || ((event, payload) => eventBus.emit(event, payload)),
     resolveClient: options.clientResolver || getAppSdkCoreClientWithSession,
     appVersion: resolveAppVersion(options.appVersion),
-    retryMaxAttempts: resolveRetryMaxAttempts(options.retryMaxAttempts),
-    retryTtlMs: resolveRetryTtlMs(options.retryTtlMs),
-    retryBackoffBaseMs,
-    retryBackoffMaxMs,
+    pushRetryPolicy: resolveRetryPolicy(options.pushRetryPolicy, globalRetryPolicy),
+    paymentRetryPolicy: resolveRetryPolicy(options.paymentRetryPolicy, globalRetryPolicy),
+  };
+}
+
+function resolveRetryPolicy(
+  options?: Partial<RuntimeRetryPolicyOptions>,
+  fallback?: RuntimeRetryPolicyOptions,
+): RuntimeRetryPolicyOptions {
+  const maxAttempts = resolveRetryMaxAttempts(options?.maxAttempts ?? fallback?.maxAttempts);
+  const ttlMs = resolveRetryTtlMs(options?.ttlMs ?? fallback?.ttlMs);
+  const backoffBaseMs = resolveRetryBackoffBaseMs(options?.backoffBaseMs ?? fallback?.backoffBaseMs);
+  const backoffMaxMs = Math.max(
+    backoffBaseMs,
+    resolveRetryBackoffMaxMs(options?.backoffMaxMs ?? fallback?.backoffMaxMs),
+  );
+  return {
+    maxAttempts,
+    ttlMs,
+    backoffBaseMs,
+    backoffMaxMs,
   };
 }
 
@@ -366,6 +391,8 @@ export async function flushDefaultPlatformRuntimeHookQueue(
   options: DefaultPlatformRuntimeHooksOptions,
 ): Promise<RuntimeRetryFlushResult> {
   const context = createRuntimeHookContext(options);
+  const pushRetryPolicy = context.pushRetryPolicy;
+  const paymentRetryPolicy = context.paymentRetryPolicy;
   const now = Date.now();
   let pushSuccess = 0;
   let paymentSuccess = 0;
@@ -378,8 +405,8 @@ export async function flushDefaultPlatformRuntimeHookQueue(
     const attempts = resolveRetryAttempts(item.attempts);
     const queuedAt = item.queuedAt ?? now;
     const nextRetryAt = item.nextRetryAt ?? queuedAt;
-    const isExpired = now - queuedAt > context.retryTtlMs;
-    const reachedMaxAttempts = attempts >= context.retryMaxAttempts;
+    const isExpired = now - queuedAt > pushRetryPolicy.ttlMs;
+    const reachedMaxAttempts = attempts >= pushRetryPolicy.maxAttempts;
     if (isExpired || reachedMaxAttempts) {
       pushDropped += 1;
       context.emit(PLATFORM_RUNTIME_HOOK_EVENTS.PUSH_RETRY_DROPPED, {
@@ -414,7 +441,7 @@ export async function flushDefaultPlatformRuntimeHookQueue(
         ...item,
         queuedAt,
         attempts: nextAttempts,
-        nextRetryAt: resolveNextRetryAt(context, nextAttempts, failedAt),
+        nextRetryAt: resolveNextRetryAt(pushRetryPolicy, nextAttempts, failedAt),
         error: toErrorMessage(error),
       });
     }
@@ -427,8 +454,8 @@ export async function flushDefaultPlatformRuntimeHookQueue(
     const attempts = resolveRetryAttempts(item.attempts);
     const queuedAt = item.queuedAt ?? now;
     const nextRetryAt = item.nextRetryAt ?? queuedAt;
-    const isExpired = now - queuedAt > context.retryTtlMs;
-    const reachedMaxAttempts = attempts >= context.retryMaxAttempts;
+    const isExpired = now - queuedAt > paymentRetryPolicy.ttlMs;
+    const reachedMaxAttempts = attempts >= paymentRetryPolicy.maxAttempts;
     if (isExpired || reachedMaxAttempts) {
       paymentDropped += 1;
       context.emit(PLATFORM_RUNTIME_HOOK_EVENTS.PAYMENT_RETRY_DROPPED, {
@@ -468,7 +495,7 @@ export async function flushDefaultPlatformRuntimeHookQueue(
         ...item,
         queuedAt,
         attempts: nextAttempts,
-        nextRetryAt: resolveNextRetryAt(context, nextAttempts, failedAt),
+        nextRetryAt: resolveNextRetryAt(paymentRetryPolicy, nextAttempts, failedAt),
         error: toErrorMessage(error),
       });
     }

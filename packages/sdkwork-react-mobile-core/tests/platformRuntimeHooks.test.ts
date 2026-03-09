@@ -372,4 +372,64 @@ describe('platform runtime hooks', () => {
       vi.useRealTimers();
     }
   });
+
+  it('applies independent retry policies for push and payment queues', async () => {
+    const { platform, storageMap } = createRuntimeHookPlatform('auth-token');
+    const emitted: Array<{ event: string; payload: unknown }> = [];
+    const registerDevice = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('network timeout'))
+      .mockRejectedValueOnce(new Error('network timeout again'));
+    const getOrderStatus = vi.fn().mockRejectedValue(new Error('gateway unavailable'));
+    const clientResolver = vi.fn().mockResolvedValue({
+      notification: { registerDevice },
+      orders: { getOrderStatus },
+    });
+
+    const options = {
+      platform,
+      clientResolver,
+      pushRetryPolicy: {
+        maxAttempts: 4,
+        backoffBaseMs: 0,
+        backoffMaxMs: 0,
+      },
+      paymentRetryPolicy: {
+        maxAttempts: 1,
+        backoffBaseMs: 0,
+        backoffMaxMs: 0,
+      },
+      emit: (event: string, payload: unknown) => emitted.push({ event, payload }),
+    };
+    const hooks = createDefaultPlatformRuntimeHooks(options);
+
+    await expect(
+      hooks.syncPushToken?.({
+        token: 'push-token-policy',
+        previousToken: null,
+        source: 'registration',
+      }),
+    ).rejects.toThrow('network timeout');
+    await expect(
+      hooks.handlePaymentCallback?.({
+        rawUrl: 'openchat://payment/callback?orderId=SO-4004&status=paid',
+        orderId: 'SO-4004',
+        success: true,
+        status: 'paid',
+      }),
+    ).rejects.toThrow('gateway unavailable');
+
+    const paymentCallsBeforeFlush = getOrderStatus.mock.calls.length;
+    const flushResult = await flushDefaultPlatformRuntimeHookQueue(options);
+
+    expect(flushResult.push).toBe(0);
+    expect(flushResult.payment).toBe(0);
+    expect(registerDevice).toHaveBeenCalledTimes(2);
+    expect(getOrderStatus).toHaveBeenCalledTimes(paymentCallsBeforeFlush);
+    expect(storageMap.has('sys_platform_push_retry_queue_v1')).toBe(true);
+    expect(storageMap.has('sys_platform_payment_retry_queue_v1')).toBe(false);
+    expect(
+      emitted.some((item) => item.event === PLATFORM_RUNTIME_HOOK_EVENTS.PAYMENT_RETRY_DROPPED),
+    ).toBe(true);
+  });
 });
