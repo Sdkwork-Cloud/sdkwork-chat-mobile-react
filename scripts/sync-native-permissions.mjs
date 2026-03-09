@@ -38,14 +38,14 @@ const androidPermissionLines = [
 ];
 
 const iosPermissionEntries = [
-  ['NSCameraUsageDescription', 'OpenChat 需要相机权限用于视频通话、拍照上传与二维码扫描。'],
-  ['NSMicrophoneUsageDescription', 'OpenChat 需要麦克风权限用于语音通话、视频通话与语音消息。'],
-  ['NSPhotoLibraryUsageDescription', 'OpenChat 需要访问相册用于上传图片和视频。'],
-  ['NSPhotoLibraryAddUsageDescription', 'OpenChat 需要写入相册用于保存图片和视频。'],
-  ['NSContactsUsageDescription', 'OpenChat 需要通讯录权限用于匹配联系人与快速发起通话。'],
-  ['NSBluetoothAlwaysUsageDescription', 'OpenChat 需要蓝牙权限用于连接蓝牙耳机与音频设备。'],
-  ['NSLocalNetworkUsageDescription', 'OpenChat 需要本地网络权限用于局域网调试与设备发现。'],
-  ['NSFaceIDUsageDescription', 'OpenChat 使用 Face ID 进行安全认证和支付校验。'],
+  ['NSCameraUsageDescription', 'OpenChat needs camera access for video calls, photo upload and QR scanning.'],
+  ['NSMicrophoneUsageDescription', 'OpenChat needs microphone access for voice calls, video calls and voice messages.'],
+  ['NSPhotoLibraryUsageDescription', 'OpenChat needs photo library access to upload images and videos.'],
+  ['NSPhotoLibraryAddUsageDescription', 'OpenChat needs photo library write access to save images and videos.'],
+  ['NSContactsUsageDescription', 'OpenChat needs contacts access to match contacts and start calls quickly.'],
+  ['NSBluetoothAlwaysUsageDescription', 'OpenChat needs Bluetooth access to connect headsets and audio devices.'],
+  ['NSLocalNetworkUsageDescription', 'OpenChat needs local network access for LAN debugging and device discovery.'],
+  ['NSFaceIDUsageDescription', 'OpenChat uses Face ID for secure authentication and payment verification.'],
 ];
 
 function syncAndroidManifest() {
