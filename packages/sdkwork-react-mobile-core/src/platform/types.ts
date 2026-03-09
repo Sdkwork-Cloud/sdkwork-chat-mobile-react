@@ -144,10 +144,16 @@ export interface INetwork {
   addListener(callback: (status: { connected: boolean; connectionType: string }) => void): Promise<() => void>;
 }
 
+export type KeyboardListenerEvent =
+  | 'keyboardWillShow'
+  | 'keyboardWillHide'
+  | 'keyboardDidShow'
+  | 'keyboardDidHide';
+
 export interface IKeyboard {
   show(): Promise<void>;
   hide(): Promise<void>;
-  addListener(event: 'keyboardWillShow' | 'keyboardWillHide', callback: (info: { keyboardHeight: number }) => void): Promise<() => void>;
+  addListener(event: KeyboardListenerEvent, callback: (info: { keyboardHeight: number }) => void): Promise<() => void>;
 }
 
 export interface IStatusBar {

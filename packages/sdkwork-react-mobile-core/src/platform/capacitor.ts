@@ -44,6 +44,7 @@ import type {
   IStatusBar,
   ISplashScreen,
   IApp,
+  KeyboardListenerEvent,
   DeviceInfo,
   OpenDialogOptions,
   SaveDialogOptions,
@@ -631,6 +632,22 @@ class CapacitorNetwork implements INetwork {
 }
 
 class CapacitorKeyboard implements IKeyboard {
+  private fallbackEvent(event: KeyboardListenerEvent): KeyboardListenerEvent | null {
+    if (event === 'keyboardWillShow') return 'keyboardDidShow';
+    if (event === 'keyboardWillHide') return 'keyboardDidHide';
+    if (event === 'keyboardDidShow') return 'keyboardWillShow';
+    if (event === 'keyboardDidHide') return 'keyboardWillHide';
+    return null;
+  }
+
+  private async attachKeyboardListener(
+    event: KeyboardListenerEvent,
+    callback: (info: { keyboardHeight: number }) => void,
+  ): Promise<() => void> {
+    const listener = await Keyboard.addListener(event as any, callback as any);
+    return () => listener.remove();
+  }
+
   async show(): Promise<void> {
     // Keyboard shows automatically when focusing input
   }
@@ -640,19 +657,22 @@ class CapacitorKeyboard implements IKeyboard {
   }
 
   async addListener(
-    event: 'keyboardWillShow' | 'keyboardWillHide',
+    event: KeyboardListenerEvent,
     callback: (info: { keyboardHeight: number }) => void
   ): Promise<() => void> {
     try {
-      if (event === 'keyboardWillShow') {
-        const listener = await Keyboard.addListener('keyboardDidShow', callback as any);
-        return () => listener.remove();
-      } else {
-        const listener = await Keyboard.addListener('keyboardDidHide', callback as any);
-        return () => listener.remove();
+      return await this.attachKeyboardListener(event, callback);
+    } catch (error) {
+      const fallback = this.fallbackEvent(event);
+      if (!fallback) {
+        return () => {};
       }
-    } catch {
-      return () => {};
+      try {
+        return await this.attachKeyboardListener(fallback, callback);
+      } catch {
+        console.warn('[Platform] Failed to bind keyboard listener', { event, fallback, error });
+        return () => {};
+      }
     }
   }
 }

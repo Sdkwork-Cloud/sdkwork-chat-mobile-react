@@ -20,6 +20,7 @@ import type {
   IStatusBar,
   ISplashScreen,
   IApp,
+  KeyboardListenerEvent,
   DeviceInfo,
   OpenDialogOptions,
   SaveDialogOptions,
@@ -358,7 +359,10 @@ class WebKeyboard implements IKeyboard {
     (document.activeElement as HTMLElement)?.blur();
   }
 
-  async addListener(): Promise<() => void> {
+  async addListener(
+    _event: KeyboardListenerEvent,
+    _callback: (info: { keyboardHeight: number }) => void,
+  ): Promise<() => void> {
     // No-op on web, return dummy cleanup
     return () => {};
   }

@@ -34,6 +34,10 @@ const pushNotificationsMock = {
   removeAllListeners: vi.fn(async () => {}),
 };
 
+const keyboardAddListenerMock = vi.fn(
+  async (_event: string, _callback: (payload: unknown) => void) => ({ remove: () => {} }),
+);
+
 vi.mock('@capacitor/core', () => ({
   Capacitor: {
     isNativePlatform: () => true,
@@ -170,7 +174,7 @@ vi.mock('@capacitor/network', () => ({
 vi.mock('@capacitor/keyboard', () => ({
   Keyboard: {
     hide: vi.fn(async () => {}),
-    addListener: vi.fn(async () => ({ remove: () => {} })),
+    addListener: keyboardAddListenerMock,
   },
 }));
 
@@ -226,11 +230,44 @@ describe('capacitor wrapper contracts', () => {
     vi.clearAllMocks();
     pushListeners.clear();
     appMock.minimizeApp = minimizeAppMock;
+    keyboardAddListenerMock.mockReset();
+    keyboardAddListenerMock.mockResolvedValue({ remove: () => {} });
     pushNotificationsMock.checkPermissions.mockResolvedValue({ receive: 'granted' });
     pushNotificationsMock.requestPermissions.mockResolvedValue({ receive: 'granted' });
     pushNotificationsMock.register.mockImplementation(async () => {
       pushListeners.get('registration')?.({ value: 'push-token-123' });
     });
+  });
+
+  it('binds keyboard listener to requested event when runtime supports it', async () => {
+    const removeMock = vi.fn();
+    keyboardAddListenerMock.mockResolvedValueOnce({ remove: removeMock });
+    const callback = vi.fn();
+    const platform = await createPlatform();
+
+    const cleanup = await platform.keyboard.addListener('keyboardWillShow', callback);
+
+    expect(keyboardAddListenerMock).toHaveBeenCalledTimes(1);
+    expect(keyboardAddListenerMock).toHaveBeenCalledWith('keyboardWillShow', expect.any(Function));
+    cleanup();
+    expect(removeMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back from keyboardWill to keyboardDid event when will events are unavailable', async () => {
+    const removeMock = vi.fn();
+    keyboardAddListenerMock
+      .mockRejectedValueOnce(new Error('keyboardWillHide not supported'))
+      .mockResolvedValueOnce({ remove: removeMock });
+    const callback = vi.fn();
+    const platform = await createPlatform();
+
+    const cleanup = await platform.keyboard.addListener('keyboardWillHide', callback);
+
+    expect(keyboardAddListenerMock).toHaveBeenCalledTimes(2);
+    expect(keyboardAddListenerMock).toHaveBeenNthCalledWith(1, 'keyboardWillHide', expect.any(Function));
+    expect(keyboardAddListenerMock).toHaveBeenNthCalledWith(2, 'keyboardDidHide', expect.any(Function));
+    cleanup();
+    expect(removeMock).toHaveBeenCalledTimes(1);
   });
 
   it('uses App.minimizeApp for app minimize instead of exiting the app', async () => {
