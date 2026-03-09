@@ -34,6 +34,7 @@
     "format:check": "pnpm -r format:check",
     "validate:service-standard": "node scripts/validate-service-standard.mjs",
     "audit:capacitor:capabilities": "node scripts/audit-capacitor-capabilities.mjs",
+    "verify:permissions:baseline": "node scripts/verify-native-permission-baseline.mjs",
     "validate:encoding": "node scripts/validate-encoding.mjs",
     "validate:encoding:strict": "node scripts/validate-encoding.mjs --strict",
     "validate:standards": "pnpm validate:service-standard && pnpm validate:encoding:strict",

@@ -62,18 +62,20 @@ Implementation contract:
 - `pnpm cap:run:ios`
 - `pnpm cap:doctor`
 - `pnpm audit:capacitor:capabilities`
+- `pnpm verify:permissions:baseline`
 
 ## Capability Audit Workflow
 
 Run:
 
 1. `pnpm audit:capacitor:capabilities`
-2. Review P0/P1/P2 statuses in the console report.
-3. For any `MISSING` or `PARTIAL` item:
+2. `pnpm verify:permissions:baseline`
+3. Review P0/P1/P2 statuses in the console report.
+4. For any `MISSING` or `PARTIAL` item:
    - Add plugin to `pnpm-workspace.yaml` catalog.
    - Reference plugin in root/core `package.json` with `catalog:`.
    - Implement bridge/runtime integration in `packages/sdkwork-react-mobile-core/src/platform/`.
-4. Run `pnpm install && pnpm cap:sync`.
+5. Run `pnpm install && pnpm cap:sync`.
 
 `pnpm cap:sync` already chains `pnpm cap:permissions:sync` to keep Android/iOS permission baseline aligned when native projects exist.
 

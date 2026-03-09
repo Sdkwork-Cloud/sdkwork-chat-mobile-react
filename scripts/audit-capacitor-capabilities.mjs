@@ -1,6 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  ANDROID_CALL_PERMISSION_BASELINE,
+  ANDROID_COMMON_PERMISSION_BASELINE,
+  IOS_CALL_PERMISSION_BASELINE,
+  IOS_COMMON_PERMISSION_BASELINE,
+} from './native-permission-baseline.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -75,49 +81,12 @@ function containsAll(source, segments) {
   return segments.every((segment) => source.includes(segment));
 }
 
-const androidCallPermissionBaseline = [
-  'android.permission.CAMERA',
-  'android.permission.RECORD_AUDIO',
-  'android.permission.MODIFY_AUDIO_SETTINGS',
-  'android.permission.FOREGROUND_SERVICE',
-  'android.permission.FOREGROUND_SERVICE_CAMERA',
-  'android.permission.FOREGROUND_SERVICE_MICROPHONE',
-  'android.permission.BLUETOOTH_CONNECT',
-  'android.permission.BLUETOOTH_SCAN',
-];
-
-const androidCommonPermissionBaseline = [
-  'android.permission.POST_NOTIFICATIONS',
-  'android.permission.ACCESS_NETWORK_STATE',
-  'android.permission.ACCESS_WIFI_STATE',
-  'android.permission.READ_MEDIA_IMAGES',
-  'android.permission.READ_MEDIA_AUDIO',
-  'android.permission.READ_MEDIA_VIDEO',
-];
-
-const iosCallPermissionBaseline = [
-  'NSCameraUsageDescription',
-  'NSMicrophoneUsageDescription',
-  'UIBackgroundModes',
-  '<string>audio</string>',
-  '<string>voip</string>',
-];
-
-const iosCommonPermissionBaseline = [
-  'NSPhotoLibraryUsageDescription',
-  'NSPhotoLibraryAddUsageDescription',
-  'NSContactsUsageDescription',
-  'NSBluetoothAlwaysUsageDescription',
-  'NSLocalNetworkUsageDescription',
-  '<string>remote-notification</string>',
-];
-
 const androidPermissionSource = androidManifestSource || androidPermissionTemplateSource;
 const iosPermissionSource = iosInfoPlistSource || iosPermissionTemplateSource;
-const hasAndroidCallPermissionBaseline = containsAll(androidPermissionSource, androidCallPermissionBaseline);
-const hasAndroidCommonPermissionBaseline = containsAll(androidPermissionSource, androidCommonPermissionBaseline);
-const hasIosCallPermissionBaseline = containsAll(iosPermissionSource, iosCallPermissionBaseline);
-const hasIosCommonPermissionBaseline = containsAll(iosPermissionSource, iosCommonPermissionBaseline);
+const hasAndroidCallPermissionBaseline = containsAll(androidPermissionSource, ANDROID_CALL_PERMISSION_BASELINE);
+const hasAndroidCommonPermissionBaseline = containsAll(androidPermissionSource, ANDROID_COMMON_PERMISSION_BASELINE);
+const hasIosCallPermissionBaseline = containsAll(iosPermissionSource, IOS_CALL_PERMISSION_BASELINE);
+const hasIosCommonPermissionBaseline = containsAll(iosPermissionSource, IOS_COMMON_PERMISSION_BASELINE);
 
 const capabilityChecks = [
   {

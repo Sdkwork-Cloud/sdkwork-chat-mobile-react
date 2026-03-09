@@ -16,6 +16,8 @@
   <string>OpenChat needs contacts access to match contacts and start calls quickly.</string>
   <key>NSBluetoothAlwaysUsageDescription</key>
   <string>OpenChat needs Bluetooth access to connect headsets and audio devices.</string>
+  <key>NSBluetoothPeripheralUsageDescription</key>
+  <string>OpenChat needs Bluetooth access to connect call peripherals and accessories.</string>
   <key>NSLocalNetworkUsageDescription</key>
   <string>OpenChat needs local network access for LAN debugging and device discovery.</string>
   <key>NSFaceIDUsageDescription</key>
