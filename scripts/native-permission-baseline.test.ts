@@ -16,6 +16,10 @@ describe('native permission baseline source of truth', () => {
     expect(baseline.ANDROID_PERMISSION_LINES).toContain(
       '<uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />',
     );
+    expect(baseline.ANDROID_PERMISSION_LINES).toContain(
+      '<uses-permission android:name="android.permission.READ_CONTACTS" />',
+    );
+    expect(baseline.ANDROID_COMMON_PERMISSION_BASELINE).toContain('android.permission.READ_CONTACTS');
     expect(baseline.IOS_BACKGROUND_MODES).toContain('voip');
     expect(
       baseline.IOS_PERMISSION_ENTRIES.some(([key]: [string, string]) => key === 'NSBluetoothPeripheralUsageDescription'),

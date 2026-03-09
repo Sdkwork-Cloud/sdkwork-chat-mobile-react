@@ -26,6 +26,7 @@ export const ANDROID_PERMISSION_LINES = [
   '<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />',
   '<uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />',
   '<uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />',
+  '<uses-permission android:name="android.permission.READ_CONTACTS" />',
   '<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />',
   '<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />',
 ];
@@ -63,6 +64,7 @@ export const ANDROID_COMMON_PERMISSION_BASELINE = [
   'android.permission.READ_MEDIA_IMAGES',
   'android.permission.READ_MEDIA_AUDIO',
   'android.permission.READ_MEDIA_VIDEO',
+  'android.permission.READ_CONTACTS',
 ];
 
 export const IOS_CALL_PERMISSION_BASELINE = [
