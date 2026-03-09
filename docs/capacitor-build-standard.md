@@ -63,6 +63,7 @@ Implementation contract:
 - `pnpm cap:doctor`
 - `pnpm audit:capacitor:capabilities`
 - `pnpm verify:permissions:baseline`
+- `pnpm validate:capacitor:baseline`
 
 ## Capability Audit Workflow
 
@@ -107,6 +108,7 @@ Call/media critical permissions:
 - `android.permission.FOREGROUND_SERVICE`
 - `android.permission.FOREGROUND_SERVICE_CAMERA`
 - `android.permission.FOREGROUND_SERVICE_MICROPHONE`
+- `android.permission.FOREGROUND_SERVICE_PHONE_CALL`
 - `android.permission.BLUETOOTH_CONNECT`
 - `android.permission.BLUETOOTH_SCAN`
 
@@ -134,6 +136,7 @@ After running `pnpm cap:add:ios`, copy these keys into `ios/App/App/Info.plist`:
 - `NSPhotoLibraryAddUsageDescription`
 - `NSContactsUsageDescription`
 - `NSBluetoothAlwaysUsageDescription`
+- `NSBluetoothPeripheralUsageDescription`
 - `NSLocalNetworkUsageDescription`
 - `NSFaceIDUsageDescription`
 - `UIBackgroundModes` with:
