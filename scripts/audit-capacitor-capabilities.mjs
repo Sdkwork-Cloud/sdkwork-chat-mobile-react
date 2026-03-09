@@ -54,7 +54,53 @@ const userBridgeGeolocationHookSource = readTextIfExists(
 );
 const coreTypesSource = readText('packages/sdkwork-react-mobile-core/src/platform/types.ts');
 const capacitorConfigSource = readText('capacitor.config.ts');
+const androidManifestSource = readTextIfExists('android/app/src/main/AndroidManifest.xml');
+const androidPermissionTemplateSource = readTextIfExists('config/android/AndroidManifest.permissions.template.xml');
+const iosInfoPlistSource = readTextIfExists('ios/App/App/Info.plist');
+const iosPermissionTemplateSource = readTextIfExists('config/ios/Info.plist.permissions.template.xml');
 const workspaceManifests = [rootPackage, corePackage, userPackage];
+
+function containsAll(source, segments) {
+  return segments.every((segment) => source.includes(segment));
+}
+
+const androidCallPermissionBaseline = [
+  'android.permission.CAMERA',
+  'android.permission.RECORD_AUDIO',
+  'android.permission.MODIFY_AUDIO_SETTINGS',
+  'android.permission.FOREGROUND_SERVICE',
+  'android.permission.FOREGROUND_SERVICE_CAMERA',
+  'android.permission.FOREGROUND_SERVICE_MICROPHONE',
+  'android.permission.BLUETOOTH_CONNECT',
+];
+
+const androidCommonPermissionBaseline = [
+  'android.permission.POST_NOTIFICATIONS',
+  'android.permission.ACCESS_NETWORK_STATE',
+  'android.permission.ACCESS_WIFI_STATE',
+  'android.permission.READ_MEDIA_IMAGES',
+  'android.permission.READ_MEDIA_VIDEO',
+];
+
+const iosCallPermissionBaseline = [
+  'NSCameraUsageDescription',
+  'NSMicrophoneUsageDescription',
+];
+
+const iosCommonPermissionBaseline = [
+  'NSPhotoLibraryUsageDescription',
+  'NSPhotoLibraryAddUsageDescription',
+  'NSContactsUsageDescription',
+  'NSBluetoothAlwaysUsageDescription',
+  'NSLocalNetworkUsageDescription',
+];
+
+const androidPermissionSource = androidManifestSource || androidPermissionTemplateSource;
+const iosPermissionSource = iosInfoPlistSource || iosPermissionTemplateSource;
+const hasAndroidCallPermissionBaseline = containsAll(androidPermissionSource, androidCallPermissionBaseline);
+const hasAndroidCommonPermissionBaseline = containsAll(androidPermissionSource, androidCommonPermissionBaseline);
+const hasIosCallPermissionBaseline = containsAll(iosPermissionSource, iosCallPermissionBaseline);
+const hasIosCommonPermissionBaseline = containsAll(iosPermissionSource, iosCommonPermissionBaseline);
 
 const capabilityChecks = [
   {
@@ -133,6 +179,20 @@ const capabilityChecks = [
     installHint: 'pnpm add @capacitor/app',
   },
   {
+    id: 'call_media_permissions',
+    tier: 'P0',
+    capability: 'Call Media Permissions Baseline',
+    plugins: ['@capacitor/camera'],
+    integrationChecks: [
+      hasAndroidCallPermissionBaseline,
+      hasIosCallPermissionBaseline,
+      coreCapacitorSource.includes("from '@capacitor/camera'"),
+      coreCapacitorSource.includes('class CapacitorCamera'),
+    ],
+    installHint:
+      'Declare camera/microphone call permissions in AndroidManifest and iOS Info.plist (or config template).',
+  },
+  {
     id: 'geolocation',
     tier: 'P1',
     capability: 'Geolocation',
@@ -184,6 +244,20 @@ const capabilityChecks = [
       coreCapacitorSource.includes('BarcodeScanner.scan'),
     ],
     installHint: 'pnpm add @capacitor-mlkit/barcode-scanning',
+  },
+  {
+    id: 'common_mobile_permissions',
+    tier: 'P1',
+    capability: 'Common Mobile Permission Baseline',
+    plugins: ['@capacitor/camera', '@capacitor/local-notifications'],
+    integrationChecks: [
+      hasAndroidCommonPermissionBaseline,
+      hasIosCommonPermissionBaseline,
+      capacitorConfigSource.includes('PushNotifications'),
+      capacitorConfigSource.includes('LocalNotifications'),
+    ],
+    installHint:
+      'Maintain common permission declarations in AndroidManifest and iOS Info.plist template.',
   },
   {
     id: 'secure_storage',

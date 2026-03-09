@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copy the following keys into ios/App/App/Info.plist <dict> block after `pnpm cap:add:ios`.
+  This template keeps audio/video call, media upload and notification permission copy aligned.
+-->
+<dict>
+  <key>NSCameraUsageDescription</key>
+  <string>OpenChat 需要相机权限用于视频通话、拍照上传与二维码扫描。</string>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>OpenChat 需要麦克风权限用于语音通话、视频通话与语音消息。</string>
+  <key>NSPhotoLibraryUsageDescription</key>
+  <string>OpenChat 需要访问相册用于上传图片和视频。</string>
+  <key>NSPhotoLibraryAddUsageDescription</key>
+  <string>OpenChat 需要写入相册用于保存图片和视频。</string>
+  <key>NSContactsUsageDescription</key>
+  <string>OpenChat 需要通讯录权限用于匹配联系人与快速发起通话。</string>
+  <key>NSBluetoothAlwaysUsageDescription</key>
+  <string>OpenChat 需要蓝牙权限用于连接蓝牙耳机与音频设备。</string>
+  <key>NSLocalNetworkUsageDescription</key>
+  <string>OpenChat 需要本地网络权限用于局域网调试与设备发现。</string>
+  <key>NSFaceIDUsageDescription</key>
+  <string>OpenChat 使用 Face ID 进行安全认证和支付校验。</string>
+</dict>

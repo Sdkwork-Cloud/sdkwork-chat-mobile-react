@@ -227,7 +227,13 @@ class WebNotifications implements INotifications {
 
 class WebPush implements IPush {
   isSupported(): boolean {
-    return false;
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+      return false;
+    }
+    const hasNotification = 'Notification' in window;
+    const hasServiceWorker = 'serviceWorker' in navigator && Boolean(navigator.serviceWorker);
+    const hasPushManager = 'PushManager' in globalThis;
+    return hasNotification && hasServiceWorker && hasPushManager;
   }
 
   async requestPermission(): Promise<PushPermissionState> {

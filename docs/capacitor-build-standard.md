@@ -54,6 +54,7 @@ Implementation contract:
 - `pnpm cap:add:android`
 - `pnpm cap:add:ios`
 - `pnpm cap:sync`
+- `pnpm cap:permissions:sync`
 - `pnpm cap:copy`
 - `pnpm cap:open:android`
 - `pnpm cap:open:ios`
@@ -74,6 +75,8 @@ Run:
    - Implement bridge/runtime integration in `packages/sdkwork-react-mobile-core/src/platform/`.
 4. Run `pnpm install && pnpm cap:sync`.
 
+`pnpm cap:sync` already chains `pnpm cap:permissions:sync` to keep Android/iOS permission baseline aligned when native projects exist.
+
 Default audit coverage includes:
 
 - Push notifications / local notifications
@@ -81,6 +84,60 @@ Default audit coverage includes:
 - Geolocation / browser OAuth fallback
 - File picker / barcode scanner
 - Secure storage / biometric auth / in-app update
+
+## Native Permission Baseline (Call/Media)
+
+Audio/video call and media workflows must include the following permission baseline.
+
+### Android Manifest
+
+Required file: `android/app/src/main/AndroidManifest.xml`
+
+If native Android project is not checked in yet, maintain the baseline in:
+
+- `config/android/AndroidManifest.permissions.template.xml`
+
+Call/media critical permissions:
+
+- `android.permission.CAMERA`
+- `android.permission.RECORD_AUDIO`
+- `android.permission.MODIFY_AUDIO_SETTINGS`
+- `android.permission.FOREGROUND_SERVICE`
+- `android.permission.FOREGROUND_SERVICE_CAMERA`
+- `android.permission.FOREGROUND_SERVICE_MICROPHONE`
+- `android.permission.BLUETOOTH_CONNECT`
+
+Common runtime permissions:
+
+- `android.permission.POST_NOTIFICATIONS`
+- `android.permission.ACCESS_NETWORK_STATE`
+- `android.permission.ACCESS_WIFI_STATE`
+- `android.permission.READ_MEDIA_IMAGES`
+- `android.permission.READ_MEDIA_VIDEO`
+- `android.permission.READ_EXTERNAL_STORAGE` (`maxSdkVersion=32`)
+
+### iOS Info.plist
+
+If `ios/` is not initialized yet, keep the baseline in:
+
+- `config/ios/Info.plist.permissions.template.xml`
+
+After running `pnpm cap:add:ios`, copy these keys into `ios/App/App/Info.plist`:
+
+- `NSCameraUsageDescription`
+- `NSMicrophoneUsageDescription`
+- `NSPhotoLibraryUsageDescription`
+- `NSPhotoLibraryAddUsageDescription`
+- `NSContactsUsageDescription`
+- `NSBluetoothAlwaysUsageDescription`
+- `NSLocalNetworkUsageDescription`
+- `NSFaceIDUsageDescription`
+
+Minimum call capability gate:
+
+1. Android has camera + microphone runtime permissions declared.
+2. iOS Info.plist includes camera + microphone usage descriptions.
+3. Permission baseline is re-checked with `pnpm audit:capacitor:capabilities`.
 
 ## Packaging Flows
 
