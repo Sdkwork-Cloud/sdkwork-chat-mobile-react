@@ -243,4 +243,79 @@ describe('platform runtime hooks', () => {
       emitted.some((item) => item.event === PLATFORM_RUNTIME_HOOK_EVENTS.RETRY_QUEUE_FLUSHED),
     ).toBe(true);
   });
+
+  it('drops stale push retry items and emits dropped event', async () => {
+    const { platform, storageMap } = createRuntimeHookPlatform('auth-token');
+    const emitted: Array<{ event: string; payload: unknown }> = [];
+    const registerDevice = vi.fn();
+    const clientResolver = vi.fn().mockResolvedValue({
+      notification: { registerDevice },
+      orders: { getOrderStatus: vi.fn() },
+    });
+
+    storageMap.set('sys_platform_push_retry_queue_v1', [
+      {
+        payload: {
+          token: 'push-token-stale',
+          previousToken: null,
+          source: 'registration',
+        },
+        queuedAt: 0,
+        attempts: 2,
+        error: 'network timeout',
+      },
+    ]);
+
+    const flushResult = await flushDefaultPlatformRuntimeHookQueue({
+      platform,
+      clientResolver,
+      emit: (event, payload) => emitted.push({ event, payload }),
+    });
+
+    expect(flushResult.push).toBe(0);
+    expect(flushResult.payment).toBe(0);
+    expect(registerDevice).not.toHaveBeenCalled();
+    expect(storageMap.has('sys_platform_push_retry_queue_v1')).toBe(false);
+    expect(
+      emitted.some((item) => item.event === PLATFORM_RUNTIME_HOOK_EVENTS.PUSH_RETRY_DROPPED),
+    ).toBe(true);
+  });
+
+  it('drops payment retry items when max attempts reached', async () => {
+    const { platform, storageMap } = createRuntimeHookPlatform('auth-token');
+    const emitted: Array<{ event: string; payload: unknown }> = [];
+    const getOrderStatus = vi.fn();
+    const clientResolver = vi.fn().mockResolvedValue({
+      notification: { registerDevice: vi.fn() },
+      orders: { getOrderStatus },
+    });
+
+    storageMap.set('sys_platform_payment_retry_queue_v1', [
+      {
+        payload: {
+          rawUrl: 'openchat://payment/callback?orderId=SO-3003&status=paid',
+          orderId: 'SO-3003',
+          success: true,
+          status: 'paid',
+        },
+        queuedAt: Date.now(),
+        attempts: 5,
+        error: 'gateway unavailable',
+      },
+    ]);
+
+    const flushResult = await flushDefaultPlatformRuntimeHookQueue({
+      platform,
+      clientResolver,
+      emit: (event, payload) => emitted.push({ event, payload }),
+    });
+
+    expect(flushResult.push).toBe(0);
+    expect(flushResult.payment).toBe(0);
+    expect(getOrderStatus).not.toHaveBeenCalled();
+    expect(storageMap.has('sys_platform_payment_retry_queue_v1')).toBe(false);
+    expect(
+      emitted.some((item) => item.event === PLATFORM_RUNTIME_HOOK_EVENTS.PAYMENT_RETRY_DROPPED),
+    ).toBe(true);
+  });
 });

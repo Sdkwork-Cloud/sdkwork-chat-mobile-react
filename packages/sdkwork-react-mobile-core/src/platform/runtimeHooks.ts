@@ -12,14 +12,18 @@ export const PLATFORM_RUNTIME_HOOK_EVENTS = {
   PUSH_DEVICE_REGISTERED: 'platform:push:device_registered',
   PUSH_DEVICE_REGISTER_SKIPPED: 'platform:push:device_register_skipped',
   PUSH_RETRY_ENQUEUED: 'platform:push:retry_enqueued',
+  PUSH_RETRY_DROPPED: 'platform:push:retry_dropped',
   PAYMENT_ORDER_STATUS_SYNCED: 'platform:payment:order_status_synced',
   PAYMENT_ORDER_STATUS_SYNC_SKIPPED: 'platform:payment:order_status_sync_skipped',
   PAYMENT_RETRY_ENQUEUED: 'platform:payment:retry_enqueued',
+  PAYMENT_RETRY_DROPPED: 'platform:payment:retry_dropped',
   RETRY_QUEUE_FLUSHED: 'platform:runtime:retry_queue_flushed',
 } as const;
 
 const PUSH_RETRY_QUEUE_KEY = 'sys_platform_push_retry_queue_v1';
 const PAYMENT_RETRY_QUEUE_KEY = 'sys_platform_payment_retry_queue_v1';
+const DEFAULT_RETRY_MAX_ATTEMPTS = 5;
+const DEFAULT_RETRY_TTL_MS = 3 * 24 * 60 * 60 * 1000;
 
 type RuntimeHookPlatform = Pick<IPlatform, 'type' | 'device' | 'storage'>;
 type RuntimeEmitter = (event: string, payload?: unknown) => void;
@@ -56,17 +60,21 @@ export interface DefaultPlatformRuntimeHooksOptions {
   emit?: RuntimeEmitter;
   clientResolver?: RuntimeClientResolver;
   appVersion?: string;
+  retryMaxAttempts?: number;
+  retryTtlMs?: number;
 }
 
 interface PushRetryItem {
   payload: PushTokenUpdatedPayload;
   queuedAt: number;
+  attempts?: number;
   error?: string;
 }
 
 interface PaymentRetryItem {
   payload: PaymentCallbackPayload;
   queuedAt: number;
+  attempts?: number;
   error?: string;
 }
 
@@ -76,6 +84,8 @@ interface RuntimeHookContext {
   emit: RuntimeEmitter;
   resolveClient: RuntimeClientResolver;
   appVersion?: string;
+  retryMaxAttempts: number;
+  retryTtlMs: number;
 }
 
 export interface RuntimeRetryFlushResult {
@@ -110,6 +120,27 @@ function resolveAppVersion(override?: string): string | undefined {
 
 function resolveDeviceType(platformType: RuntimeHookPlatform['type']): string {
   return (platformType || 'mobile').toLowerCase();
+}
+
+function resolveRetryMaxAttempts(value?: number): number {
+  if (typeof value === 'number' && Number.isFinite(value) && value >= 1) {
+    return Math.floor(value);
+  }
+  return DEFAULT_RETRY_MAX_ATTEMPTS;
+}
+
+function resolveRetryTtlMs(value?: number): number {
+  if (typeof value === 'number' && Number.isFinite(value) && value >= 60_000) {
+    return Math.floor(value);
+  }
+  return DEFAULT_RETRY_TTL_MS;
+}
+
+function resolveRetryAttempts(value?: number): number {
+  if (typeof value === 'number' && Number.isFinite(value) && value >= 1) {
+    return Math.floor(value);
+  }
+  return 1;
 }
 
 function toErrorMessage(error: unknown): string {
@@ -182,6 +213,8 @@ function createRuntimeHookContext(options: DefaultPlatformRuntimeHooksOptions): 
     emit: options.emit || ((event, payload) => eventBus.emit(event, payload)),
     resolveClient: options.clientResolver || getAppSdkCoreClientWithSession,
     appVersion: resolveAppVersion(options.appVersion),
+    retryMaxAttempts: resolveRetryMaxAttempts(options.retryMaxAttempts),
+    retryTtlMs: resolveRetryTtlMs(options.retryTtlMs),
   };
 }
 
@@ -241,10 +274,12 @@ async function enqueuePushRetry(
   error: unknown,
 ): Promise<void> {
   const queue = await readQueue<PushRetryItem>(context.storage, PUSH_RETRY_QUEUE_KEY);
+  const existing = queue.find((item) => item.payload.token === payload.token);
   const deduped = queue.filter((item) => item.payload.token !== payload.token);
   deduped.push({
     payload,
-    queuedAt: Date.now(),
+    queuedAt: existing?.queuedAt ?? Date.now(),
+    attempts: existing ? resolveRetryAttempts(existing.attempts) + 1 : 1,
     error: toErrorMessage(error),
   });
   await writeQueue(context.storage, PUSH_RETRY_QUEUE_KEY, deduped);
@@ -261,10 +296,12 @@ async function enqueuePaymentRetry(
   error: unknown,
 ): Promise<void> {
   const queue = await readQueue<PaymentRetryItem>(context.storage, PAYMENT_RETRY_QUEUE_KEY);
+  const existing = queue.find((item) => item.payload.orderId === payload.orderId);
   const deduped = queue.filter((item) => item.payload.orderId !== payload.orderId);
   deduped.push({
     payload,
-    queuedAt: Date.now(),
+    queuedAt: existing?.queuedAt ?? Date.now(),
+    attempts: existing ? resolveRetryAttempts(existing.attempts) + 1 : 1,
     error: toErrorMessage(error),
   });
   await writeQueue(context.storage, PAYMENT_RETRY_QUEUE_KEY, deduped);
@@ -284,12 +321,29 @@ export async function flushDefaultPlatformRuntimeHookQueue(
   options: DefaultPlatformRuntimeHooksOptions,
 ): Promise<RuntimeRetryFlushResult> {
   const context = createRuntimeHookContext(options);
+  const now = Date.now();
   let pushSuccess = 0;
   let paymentSuccess = 0;
+  let pushDropped = 0;
+  let paymentDropped = 0;
 
   const pushQueue = await readQueue<PushRetryItem>(context.storage, PUSH_RETRY_QUEUE_KEY);
   const pushRemaining: PushRetryItem[] = [];
   for (const item of pushQueue) {
+    const attempts = resolveRetryAttempts(item.attempts);
+    const queuedAt = item.queuedAt ?? now;
+    const isExpired = now - queuedAt > context.retryTtlMs;
+    const reachedMaxAttempts = attempts >= context.retryMaxAttempts;
+    if (isExpired || reachedMaxAttempts) {
+      pushDropped += 1;
+      context.emit(PLATFORM_RUNTIME_HOOK_EVENTS.PUSH_RETRY_DROPPED, {
+        token: item.payload.token,
+        reason: isExpired ? 'retry_ttl_expired' : 'retry_max_attempts_reached',
+        attempts,
+      });
+      continue;
+    }
+
     try {
       const { deviceId } = await syncPushTokenNow(context, item.payload);
       context.emit(PLATFORM_RUNTIME_HOOK_EVENTS.PUSH_DEVICE_REGISTERED, {
@@ -299,7 +353,12 @@ export async function flushDefaultPlatformRuntimeHookQueue(
       });
       pushSuccess += 1;
     } catch (error) {
-      pushRemaining.push(item);
+      pushRemaining.push({
+        ...item,
+        queuedAt,
+        attempts: attempts + 1,
+        error: toErrorMessage(error),
+      });
     }
   }
   await writeQueue(context.storage, PUSH_RETRY_QUEUE_KEY, pushRemaining);
@@ -307,6 +366,20 @@ export async function flushDefaultPlatformRuntimeHookQueue(
   const paymentQueue = await readQueue<PaymentRetryItem>(context.storage, PAYMENT_RETRY_QUEUE_KEY);
   const paymentRemaining: PaymentRetryItem[] = [];
   for (const item of paymentQueue) {
+    const attempts = resolveRetryAttempts(item.attempts);
+    const queuedAt = item.queuedAt ?? now;
+    const isExpired = now - queuedAt > context.retryTtlMs;
+    const reachedMaxAttempts = attempts >= context.retryMaxAttempts;
+    if (isExpired || reachedMaxAttempts) {
+      paymentDropped += 1;
+      context.emit(PLATFORM_RUNTIME_HOOK_EVENTS.PAYMENT_RETRY_DROPPED, {
+        orderId: item.payload.orderId,
+        reason: isExpired ? 'retry_ttl_expired' : 'retry_max_attempts_reached',
+        attempts,
+      });
+      continue;
+    }
+
     try {
       const status = await syncPaymentStatusNow(context, item.payload);
       context.emit(PLATFORM_RUNTIME_HOOK_EVENTS.PAYMENT_ORDER_STATUS_SYNCED, {
@@ -321,7 +394,12 @@ export async function flushDefaultPlatformRuntimeHookQueue(
       });
       paymentSuccess += 1;
     } catch (error) {
-      paymentRemaining.push(item);
+      paymentRemaining.push({
+        ...item,
+        queuedAt,
+        attempts: attempts + 1,
+        error: toErrorMessage(error),
+      });
     }
   }
   await writeQueue(context.storage, PAYMENT_RETRY_QUEUE_KEY, paymentRemaining);
@@ -329,6 +407,8 @@ export async function flushDefaultPlatformRuntimeHookQueue(
   context.emit(PLATFORM_RUNTIME_HOOK_EVENTS.RETRY_QUEUE_FLUSHED, {
     push: pushSuccess,
     payment: paymentSuccess,
+    pushDropped,
+    paymentDropped,
     pushRemaining: pushRemaining.length,
     paymentRemaining: paymentRemaining.length,
   });
