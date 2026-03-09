@@ -35,6 +35,30 @@ describe('drive and gig workbench locale coverage', () => {
     expect(enUS.commerce.gig_center.my_empty_active_copy).toBe(
       'Accept work from the hall and it will move into your active queue here.'
     );
+    expect(enUS.commerce.my_gigs.hero_kicker).toBe('Fulfillment desk');
+    expect(enUS.commerce.my_gigs.hero_title).toBe('Run delivery and payout with less context switching');
+    expect(enUS.commerce.my_gigs.hero_subtitle).toBe(
+      'Track what needs delivery now, what is waiting for review, and what already paid out.'
+    );
+    expect(enUS.commerce.my_gigs.empty_active_copy).toBe(
+      'Accept gigs from the hall and they will appear here as your live delivery queue.'
+    );
+    expect(enUS.commerce.my_gigs.empty_history_copy).toBe(
+      'Completed and settled gigs will build your history once the first delivery is closed.'
+    );
+    expect(enUS.commerce.orders.hero_kicker).toBe('Order workspace');
+    expect(enUS.commerce.orders.hero_title).toBe('See which orders need action first');
+    expect(enUS.commerce.orders.hero_subtitle).toBe(
+      'Use payment, shipping, and refund signals to decide which queue deserves attention now.'
+    );
+    expect(enUS.commerce.orders.queue_title).toBe('Order queue');
+    expect(enUS.commerce.orders.queue_subtitle).toBe(
+      'Each card keeps status, amount, and next action in one scan line.'
+    );
+    expect(enUS.commerce.order_detail.progress_title).toBe('Journey');
+    expect(enUS.commerce.order_detail.command_title).toBe('Next action');
+    expect(enUS.commerce.order_detail.amount_title).toBe('Payment breakdown');
+    expect(enUS.commerce.order_detail.overview_title).toBe('Order portfolio');
   });
 
   it('exposes new drive and gig workbench labels in zh-CN resources', () => {
@@ -64,6 +88,20 @@ describe('drive and gig workbench locale coverage', () => {
       'commerce.gig_center.my_title',
       'commerce.gig_center.empty_filtered',
       'commerce.gig_center.my_empty_active_copy',
+      'commerce.my_gigs.hero_kicker',
+      'commerce.my_gigs.hero_title',
+      'commerce.my_gigs.hero_subtitle',
+      'commerce.my_gigs.empty_active_copy',
+      'commerce.my_gigs.empty_history_copy',
+      'commerce.orders.hero_kicker',
+      'commerce.orders.hero_title',
+      'commerce.orders.hero_subtitle',
+      'commerce.orders.queue_title',
+      'commerce.orders.queue_subtitle',
+      'commerce.order_detail.progress_title',
+      'commerce.order_detail.command_title',
+      'commerce.order_detail.amount_title',
+      'commerce.order_detail.overview_title',
     ];
 
     for (const path of zhPaths) {

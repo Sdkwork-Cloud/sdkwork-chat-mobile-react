@@ -18,91 +18,117 @@ interface StatusMeta {
   tone: 'warning' | 'info' | 'success' | 'neutral';
 }
 
-const canRefund = (status: OrderStatus): boolean => {
-  return ['paid', 'processing', 'shipped', 'delivered'].includes(status);
+interface JourneyStep {
+  id: string;
+  label: string;
+  state: 'done' | 'active' | 'todo';
+}
+
+const canRefund = (status: OrderStatus): boolean => ['paid', 'processing', 'shipped', 'delivered'].includes(status);
+
+const formatMoney = (amount: number) => `¥${amount.toFixed(2)}`;
+
+const getJourneyIndex = (status: OrderStatus): number => {
+  if (status === 'pending_payment') return 0;
+  if (status === 'paid' || status === 'processing') return 1;
+  if (status === 'shipped') return 2;
+  if (status === 'delivered' || status === 'completed' || status === 'refunding' || status === 'refunded') return 3;
+  return 0;
 };
 
 export const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ t, orderId, onBack }) => {
-  const tr = (key: string, fallback: string) => {
-    const value = t?.(key) ?? key;
-    return value === key ? fallback : value;
-  };
+  const tr = React.useCallback(
+    (key: string, fallback: string) => {
+      const value = t?.(key) ?? key;
+      return value === key ? fallback : value;
+    },
+    [t]
+  );
 
   const { orderCounts, orders, currentOrder, loadOrder, loadOrders, payOrder, cancelOrder, requestRefund, confirmDelivery } = useOrders();
   const [pendingAction, setPendingAction] = React.useState(false);
+
   const orderStatusText: Record<OrderStatus, string> = React.useMemo(
     () => ({
-      pending_payment: tr('commerce.order.status.pending_payment', '待支付'),
-      paid: tr('commerce.order.status.paid', '已支付'),
-      processing: tr('commerce.order.status.processing', '处理中'),
-      shipped: tr('commerce.order.status.shipped', '已发货'),
-      delivered: tr('commerce.order.status.delivered', '待确认'),
-      completed: tr('commerce.order.status.completed', '已完成'),
-      cancelled: tr('commerce.order.status.cancelled', '已取消'),
-      refunding: tr('commerce.order.status.refunding', '退款中'),
-      refunded: tr('commerce.order.status.refunded', '已退款'),
+      pending_payment: tr('commerce.order.status.pending_payment', 'Pending payment'),
+      paid: tr('commerce.order.status.paid', 'Paid'),
+      processing: tr('commerce.order.status.processing', 'Processing'),
+      shipped: tr('commerce.order.status.shipped', 'Shipped'),
+      delivered: tr('commerce.order.status.delivered', 'To confirm'),
+      completed: tr('commerce.order.status.completed', 'Completed'),
+      cancelled: tr('commerce.order.status.cancelled', 'Cancelled'),
+      refunding: tr('commerce.order.status.refunding', 'Refunding'),
+      refunded: tr('commerce.order.status.refunded', 'Refunded'),
     }),
-    [t]
+    [tr]
   );
+
   const paymentMethodText: Record<string, string> = React.useMemo(
     () => ({
-      wechat_pay: tr('commerce.order.payment.wechat', '微信支付'),
-      alipay: tr('commerce.order.payment.alipay', '支付宝'),
-      balance: tr('commerce.order.payment.balance', '余额支付'),
-      credit_card: tr('commerce.order.payment.credit_card', '信用卡'),
-      cod: tr('commerce.order.payment.cod', '货到付款'),
+      wechat_pay: tr('commerce.order.payment.wechat', 'WeChat Pay'),
+      alipay: tr('commerce.order.payment.alipay', 'Alipay'),
+      balance: tr('commerce.order.payment.balance', 'Balance'),
+      credit_card: tr('commerce.order.payment.credit_card', 'Credit Card'),
+      cod: tr('commerce.order.payment.cod', 'Cash on Delivery'),
     }),
-    [t]
+    [tr]
   );
+
   const statusMeta: Record<OrderStatus, StatusMeta> = React.useMemo(
     () => ({
       pending_payment: {
-        title: tr('commerce.order_detail.meta.pending_payment.title', '等待买家付款'),
-        subtitle: tr('commerce.order_detail.meta.pending_payment.subtitle', '请尽快完成支付，超时后订单将自动关闭'),
+        title: tr('commerce.order_detail.meta.pending_payment.title', 'Awaiting Payment'),
+        subtitle: tr(
+          'commerce.order_detail.meta.pending_payment.subtitle',
+          'Please complete payment soon, or the order will close automatically'
+        ),
         tone: 'warning',
       },
       paid: {
-        title: tr('commerce.order_detail.meta.paid.title', '支付成功，等待发货'),
-        subtitle: tr('commerce.order_detail.meta.paid.subtitle', '商家正在为你准备商品'),
+        title: tr('commerce.order_detail.meta.paid.title', 'Paid, Awaiting Shipment'),
+        subtitle: tr('commerce.order_detail.meta.paid.subtitle', 'The seller is preparing your order'),
         tone: 'info',
       },
       processing: {
-        title: tr('commerce.order_detail.meta.processing.title', '订单处理中'),
-        subtitle: tr('commerce.order_detail.meta.processing.subtitle', '商家正在处理你的订单'),
+        title: tr('commerce.order_detail.meta.processing.title', 'Processing'),
+        subtitle: tr('commerce.order_detail.meta.processing.subtitle', 'The seller is processing your order'),
         tone: 'info',
       },
       shipped: {
-        title: tr('commerce.order_detail.meta.shipped.title', '商品已发货'),
-        subtitle: tr('commerce.order_detail.meta.shipped.subtitle', '请注意查收物流通知'),
+        title: tr('commerce.order_detail.meta.shipped.title', 'Shipped'),
+        subtitle: tr('commerce.order_detail.meta.shipped.subtitle', 'Please check your logistics updates'),
         tone: 'info',
       },
       delivered: {
-        title: tr('commerce.order_detail.meta.delivered.title', '订单待确认'),
-        subtitle: tr('commerce.order_detail.meta.delivered.subtitle', '商品已送达，请确认收货'),
+        title: tr('commerce.order_detail.meta.delivered.title', 'Awaiting Confirmation'),
+        subtitle: tr('commerce.order_detail.meta.delivered.subtitle', 'Items delivered, please confirm receipt'),
         tone: 'success',
       },
       completed: {
-        title: tr('commerce.order_detail.meta.completed.title', '交易完成'),
-        subtitle: tr('commerce.order_detail.meta.completed.subtitle', '感谢你的购买，欢迎再次下单'),
+        title: tr('commerce.order_detail.meta.completed.title', 'Completed'),
+        subtitle: tr('commerce.order_detail.meta.completed.subtitle', 'Thanks for your purchase'),
         tone: 'success',
       },
       cancelled: {
-        title: tr('commerce.order_detail.meta.cancelled.title', '订单已取消'),
-        subtitle: tr('commerce.order_detail.meta.cancelled.subtitle', '如有需要可以重新下单'),
+        title: tr('commerce.order_detail.meta.cancelled.title', 'Cancelled'),
+        subtitle: tr('commerce.order_detail.meta.cancelled.subtitle', 'You can place a new order anytime'),
         tone: 'neutral',
       },
       refunding: {
-        title: tr('commerce.order_detail.meta.refunding.title', '退款处理中'),
-        subtitle: tr('commerce.order_detail.meta.refunding.subtitle', '退款申请已提交，请耐心等待审核'),
+        title: tr('commerce.order_detail.meta.refunding.title', 'Refunding'),
+        subtitle: tr('commerce.order_detail.meta.refunding.subtitle', 'Your refund request is under review'),
         tone: 'warning',
       },
       refunded: {
-        title: tr('commerce.order_detail.meta.refunded.title', '已退款'),
-        subtitle: tr('commerce.order_detail.meta.refunded.subtitle', '款项已按原路退回'),
+        title: tr('commerce.order_detail.meta.refunded.title', 'Refunded'),
+        subtitle: tr(
+          'commerce.order_detail.meta.refunded.subtitle',
+          'The amount has been returned to original payment method'
+        ),
         tone: 'success',
       },
     }),
-    [t]
+    [tr]
   );
 
   React.useEffect(() => {
@@ -129,6 +155,24 @@ export const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ t, orderId, on
 
   const order: Order | null = currentOrder || null;
 
+  const journeySteps = React.useMemo<JourneyStep[]>(() => {
+    if (!order) return [];
+
+    const currentIndex = getJourneyIndex(order.status);
+    const labels = [
+      tr('commerce.order_detail.progress_payment', 'Await payment'),
+      tr('commerce.order_detail.progress_processing', 'Merchant ready'),
+      tr('commerce.order_detail.progress_shipping', 'In transit'),
+      tr('commerce.order_detail.progress_completed', 'Close order'),
+    ];
+
+    return labels.map((label, index) => ({
+      id: `step-${index}`,
+      label,
+      state: index < currentIndex ? 'done' : index === currentIndex ? 'active' : 'todo',
+    }));
+  }, [order, tr]);
+
   const runAction = async (task: () => Promise<void>, successText: string, errorText: string) => {
     if (!order || pendingAction) return;
     setPendingAction(true);
@@ -146,168 +190,235 @@ export const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ t, orderId, on
 
   const footer = order ? (
     <div className="commerce-order-detail__footer">
-      {order.status === 'pending_payment' ? (
-        <>
+      <div className="commerce-order-detail__command-title">{tr('commerce.order_detail.command_title', 'Next action')}</div>
+      <div className="commerce-order-detail__command-actions">
+        {order.status === 'pending_payment' ? (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              loading={pendingAction}
+              onClick={() =>
+                void runAction(
+                  async () => cancelOrder(order.id, 'user_cancelled').then(() => undefined),
+                  tr('commerce.order.action.cancel_success', 'Order cancelled'),
+                  tr('commerce.order.action.cancel_failed', 'Failed to cancel order, please try again')
+                )
+              }
+            >
+              {tr('commerce.order.action.cancel', 'Cancel Order')}
+            </Button>
+            <Button
+              size="sm"
+              loading={pendingAction}
+              onClick={() =>
+                void runAction(
+                  async () => payOrder(order.id).then(() => undefined),
+                  tr('commerce.order.action.pay_success', 'Payment successful'),
+                  tr('commerce.order.action.pay_failed', 'Payment failed, please try again')
+                )
+              }
+            >
+              {tr('commerce.order.action.pay', 'Pay Now')}
+            </Button>
+          </>
+        ) : null}
+
+        {order.status === 'delivered' ? (
+          <Button
+            size="sm"
+            loading={pendingAction}
+            onClick={() =>
+              void runAction(
+                async () => confirmDelivery(order.id).then(() => undefined),
+                tr('commerce.order.action.confirm_success', 'Receipt confirmed'),
+                tr('commerce.order.action.confirm_failed', 'Failed to confirm receipt, please try again')
+              )
+            }
+          >
+            {tr('commerce.order.action.confirm', 'Confirm Receipt')}
+          </Button>
+        ) : null}
+
+        {canRefund(order.status) ? (
           <Button
             size="sm"
             variant="outline"
             loading={pendingAction}
             onClick={() =>
               void runAction(
-                async () => cancelOrder(order.id, 'user_cancelled').then(() => undefined),
-                tr('commerce.order.action.cancel_success', '订单已取消'),
-                tr('commerce.order.action.cancel_failed', '取消失败，请稍后重试')
+                async () => requestRefund(order.id, 'user_refund_request').then(() => undefined),
+                tr('commerce.order.action.refund_success', 'Refund request submitted'),
+                tr('commerce.order.action.refund_failed', 'Refund request failed, please try again')
               )
             }
           >
-            {tr('commerce.order.action.cancel', '取消订单')}
+            {tr('commerce.order.action.refund', 'Request Refund')}
           </Button>
-          <Button
-            size="sm"
-            loading={pendingAction}
-            onClick={() =>
-              void runAction(
-                async () => payOrder(order.id).then(() => undefined),
-                tr('commerce.order.action.pay_success', '支付成功'),
-                tr('commerce.order.action.pay_failed', '支付失败，请稍后重试')
-              )
-            }
-          >
-            {tr('commerce.order.action.pay', '去支付')}
-          </Button>
-        </>
-      ) : null}
-
-      {order.status === 'delivered' ? (
-        <Button
-          size="sm"
-          loading={pendingAction}
-          onClick={() =>
-            void runAction(
-              async () => confirmDelivery(order.id).then(() => undefined),
-              tr('commerce.order.action.confirm_success', '已确认收货'),
-              tr('commerce.order.action.confirm_failed', '确认收货失败，请稍后重试')
-            )
-          }
-        >
-          {tr('commerce.order.action.confirm', '确认收货')}
-        </Button>
-      ) : null}
-
-      {canRefund(order.status) ? (
-        <Button
-          size="sm"
-          variant="outline"
-          loading={pendingAction}
-          onClick={() =>
-            void runAction(
-              async () => requestRefund(order.id, 'user_refund_request').then(() => undefined),
-              tr('commerce.order.action.refund_success', '退款申请已提交'),
-              tr('commerce.order.action.refund_failed', '退款申请失败，请稍后重试')
-            )
-          }
-        >
-          {tr('commerce.order.action.refund', '申请退款')}
-        </Button>
-      ) : null}
+        ) : null}
+      </div>
     </div>
   ) : null;
 
   return (
-    <PageScaffold title={tr('commerce.order_detail.title', '订单详情')} onBack={onBack} footer={footer}>
-      {!order ? <EmptyState icon="🧾" title={tr('commerce.order_detail.not_found', '未找到订单')} actionText={tr('common.back', '返回')} onAction={onBack} /> : null}
+    <PageScaffold title={tr('commerce.order_detail.title', 'Order Details')} onBack={onBack} footer={footer}>
+      {!order ? (
+        <EmptyState
+          icon="🧾"
+          title={tr('commerce.order_detail.not_found', 'Order not found')}
+          actionText={tr('common.back', 'Back')}
+          onAction={onBack}
+        />
+      ) : null}
 
       {order ? (
         <div className="commerce-order-detail">
-          <SectionCard style={{ padding: 0, overflow: 'hidden' }}>
-            <div className={`commerce-order-detail__hero commerce-order-detail__hero--${statusMeta[order.status].tone}`}>
-              <div className="commerce-order-detail__hero-title">{statusMeta[order.status].title}</div>
-              <div className="commerce-order-detail__hero-subtitle">{statusMeta[order.status].subtitle}</div>
-            </div>
-          </SectionCard>
-
-          <SectionCard>
-            <div className="commerce-order-detail__section-title">{tr('commerce.order_detail.shipping_info', '收货信息')}</div>
-            <div className="commerce-order-detail__address-name">
-              {order.shippingAddress.name} <span>{order.shippingAddress.phone}</span>
-            </div>
-            <div className="commerce-order-detail__address-text">
-              {order.shippingAddress.province}
-              {order.shippingAddress.city}
-              {order.shippingAddress.district}
-              {order.shippingAddress.detail}
-            </div>
-          </SectionCard>
-
-          <SectionCard>
-            <div className="commerce-order-detail__section-title">{tr('commerce.order_detail.product_info', '商品信息')}</div>
-            {order.items.map((item) => (
-              <div key={item.id} className="commerce-order-detail__item">
-                <div
-                  className="commerce-order-detail__item-cover"
-                  style={{ backgroundImage: `url(${item.productImage})` }}
-                />
-                <div className="commerce-order-detail__item-main">
-                  <div className="commerce-order-detail__item-name">{item.productName}</div>
-                  <div className="commerce-order-detail__item-qty">x{item.quantity}</div>
+          <section className="commerce-order-detail__surface">
+            <SectionCard style={{ padding: 0, overflow: 'hidden' }}>
+              <div className={`commerce-order-detail__status-board commerce-order-detail__status-board--${statusMeta[order.status].tone}`}>
+                <div className="commerce-order-detail__status-board-label">
+                  {tr('commerce.order_detail.status_board_label', 'Order status')}
                 </div>
-                <PriceText amount={item.subtotal} />
-              </div>
-            ))}
-          </SectionCard>
+                <div className="commerce-order-detail__status-board-title">{statusMeta[order.status].title}</div>
+                <div className="commerce-order-detail__status-board-subtitle">{statusMeta[order.status].subtitle}</div>
 
-          <SectionCard>
-            <div className="commerce-order-detail__summary-row">
-              <span>{tr('commerce.order_detail.order_status', '订单状态')}</span>
-              <span>{orderStatusText[order.status]}</span>
-            </div>
-            <div className="commerce-order-detail__summary-row">
-              <span>{tr('commerce.order.no', '订单号')}</span>
-              <span>{order.orderNo}</span>
-            </div>
-            <div className="commerce-order-detail__summary-row">
-              <span>{tr('commerce.order_detail.order_time', '下单时间')}</span>
-              <span>{formatDateTime(order.createdAt)}</span>
-            </div>
-            <div className="commerce-order-detail__summary-row">
-              <span>{tr('commerce.order_confirmation.payment_method', '支付方式')}</span>
-              <span>{paymentMethodText[order.paymentMethod] || order.paymentMethod}</span>
-            </div>
-            <div className="commerce-order-detail__summary-row">
-              <span>{tr('commerce.order_detail.total_amount', '商品总额')}</span>
-              <span>¥{order.totalAmount.toFixed(2)}</span>
-            </div>
-            <div className="commerce-order-detail__summary-row">
-              <span>{tr('commerce.order_confirmation.shipping_fee', '运费')}</span>
-              <span>¥{order.shippingAmount.toFixed(2)}</span>
-            </div>
-            <div className="commerce-order-detail__summary-total">
-              <span>{tr('commerce.order_detail.final_amount', '实付款')}</span>
-              <PriceText amount={order.finalAmount} />
-            </div>
-          </SectionCard>
+                <div className="commerce-order-detail__summary-grid">
+                  <div className="commerce-order-detail__summary-cell">
+                    <span>{tr('commerce.order.no', 'Order No')}</span>
+                    <strong>{order.orderNo}</strong>
+                  </div>
+                  <div className="commerce-order-detail__summary-cell">
+                    <span>{tr('commerce.order_confirmation.payment_method', 'Payment Method')}</span>
+                    <strong>{paymentMethodText[order.paymentMethod] || order.paymentMethod}</strong>
+                  </div>
+                  <div className="commerce-order-detail__summary-cell">
+                    <span>{tr('commerce.order_detail.order_time', 'Order Time')}</span>
+                    <strong>{formatDateTime(order.createdAt)}</strong>
+                  </div>
+                  <div className="commerce-order-detail__summary-cell">
+                    <span>{tr('commerce.order_detail.final_amount', 'Final Amount')}</span>
+                    <strong>{formatMoney(order.finalAmount)}</strong>
+                  </div>
+                </div>
+              </div>
+            </SectionCard>
+          </section>
 
-          <SectionCard>
-            <div className="commerce-order-detail__count-title">{tr('commerce.order_detail.overview', '订单概况')}</div>
-            <div className="commerce-order-detail__count-grid">
-              <div>
-                <span>{orderCounts.pending_payment}</span>
-                <small>{tr('commerce.order.status.pending_payment', '待支付')}</small>
+          <section className="commerce-order-detail__surface commerce-order-detail__journey">
+            <SectionCard>
+              <div className="commerce-order-detail__section-title">
+                {tr('commerce.order_detail.progress_title', 'Journey')}
               </div>
-              <div>
-                <span>{orderCounts.paid + orderCounts.processing}</span>
-                <small>{tr('commerce.order_detail.overview_in_progress', '进行中')}</small>
+              <div className="commerce-order-detail__journey-steps">
+                {journeySteps.map((step) => (
+                  <div key={step.id} className={`commerce-order-detail__journey-step is-${step.state}`}>
+                    <div className="commerce-order-detail__journey-node" />
+                    <div className="commerce-order-detail__journey-copy">{step.label}</div>
+                  </div>
+                ))}
               </div>
-              <div>
-                <span>{orderCounts.completed}</span>
-                <small>{tr('commerce.order.status.completed', '已完成')}</small>
+            </SectionCard>
+          </section>
+
+          <section className="commerce-order-detail__surface">
+            <SectionCard>
+              <div className="commerce-order-detail__section-title">
+                {tr('commerce.order_detail.shipping_info', 'Shipping Info')}
               </div>
-              <div>
-                <span>{orderCounts.refunding + orderCounts.refunded}</span>
-                <small>{tr('commerce.order.status.refunding', '退款中')}</small>
+              <div className="commerce-order-detail__address-name">
+                {order.shippingAddress.name} <span>{order.shippingAddress.phone}</span>
               </div>
-            </div>
-          </SectionCard>
+              <div className="commerce-order-detail__address-text">
+                {order.shippingAddress.province}
+                {order.shippingAddress.city}
+                {order.shippingAddress.district}
+                {order.shippingAddress.detail}
+              </div>
+
+              <div className="commerce-order-detail__logistics-grid">
+                <div className="commerce-order-detail__logistics-cell">
+                  <span>{tr('commerce.order_detail.logistics_company', 'Logistics')}</span>
+                  <strong>{order.logisticsCompany || tr('commerce.order_detail.logistics_pending', 'Awaiting shipment')}</strong>
+                </div>
+                <div className="commerce-order-detail__logistics-cell">
+                  <span>{tr('commerce.order_detail.tracking_no', 'Tracking No')}</span>
+                  <strong>{order.trackingNo || tr('commerce.order_detail.tracking_pending', 'Not generated')}</strong>
+                </div>
+              </div>
+            </SectionCard>
+          </section>
+
+          <section className="commerce-order-detail__surface">
+            <SectionCard>
+              <div className="commerce-order-detail__section-title">
+                {tr('commerce.order_detail.product_info', 'Product Info')}
+              </div>
+              {order.items.map((item) => (
+                <div key={item.id} className="commerce-order-detail__item">
+                  <div className="commerce-order-detail__item-cover" style={{ backgroundImage: `url(${item.productImage})` }} />
+                  <div className="commerce-order-detail__item-main">
+                    <div className="commerce-order-detail__item-name">{item.productName}</div>
+                    <div className="commerce-order-detail__item-qty">x{item.quantity}</div>
+                  </div>
+                  <PriceText amount={item.subtotal} />
+                </div>
+              ))}
+            </SectionCard>
+          </section>
+
+          <section className="commerce-order-detail__surface">
+            <SectionCard>
+              <div className="commerce-order-detail__section-title">
+                {tr('commerce.order_detail.amount_title', 'Payment breakdown')}
+              </div>
+              <div className="commerce-order-detail__summary-row">
+                <span>{tr('commerce.order_detail.order_status', 'Order Status')}</span>
+                <span>{orderStatusText[order.status]}</span>
+              </div>
+              <div className="commerce-order-detail__summary-row">
+                <span>{tr('commerce.order_detail.total_amount', 'Products Total')}</span>
+                <span>{formatMoney(order.totalAmount)}</span>
+              </div>
+              <div className="commerce-order-detail__summary-row">
+                <span>{tr('commerce.order_confirmation.shipping_fee', 'Shipping Fee')}</span>
+                <span>{formatMoney(order.shippingAmount)}</span>
+              </div>
+              <div className="commerce-order-detail__summary-row">
+                <span>{tr('commerce.order_detail.discount_label', 'Discount')}</span>
+                <span>-{formatMoney(order.discountAmount)}</span>
+              </div>
+              <div className="commerce-order-detail__summary-total">
+                <span>{tr('commerce.order_detail.final_amount', 'Final Amount')}</span>
+                <PriceText amount={order.finalAmount} />
+              </div>
+            </SectionCard>
+          </section>
+
+          <section className="commerce-order-detail__surface">
+            <SectionCard>
+              <div className="commerce-order-detail__section-title">
+                {tr('commerce.order_detail.overview_title', 'Order portfolio')}
+              </div>
+              <div className="commerce-order-detail__overview-grid">
+                <div>
+                  <span>{orderCounts.pending_payment}</span>
+                  <small>{tr('commerce.order.status.pending_payment', 'Pending payment')}</small>
+                </div>
+                <div>
+                  <span>{orderCounts.paid + orderCounts.processing + orderCounts.shipped}</span>
+                  <small>{tr('commerce.order_detail.overview_in_progress', 'In progress')}</small>
+                </div>
+                <div>
+                  <span>{orderCounts.completed}</span>
+                  <small>{tr('commerce.order.status.completed', 'Completed')}</small>
+                </div>
+                <div>
+                  <span>{orderCounts.refunding + orderCounts.refunded}</span>
+                  <small>{tr('commerce.order.status.refunding', 'Refunding')}</small>
+                </div>
+              </div>
+            </SectionCard>
+          </section>
         </div>
       ) : null}
     </PageScaffold>

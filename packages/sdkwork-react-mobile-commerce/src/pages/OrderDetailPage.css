@@ -1,46 +1,148 @@
+.commerce-order-detail__surface {
+  margin-bottom: 12px;
+}
+
 .commerce-order-detail__footer {
+  display: grid;
+  gap: 10px;
+}
+
+.commerce-order-detail__command-title {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.commerce-order-detail__command-actions {
   display: flex;
   justify-content: flex-end;
-  align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
-.commerce-order-detail__hero {
+.commerce-order-detail__status-board {
   color: #fff;
-  padding: 16px;
+  padding: 18px;
 }
 
-.commerce-order-detail__hero--warning {
+.commerce-order-detail__status-board--warning {
   background: linear-gradient(135deg, #ff9f43, #ff6a00);
 }
 
-.commerce-order-detail__hero--info {
+.commerce-order-detail__status-board--info {
   background: linear-gradient(135deg, #2f7df6, #2a64ea);
 }
 
-.commerce-order-detail__hero--success {
+.commerce-order-detail__status-board--success {
   background: linear-gradient(135deg, #00a870, #0fbe7d);
 }
 
-.commerce-order-detail__hero--neutral {
+.commerce-order-detail__status-board--neutral {
   background: linear-gradient(135deg, #6e7891, #5c657f);
 }
 
-.commerce-order-detail__hero-title {
-  font-size: 18px;
+.commerce-order-detail__status-board-label {
+  font-size: 11px;
   font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.72;
 }
 
-.commerce-order-detail__hero-subtitle {
-  margin-top: 6px;
-  font-size: 12px;
+.commerce-order-detail__status-board-title {
+  margin-top: 10px;
+  font-size: 24px;
+  line-height: 1.08;
+  font-weight: 800;
+}
+
+.commerce-order-detail__status-board-subtitle {
+  margin-top: 8px;
+  max-width: 440px;
+  font-size: 13px;
+  line-height: 1.5;
   opacity: 0.92;
+}
+
+.commerce-order-detail__summary-grid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.commerce-order-detail__summary-cell {
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.commerce-order-detail__summary-cell span {
+  display: block;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.commerce-order-detail__summary-cell strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 .commerce-order-detail__section-title {
   color: var(--text-secondary);
   font-size: 13px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+.commerce-order-detail__journey-steps {
+  display: grid;
+  gap: 10px;
+}
+
+.commerce-order-detail__journey-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--bg-cell-active);
+}
+
+.commerce-order-detail__journey-step.is-active {
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.commerce-order-detail__journey-step.is-done {
+  border: 1px solid rgba(7, 193, 96, 0.18);
+  background: rgba(7, 193, 96, 0.08);
+}
+
+.commerce-order-detail__journey-node {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(148, 163, 184, 0.4);
+  flex-shrink: 0;
+}
+
+.commerce-order-detail__journey-step.is-active .commerce-order-detail__journey-node {
+  background: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+}
+
+.commerce-order-detail__journey-step.is-done .commerce-order-detail__journey-node {
+  background: #07c160;
+}
+
+.commerce-order-detail__journey-copy {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .commerce-order-detail__address-name {
@@ -63,11 +165,39 @@
   line-height: 1.4;
 }
 
+.commerce-order-detail__logistics-grid {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.commerce-order-detail__logistics-cell {
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--bg-cell-active);
+}
+
+.commerce-order-detail__logistics-cell span {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.commerce-order-detail__logistics-cell strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
 .commerce-order-detail__item {
   display: flex;
   gap: 10px;
   align-items: center;
-  padding: 8px 0;
+  padding: 10px 0;
   border-top: 0.5px solid var(--border-color);
 }
 
@@ -77,9 +207,9 @@
 }
 
 .commerce-order-detail__item-cover {
-  width: 56px;
-  height: 56px;
-  border-radius: 8px;
+  width: 58px;
+  height: 58px;
+  border-radius: 10px;
   background-size: cover;
   background-position: center;
   background-color: var(--bg-cell-active);
@@ -111,14 +241,13 @@
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 7px;
+  margin-bottom: 8px;
   font-size: 13px;
   color: var(--text-primary);
 }
 
 .commerce-order-detail__summary-row span:first-child {
   color: var(--text-secondary);
-  flex-shrink: 0;
 }
 
 .commerce-order-detail__summary-row span:last-child {
@@ -127,8 +256,8 @@
 }
 
 .commerce-order-detail__summary-total {
-  margin-top: 8px;
-  padding-top: 10px;
+  margin-top: 10px;
+  padding-top: 12px;
   border-top: 0.5px solid var(--border-color);
   display: flex;
   justify-content: space-between;
@@ -140,35 +269,41 @@
   font-size: 13px;
 }
 
-.commerce-order-detail__count-title {
-  color: var(--text-secondary);
-  font-size: 13px;
-  margin-bottom: 8px;
-}
-
-.commerce-order-detail__count-grid {
+.commerce-order-detail__overview-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
-.commerce-order-detail__count-grid div {
+.commerce-order-detail__overview-grid div {
   background: var(--bg-cell-active);
-  border-radius: 10px;
-  padding: 8px 6px;
+  border-radius: 14px;
+  padding: 10px;
   text-align: center;
 }
 
-.commerce-order-detail__count-grid span {
+.commerce-order-detail__overview-grid span {
   display: block;
   color: var(--text-primary);
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 800;
 }
 
-.commerce-order-detail__count-grid small {
+.commerce-order-detail__overview-grid small {
   display: block;
-  margin-top: 2px;
+  margin-top: 4px;
   color: var(--text-secondary);
   font-size: 11px;
+}
+
+@media (max-width: 520px) {
+  .commerce-order-detail__summary-grid,
+  .commerce-order-detail__logistics-grid,
+  .commerce-order-detail__overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .commerce-order-detail__status-board-title {
+    font-size: 22px;
+  }
 }
