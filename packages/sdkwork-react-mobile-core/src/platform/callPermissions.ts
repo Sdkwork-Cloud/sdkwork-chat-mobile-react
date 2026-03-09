@@ -87,6 +87,13 @@ function applyErrorState(
   };
 }
 
+function hasRequestedTrack(stream: MediaStream, name: MediaPermissionName): boolean {
+  if (name === 'camera') {
+    return stream.getVideoTracks().length > 0;
+  }
+  return stream.getAudioTracks().length > 0;
+}
+
 export async function inspectCallMediaPermissions(
   request?: CallMediaPermissionRequest,
 ): Promise<CallMediaPermissionStatus> {
@@ -130,10 +137,13 @@ export async function requestCallMediaPermissions(
     });
     stream.getTracks().forEach((track) => track.stop());
 
+    const hasCameraTrack = !normalized.requireCamera || hasRequestedTrack(stream, 'camera');
+    const hasMicrophoneTrack = !normalized.requireMicrophone || hasRequestedTrack(stream, 'microphone');
+
     return {
       supported: true,
-      camera: 'granted',
-      microphone: 'granted',
+      camera: hasCameraTrack ? 'granted' : 'unsupported',
+      microphone: hasMicrophoneTrack ? 'granted' : 'unsupported',
     };
   } catch (error) {
     return {
