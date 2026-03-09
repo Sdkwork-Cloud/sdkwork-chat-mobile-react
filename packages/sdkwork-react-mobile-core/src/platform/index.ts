@@ -37,12 +37,17 @@ export type {
 } from './runtimeHooks';
 export {
   inspectCallMediaPermissions,
+  prepareCallMediaSession,
   requestCallMediaPermissions,
 } from './callPermissions';
 export type {
   CallMediaPermissionState,
   CallMediaPermissionRequest,
   CallMediaPermissionStatus,
+  CallSessionMode,
+  CallSessionFailureReason,
+  PrepareCallMediaSessionOptions,
+  CallSessionPreflightResult,
 } from './callPermissions';
 
 let platformInstance: IPlatform | null = null;

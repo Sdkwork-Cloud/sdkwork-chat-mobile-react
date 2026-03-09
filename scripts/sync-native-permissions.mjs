@@ -31,7 +31,10 @@ const androidPermissionLines = [
   '<uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />',
   '<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />',
   '<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />',
+  '<uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />',
+  '<uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />',
   '<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />',
+  '<uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />',
   '<uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />',
   '<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />',
   '<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />',
@@ -47,6 +50,48 @@ const iosPermissionEntries = [
   ['NSLocalNetworkUsageDescription', 'OpenChat needs local network access for LAN debugging and device discovery.'],
   ['NSFaceIDUsageDescription', 'OpenChat uses Face ID for secure authentication and payment verification.'],
 ];
+
+const iosBackgroundModes = ['audio', 'voip', 'remote-notification'];
+
+function ensureIosBackgroundModes(source) {
+  const backgroundModesPattern = /<key>UIBackgroundModes<\/key>\s*<array>([\s\S]*?)<\/array>/m;
+  const match = source.match(backgroundModesPattern);
+
+  if (!match) {
+    const block = [
+      '\t<key>UIBackgroundModes</key>',
+      '\t<array>',
+      ...iosBackgroundModes.map((mode) => `\t\t<string>${mode}</string>`),
+      '\t</array>',
+    ].join('\n');
+    return {
+      source: source.replace('</dict>', `${block}\n</dict>`),
+      additions: iosBackgroundModes.length + 1,
+    };
+  }
+
+  let block = match[0];
+  let additions = 0;
+  for (const mode of iosBackgroundModes) {
+    const marker = `<string>${mode}</string>`;
+    if (!block.includes(marker)) {
+      block = block.replace('</array>', `\t\t${marker}\n\t</array>`);
+      additions += 1;
+    }
+  }
+
+  if (!additions) {
+    return {
+      source,
+      additions: 0,
+    };
+  }
+
+  return {
+    source: source.replace(backgroundModesPattern, block),
+    additions,
+  };
+}
 
 function syncAndroidManifest() {
   if (!fs.existsSync(androidManifestPath)) {
@@ -87,20 +132,35 @@ function syncIosInfoPlist() {
   }
 
   let source = fs.readFileSync(iosInfoPlistPath, 'utf8');
+  let changed = false;
   const missingBlocks = iosPermissionEntries
     .filter(([key]) => !source.includes(`<key>${key}</key>`))
     .map(
       ([key, value]) => `\t<key>${key}</key>\n\t<string>${value}</string>`,
     );
 
-  if (!missingBlocks.length) {
+  if (missingBlocks.length) {
+    source = source.replace('</dict>', `${missingBlocks.join('\n')}\n</dict>`);
+    changed = true;
+  }
+
+  const backgroundModeResult = ensureIosBackgroundModes(source);
+  if (backgroundModeResult.additions > 0) {
+    source = backgroundModeResult.source;
+    changed = true;
+  }
+
+  if (!changed) {
     console.log('[permissions] iOS Info.plist already aligned');
     return;
   }
 
-  source = source.replace('</dict>', `${missingBlocks.join('\n')}\n</dict>`);
   fs.writeFileSync(iosInfoPlistPath, source, 'utf8');
-  console.log(`[permissions] iOS Info.plist synced with ${missingBlocks.length} additions`);
+  console.log(
+    `[permissions] iOS Info.plist synced with ${
+      missingBlocks.length + backgroundModeResult.additions
+    } additions`,
+  );
 }
 
 syncAndroidManifest();

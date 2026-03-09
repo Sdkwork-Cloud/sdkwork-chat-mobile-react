@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { inspectCallMediaPermissions, requestCallMediaPermissions } from '../src/platform/callPermissions';
+import {
+  inspectCallMediaPermissions,
+  prepareCallMediaSession,
+  requestCallMediaPermissions,
+} from '../src/platform/callPermissions';
 
 const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
 
@@ -112,6 +116,109 @@ describe('call media permissions', () => {
       supported: true,
       camera: 'granted',
       microphone: 'denied',
+    });
+  });
+
+  it('downgrades video call to audio mode when camera path is denied but microphone path succeeds', async () => {
+    const requestPermissions = vi
+      .fn()
+      .mockResolvedValueOnce({
+        supported: true,
+        camera: 'denied',
+        microphone: 'denied',
+      })
+      .mockResolvedValueOnce({
+        supported: true,
+        camera: 'granted',
+        microphone: 'granted',
+      });
+
+    const result = await prepareCallMediaSession(
+      { preferredMode: 'video', allowAudioFallback: true },
+      { requestPermissions },
+    );
+
+    expect(result).toEqual({
+      ready: true,
+      mode: 'audio',
+      fallbackApplied: true,
+      reason: 'camera_denied',
+      permissions: {
+        supported: true,
+        camera: 'granted',
+        microphone: 'granted',
+      },
+    });
+    expect(requestPermissions).toHaveBeenNthCalledWith(1, {
+      requireCamera: true,
+      requireMicrophone: true,
+    });
+    expect(requestPermissions).toHaveBeenNthCalledWith(2, {
+      requireCamera: false,
+      requireMicrophone: true,
+    });
+  });
+
+  it('fails call preflight when microphone permission is denied', async () => {
+    const requestPermissions = vi.fn().mockResolvedValue({
+      supported: true,
+      camera: 'granted',
+      microphone: 'denied',
+    });
+
+    const result = await prepareCallMediaSession(
+      { preferredMode: 'video', allowAudioFallback: true },
+      { requestPermissions },
+    );
+
+    expect(result).toEqual({
+      ready: false,
+      mode: 'video',
+      fallbackApplied: false,
+      reason: 'microphone_denied',
+      permissions: {
+        supported: true,
+        camera: 'granted',
+        microphone: 'denied',
+      },
+    });
+    expect(requestPermissions).toHaveBeenCalledTimes(2);
+    expect(requestPermissions).toHaveBeenNthCalledWith(1, {
+      requireCamera: true,
+      requireMicrophone: true,
+    });
+    expect(requestPermissions).toHaveBeenNthCalledWith(2, {
+      requireCamera: false,
+      requireMicrophone: true,
+    });
+  });
+
+  it('requests microphone-only permission when preferred mode is audio', async () => {
+    const requestPermissions = vi.fn().mockResolvedValue({
+      supported: true,
+      camera: 'granted',
+      microphone: 'granted',
+    });
+
+    const result = await prepareCallMediaSession(
+      { preferredMode: 'audio' },
+      { requestPermissions },
+    );
+
+    expect(result).toEqual({
+      ready: true,
+      mode: 'audio',
+      fallbackApplied: false,
+      permissions: {
+        supported: true,
+        camera: 'granted',
+        microphone: 'granted',
+      },
+    });
+    expect(requestPermissions).toHaveBeenCalledTimes(1);
+    expect(requestPermissions).toHaveBeenCalledWith({
+      requireCamera: false,
+      requireMicrophone: true,
     });
   });
 });

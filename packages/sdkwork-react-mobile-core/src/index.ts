@@ -17,6 +17,7 @@ export {
   flushDefaultPlatformRuntimeHookQueue,
   inspectDefaultPlatformRuntimeHookQueue,
   inspectCallMediaPermissions,
+  prepareCallMediaSession,
   requestCallMediaPermissions,
   type Platform,
   type PlatformType,
@@ -38,6 +39,10 @@ export {
   type CallMediaPermissionState,
   type CallMediaPermissionRequest,
   type CallMediaPermissionStatus,
+  type CallSessionMode,
+  type CallSessionFailureReason,
+  type PrepareCallMediaSessionOptions,
+  type CallSessionPreflightResult,
 } from './platform';
 
 export { platformService } from './platform/platformService';

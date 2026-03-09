@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Page, Avatar, Toast, ActionSheet, Icon } from '@sdkwork/react-mobile-commons';
+import { prepareCallMediaSession } from '@sdkwork/react-mobile-core';
 import { contactsService } from '../services/ContactsService';
 import type { Contact } from '../types';
 import './ContactProfilePage.css';
@@ -67,8 +68,45 @@ export const ContactProfilePage: React.FC<ContactProfilePageProps> = ({
     onSendMessage?.(contact);
   };
 
-  const handleVideoCall = () => {
-    onNavigate?.('/communication', { id: contactId });
+  const resolveCallFailureMessage = (reason?: string) => {
+    if (reason === 'unsupported') {
+      return tr('contact_profile.call_not_supported', 'Call media is not supported on this device');
+    }
+
+    if (reason === 'microphone_denied' || reason === 'microphone_unsupported') {
+      return tr(
+        'contact_profile.microphone_permission_required',
+        'Microphone permission is required to start a call',
+      );
+    }
+
+    return tr(
+      'contact_profile.call_permission_required',
+      'Unable to start call, please check camera and microphone permissions',
+    );
+  };
+
+  const handleVideoCall = async () => {
+    const session = await prepareCallMediaSession({
+      preferredMode: 'video',
+      allowAudioFallback: true,
+    });
+
+    if (!session.ready) {
+      Toast.error(resolveCallFailureMessage(session.reason));
+      return;
+    }
+
+    if (session.mode === 'audio' && session.fallbackApplied) {
+      Toast.info(
+        tr(
+          'contact_profile.video_fallback_audio',
+          'Camera permission is unavailable, switched to voice call',
+        ),
+      );
+    }
+
+    onNavigate?.('/communication', { id: contactId, mode: session.mode });
   };
 
   const handleMoreOptions = async () => {

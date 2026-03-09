@@ -106,6 +106,7 @@ Call/media critical permissions:
 - `android.permission.FOREGROUND_SERVICE_CAMERA`
 - `android.permission.FOREGROUND_SERVICE_MICROPHONE`
 - `android.permission.BLUETOOTH_CONNECT`
+- `android.permission.BLUETOOTH_SCAN`
 
 Common runtime permissions:
 
@@ -113,6 +114,7 @@ Common runtime permissions:
 - `android.permission.ACCESS_NETWORK_STATE`
 - `android.permission.ACCESS_WIFI_STATE`
 - `android.permission.READ_MEDIA_IMAGES`
+- `android.permission.READ_MEDIA_AUDIO`
 - `android.permission.READ_MEDIA_VIDEO`
 - `android.permission.READ_EXTERNAL_STORAGE` (`maxSdkVersion=32`)
 
@@ -132,6 +134,10 @@ After running `pnpm cap:add:ios`, copy these keys into `ios/App/App/Info.plist`:
 - `NSBluetoothAlwaysUsageDescription`
 - `NSLocalNetworkUsageDescription`
 - `NSFaceIDUsageDescription`
+- `UIBackgroundModes` with:
+  - `audio`
+  - `voip`
+  - `remote-notification`
 
 Minimum call capability gate:
 
@@ -143,8 +149,9 @@ Runtime guard API (core):
 
 - `inspectCallMediaPermissions(...)`
 - `requestCallMediaPermissions(...)`
+- `prepareCallMediaSession(...)`
 
-Both are exported from `@sdkwork/react-mobile-core` platform module to enforce call permission preflight before opening RTC sessions.
+These APIs are exported from `@sdkwork/react-mobile-core` platform module to enforce call permission preflight and audio fallback before opening RTC sessions.
 
 ## Packaging Flows
 

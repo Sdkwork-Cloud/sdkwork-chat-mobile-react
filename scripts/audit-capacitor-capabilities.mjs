@@ -56,6 +56,12 @@ const userBridgeGeolocationHookSource = readTextIfExists(
 );
 const coreTypesSource = readText('packages/sdkwork-react-mobile-core/src/platform/types.ts');
 const capacitorConfigSource = readText('capacitor.config.ts');
+const contactProfilePageSource = readTextIfExists(
+  'packages/sdkwork-react-mobile-contacts/src/pages/ContactProfilePage.tsx',
+);
+const callsPageSource = readTextIfExists(
+  'packages/sdkwork-react-mobile-communication/src/pages/CallsPage.tsx',
+);
 const androidManifestSource = readTextIfExists('android/app/src/main/AndroidManifest.xml');
 const androidPermissionTemplateSource = readTextIfExists('config/android/AndroidManifest.permissions.template.xml');
 const iosInfoPlistSource = readTextIfExists('ios/App/App/Info.plist');
@@ -74,6 +80,7 @@ const androidCallPermissionBaseline = [
   'android.permission.FOREGROUND_SERVICE_CAMERA',
   'android.permission.FOREGROUND_SERVICE_MICROPHONE',
   'android.permission.BLUETOOTH_CONNECT',
+  'android.permission.BLUETOOTH_SCAN',
 ];
 
 const androidCommonPermissionBaseline = [
@@ -81,12 +88,16 @@ const androidCommonPermissionBaseline = [
   'android.permission.ACCESS_NETWORK_STATE',
   'android.permission.ACCESS_WIFI_STATE',
   'android.permission.READ_MEDIA_IMAGES',
+  'android.permission.READ_MEDIA_AUDIO',
   'android.permission.READ_MEDIA_VIDEO',
 ];
 
 const iosCallPermissionBaseline = [
   'NSCameraUsageDescription',
   'NSMicrophoneUsageDescription',
+  'UIBackgroundModes',
+  '<string>audio</string>',
+  '<string>voip</string>',
 ];
 
 const iosCommonPermissionBaseline = [
@@ -95,6 +106,7 @@ const iosCommonPermissionBaseline = [
   'NSContactsUsageDescription',
   'NSBluetoothAlwaysUsageDescription',
   'NSLocalNetworkUsageDescription',
+  '<string>remote-notification</string>',
 ];
 
 const androidPermissionSource = androidManifestSource || androidPermissionTemplateSource;
@@ -222,6 +234,20 @@ const capabilityChecks = [
     ],
     installHint:
       'Implement and export call permission runtime guard utilities in core platform module.',
+  },
+  {
+    id: 'call_entry_permission_preflight',
+    tier: 'P1',
+    capability: 'Call Entry Permission Preflight',
+    plugins: ['@capacitor/camera'],
+    integrationChecks: [
+      coreCallPermissionSource.includes('prepareCallMediaSession'),
+      corePlatformIndexSource.includes('prepareCallMediaSession'),
+      contactProfilePageSource.includes('prepareCallMediaSession'),
+      callsPageSource.includes('prepareCallMediaSession'),
+    ],
+    installHint:
+      'Integrate prepareCallMediaSession at call entry points so call launches always run permission preflight.',
   },
   {
     id: 'browser_oauth',

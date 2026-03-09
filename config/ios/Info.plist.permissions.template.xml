@@ -20,4 +20,10 @@
   <string>OpenChat needs local network access for LAN debugging and device discovery.</string>
   <key>NSFaceIDUsageDescription</key>
   <string>OpenChat uses Face ID for secure authentication and payment verification.</string>
+  <key>UIBackgroundModes</key>
+  <array>
+    <string>audio</string>
+    <string>voip</string>
+    <string>remote-notification</string>
+  </array>
 </dict>
