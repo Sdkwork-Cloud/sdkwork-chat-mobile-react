@@ -16,6 +16,8 @@ export {
   createDefaultPlatformRuntimeHooks,
   flushDefaultPlatformRuntimeHookQueue,
   inspectDefaultPlatformRuntimeHookQueue,
+  inspectCallMediaPermissions,
+  requestCallMediaPermissions,
   type Platform,
   type PlatformType,
   type PlatformCapabilityReport,
@@ -33,6 +35,9 @@ export {
   type RuntimeRetryPolicyOptions,
   type RuntimeRetryQueueSnapshotBucket,
   type RuntimeRetryQueueSnapshot,
+  type CallMediaPermissionState,
+  type CallMediaPermissionRequest,
+  type CallMediaPermissionStatus,
 } from './platform';
 
 export { platformService } from './platform/platformService';

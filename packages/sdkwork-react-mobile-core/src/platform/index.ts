@@ -35,6 +35,15 @@ export type {
   RuntimeRetryQueueSnapshotBucket,
   RuntimeRetryQueueSnapshot,
 } from './runtimeHooks';
+export {
+  inspectCallMediaPermissions,
+  requestCallMediaPermissions,
+} from './callPermissions';
+export type {
+  CallMediaPermissionState,
+  CallMediaPermissionRequest,
+  CallMediaPermissionStatus,
+} from './callPermissions';
 
 let platformInstance: IPlatform | null = null;
 let initializationPromise: Promise<void> | null = null;

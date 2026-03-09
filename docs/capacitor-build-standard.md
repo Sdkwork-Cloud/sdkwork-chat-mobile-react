@@ -139,6 +139,13 @@ Minimum call capability gate:
 2. iOS Info.plist includes camera + microphone usage descriptions.
 3. Permission baseline is re-checked with `pnpm audit:capacitor:capabilities`.
 
+Runtime guard API (core):
+
+- `inspectCallMediaPermissions(...)`
+- `requestCallMediaPermissions(...)`
+
+Both are exported from `@sdkwork/react-mobile-core` platform module to enforce call permission preflight before opening RTC sessions.
+
 ## Packaging Flows
 
 ### Android

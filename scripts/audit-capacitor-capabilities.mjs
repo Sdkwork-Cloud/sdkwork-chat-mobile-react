@@ -44,6 +44,8 @@ const userPackage = readJson('packages/sdkwork-react-mobile-user/package.json');
 const workspaceYaml = readText('pnpm-workspace.yaml');
 const coreCapacitorSource = readText('packages/sdkwork-react-mobile-core/src/platform/capacitor.ts');
 const coreRuntimeSource = readText('packages/sdkwork-react-mobile-core/src/platform/runtime.ts');
+const corePlatformIndexSource = readText('packages/sdkwork-react-mobile-core/src/platform/index.ts');
+const coreCallPermissionSource = readTextIfExists('packages/sdkwork-react-mobile-core/src/platform/callPermissions.ts');
 const userBridgeIndexSource = readText('packages/sdkwork-react-mobile-user/src/bridge/index.ts');
 const userBridgeTypesSource = readText('packages/sdkwork-react-mobile-user/src/bridge/types.ts');
 const userBridgeGeolocationSource = readTextIfExists(
@@ -206,6 +208,20 @@ const capabilityChecks = [
       userBridgeTypesSource.includes('GeolocationResult'),
     ],
     installHint: 'pnpm add @capacitor/geolocation',
+  },
+  {
+    id: 'call_permission_runtime_guard',
+    tier: 'P1',
+    capability: 'Call Permission Runtime Guard',
+    plugins: ['@capacitor/camera'],
+    integrationChecks: [
+      coreCallPermissionSource.includes('inspectCallMediaPermissions'),
+      coreCallPermissionSource.includes('requestCallMediaPermissions'),
+      coreCallPermissionSource.includes('navigator.mediaDevices.getUserMedia'),
+      corePlatformIndexSource.includes("from './callPermissions'"),
+    ],
+    installHint:
+      'Implement and export call permission runtime guard utilities in core platform module.',
   },
   {
     id: 'browser_oauth',
