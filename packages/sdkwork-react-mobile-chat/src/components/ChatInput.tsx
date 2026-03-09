@@ -16,6 +16,11 @@ interface ChatInputProps {
   t?: (key: string) => string;
   sessionId: string;
   onSend: (text: string, replyTo?: Message, image?: File) => void;
+  onStartVideoCall?: (payload: {
+    sessionId: string;
+    mode: 'video' | 'audio';
+    fallbackApplied: boolean;
+  }) => void;
   isLoading: boolean;
   replyMessage: Message | null;
   onCancelReply: () => void;
@@ -44,6 +49,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   t,
   sessionId,
   onSend,
+  onStartVideoCall,
   isLoading,
   replyMessage,
   onCancelReply,
@@ -339,7 +345,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       </div>
 
       <ChatEmojiPanel t={t} visible={activePanel === 'emoji'} onSelect={handleEmojiSelect} />
-      <ChatActionPanel t={t} sessionId={sessionId} visible={activePanel === 'action'} onSendImage={handleSendImage} />
+      <ChatActionPanel
+        t={t}
+        sessionId={sessionId}
+        visible={activePanel === 'action'}
+        onSendImage={handleSendImage}
+        onStartVideoCall={onStartVideoCall}
+      />
     </div>
   );
 };

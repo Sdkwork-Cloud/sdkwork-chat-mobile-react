@@ -153,6 +153,12 @@ Runtime guard API (core):
 
 These APIs are exported from `@sdkwork/react-mobile-core` platform module to enforce call permission preflight and audio fallback before opening RTC sessions.
 
+Entry points that should invoke this preflight include:
+
+- Contact profile "Voice/Video Call" button
+- Call history redial entry
+- Chat action panel video-call shortcut
+
 ## Packaging Flows
 
 ### Android

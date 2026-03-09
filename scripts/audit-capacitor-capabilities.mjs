@@ -62,6 +62,9 @@ const contactProfilePageSource = readTextIfExists(
 const callsPageSource = readTextIfExists(
   'packages/sdkwork-react-mobile-communication/src/pages/CallsPage.tsx',
 );
+const chatActionPanelSource = readTextIfExists(
+  'packages/sdkwork-react-mobile-chat/src/components/ChatActionPanel.tsx',
+);
 const androidManifestSource = readTextIfExists('android/app/src/main/AndroidManifest.xml');
 const androidPermissionTemplateSource = readTextIfExists('config/android/AndroidManifest.permissions.template.xml');
 const iosInfoPlistSource = readTextIfExists('ios/App/App/Info.plist');
@@ -248,6 +251,20 @@ const capabilityChecks = [
     ],
     installHint:
       'Integrate prepareCallMediaSession at call entry points so call launches always run permission preflight.',
+  },
+  {
+    id: 'chat_video_call_preflight',
+    tier: 'P1',
+    capability: 'Chat Video Call Permission Preflight',
+    plugins: ['@capacitor/camera'],
+    integrationChecks: [
+      chatActionPanelSource.includes('prepareCallMediaSession'),
+      chatActionPanelSource.includes("preferredMode: 'video'"),
+      chatActionPanelSource.includes('allowAudioFallback: true'),
+      chatActionPanelSource.includes('onStartVideoCall?.('),
+    ],
+    installHint:
+      'Wire chat action panel video call entry to prepareCallMediaSession with audio fallback before launching call UI.',
   },
   {
     id: 'browser_oauth',
