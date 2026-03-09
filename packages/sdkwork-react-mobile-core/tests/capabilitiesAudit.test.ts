@@ -109,6 +109,22 @@ describe('inspectPlatformCapabilities', () => {
   it('reports push/payment/local notification integration when implemented', () => {
     const report = inspectPlatformCapabilities(createPlatformMock());
 
+    expect(report.wrappersSummary.total).toBe(14);
+    expect(report.wrappersSummary.ready).toBe(14);
+    expect(report.wrappers.device.integrated).toBe(true);
+    expect(report.wrappers.storage.integrated).toBe(true);
+    expect(report.wrappers.clipboard.integrated).toBe(true);
+    expect(report.wrappers.camera.integrated).toBe(true);
+    expect(report.wrappers.fileSystem.integrated).toBe(true);
+    expect(report.wrappers.notifications.integrated).toBe(true);
+    expect(report.wrappers.push.integrated).toBe(true);
+    expect(report.wrappers.payment.integrated).toBe(true);
+    expect(report.wrappers.share.integrated).toBe(true);
+    expect(report.wrappers.network.integrated).toBe(true);
+    expect(report.wrappers.keyboard.integrated).toBe(true);
+    expect(report.wrappers.statusBar.integrated).toBe(true);
+    expect(report.wrappers.splashScreen.integrated).toBe(true);
+    expect(report.wrappers.app.integrated).toBe(true);
     expect(report.pushNotifications.integrated).toBe(true);
     expect(report.localNotifications.integrated).toBe(true);
     expect(report.payments.integrated).toBe(true);
@@ -124,8 +140,31 @@ describe('inspectPlatformCapabilities', () => {
       }),
     );
 
+    expect(report.wrappersSummary.ready).toBe(12);
+    expect(report.wrappers.push.integrated).toBe(false);
+    expect(report.wrappers.payment.integrated).toBe(false);
     expect(report.pushNotifications.integrated).toBe(false);
     expect(report.payments.integrated).toBe(false);
     expect(report.payments.supportedChannels).toEqual([]);
+  });
+
+  it('reports wrapper-level missing methods for each encapsulation', () => {
+    const report = inspectPlatformCapabilities(
+      createPlatformMock({
+        clipboard: {
+          read: async () => '',
+        } as any,
+        app: {
+          exit: async () => {},
+          minimize: async () => {},
+        } as any,
+      }),
+    );
+
+    expect(report.wrappers.clipboard.integrated).toBe(false);
+    expect(report.wrappers.clipboard.detail).toContain('missing methods');
+    expect(report.wrappers.app.integrated).toBe(false);
+    expect(report.wrappers.app.detail).toContain('missing methods');
+    expect(report.wrappersSummary.ready).toBe(12);
   });
 });

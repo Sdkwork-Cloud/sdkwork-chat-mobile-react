@@ -428,13 +428,13 @@ class CapacitorPush implements IPush {
 
     return new Promise((resolve) => {
       let settled = false;
-      let timeoutId: number | null = null;
+      let timeoutId: ReturnType<typeof globalThis.setTimeout> | null = null;
 
       const settle = (result: PushRegistrationResult) => {
         if (settled) return;
         settled = true;
         if (timeoutId !== null) {
-          window.clearTimeout(timeoutId);
+          globalThis.clearTimeout(timeoutId);
         }
         cleanup();
         resolve(result);
@@ -479,7 +479,7 @@ class CapacitorPush implements IPush {
           });
         });
 
-      timeoutId = window.setTimeout(() => {
+      timeoutId = globalThis.setTimeout(() => {
         settle({
           success: false,
           error: 'Push registration timeout',
@@ -691,7 +691,12 @@ class CapacitorApp implements IApp {
   }
 
   async minimize(): Promise<void> {
-    await App.exitApp();
+    const plugin = App as unknown as { minimizeApp?: () => Promise<void> };
+    if (typeof plugin.minimizeApp === 'function') {
+      await plugin.minimizeApp();
+      return;
+    }
+    console.warn('[Platform] App minimize is not supported by current runtime');
   }
 
   async getLaunchUrl(): Promise<{ url?: string | null }> {
