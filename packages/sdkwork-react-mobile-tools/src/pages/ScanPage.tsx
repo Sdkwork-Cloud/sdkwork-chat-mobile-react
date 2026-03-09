@@ -1,5 +1,6 @@
 import React from 'react';
 import { Flashlight, FlashlightOff, Image, ScanLine, X } from 'lucide-react';
+import { getPlatform, initializePlatform } from '@sdkwork/react-mobile-core/platform';
 import { useTools } from '../hooks/useTools';
 import {
   getCapacitorRuntimeFromWindow,
@@ -13,20 +14,22 @@ interface ScanPageProps {
   t?: (key: string) => string;
   onBack?: () => void;
   onScanResult?: (result: string) => void;
+  initialScanResult?: string;
 }
 
 const SCAN_DELAY_MS = 1200;
 const MOCK_SCAN_RESULTS = [
-  'sdkwork://qr/entity?type=user&id=u_1001&name=Alice',
-  'sdkwork://qr/entity?type=group&id=g_core&name=SDKWORK-Core',
-  'sdkwork://qr/entity?type=agent&id=omni_core&name=Omni-Core',
+  'https://sdkwork.ai/scan?qr=1&v=1&type=user&id=u_1001&name=Alice',
+  'https://sdkwork.ai/scan?qr=1&v=1&type=group&id=g_core&name=SDKWORK-Core',
+  'https://sdkwork.ai/scan?qr=1&v=1&type=agent&id=omni_core&name=Omni-Core',
 ];
 
-export const ScanPage: React.FC<ScanPageProps> = ({ t, onBack, onScanResult }) => {
+export const ScanPage: React.FC<ScanPageProps> = ({ t, onBack, onScanResult, initialScanResult }) => {
   const { addScanRecord } = useTools();
   const runtimeRef = React.useRef<CapacitorRuntimeLike | undefined>(undefined);
   const scanTimerRef = React.useRef<number | null>(null);
   const mockScanIndexRef = React.useRef(0);
+  const initialScanHandledRef = React.useRef(false);
   const [isScanning, setIsScanning] = React.useState(false);
   const [scanResult, setScanResult] = React.useState<string | null>(null);
   const [supportsFlashlight, setSupportsFlashlight] = React.useState(false);
@@ -58,6 +61,16 @@ export const ScanPage: React.FC<ScanPageProps> = ({ t, onBack, onScanResult }) =
     }
   }, []);
 
+  React.useEffect(() => {
+    const normalized = (initialScanResult || '').trim();
+    if (!normalized || initialScanHandledRef.current) return;
+
+    initialScanHandledRef.current = true;
+    setScanResult(normalized);
+    setStatusText(tr('tools.scan.resolving', '正在解析扫码链接...'));
+    onScanResult?.(normalized);
+  }, [initialScanResult, onScanResult, tr]);
+
   const handleClose = React.useCallback(() => {
     if (onBack) {
       onBack();
@@ -79,21 +92,56 @@ export const ScanPage: React.FC<ScanPageProps> = ({ t, onBack, onScanResult }) =
     setIsScanning(true);
     setScanResult(null);
     setStatusText(tr('tools.scan.scanning', '正在识别...'));
+    const runMockScan = () => {
+      if (scanTimerRef.current !== null) {
+        window.clearTimeout(scanTimerRef.current);
+      }
 
-    if (scanTimerRef.current !== null) {
-      window.clearTimeout(scanTimerRef.current);
-    }
+      scanTimerRef.current = window.setTimeout(() => {
+        const index = mockScanIndexRef.current % MOCK_SCAN_RESULTS.length;
+        const mockResult = MOCK_SCAN_RESULTS[index];
+        mockScanIndexRef.current += 1;
+        setScanResult(mockResult);
+        setIsScanning(false);
+        setStatusText(tr('tools.scan.tap_to_scan', '轻触扫码框开始识别'));
+        void addScanRecord(mockResult, 'qrcode');
+        onScanResult?.(mockResult);
+      }, SCAN_DELAY_MS);
+    };
 
-    scanTimerRef.current = window.setTimeout(() => {
-      const index = mockScanIndexRef.current % MOCK_SCAN_RESULTS.length;
-      const mockResult = MOCK_SCAN_RESULTS[index];
-      mockScanIndexRef.current += 1;
-      setScanResult(mockResult);
-      setIsScanning(false);
-      setStatusText(tr('tools.scan.tap_to_scan', '轻触扫码框开始识别'));
-      void addScanRecord(mockResult, 'qrcode');
-      onScanResult?.(mockResult);
-    }, SCAN_DELAY_MS);
+    const executeScan = async () => {
+      try {
+        await initializePlatform();
+        const platform = getPlatform();
+        const result = (await platform.camera.scanQRCode()).trim();
+        if (!result) {
+          throw new Error('empty scan result');
+        }
+        setScanResult(result);
+        setIsScanning(false);
+        setStatusText(tr('tools.scan.tap_to_scan', '轻触扫码框开始识别'));
+        void addScanRecord(result, 'qrcode');
+        onScanResult?.(result);
+      } catch (error) {
+        const message = error instanceof Error ? error.message.toLowerCase() : '';
+        const shouldFallbackToMock =
+          !message
+          || message.includes('not supported')
+          || message.includes('missing')
+          || message.includes('requires')
+          || message.includes('permission denied')
+          || message.includes('available in fallback platform');
+        if (shouldFallbackToMock) {
+          runMockScan();
+          return;
+        }
+        console.error('[ScanPage] Scan failed:', error);
+        setIsScanning(false);
+        setStatusText(tr('tools.scan.scan_failed', '识别失败，请重试'));
+      }
+    };
+
+    void executeScan();
   }, [addScanRecord, isScanning, onScanResult, tr]);
 
   const handleOpenAlbum = React.useCallback(() => {

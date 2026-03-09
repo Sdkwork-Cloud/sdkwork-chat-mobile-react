@@ -33,6 +33,8 @@
       "@sdkwork/react-mobile-wallet": ["./packages/sdkwork-react-mobile-wallet/src/index.ts"],
       "@sdkwork/react-mobile-vip": ["./packages/sdkwork-react-mobile-vip/src/index.ts"],
       "@sdkwork/react-mobile-drive": ["./packages/sdkwork-react-mobile-drive/src/index.ts"],
+      "@sdkwork/react-mobile-email": ["./packages/sdkwork-react-mobile-email/src/index.ts"],
+      "@sdkwork/react-mobile-notes": ["./packages/sdkwork-react-mobile-notes/src/index.ts"],
       "@sdkwork/react-mobile-nearby": ["./packages/sdkwork-react-mobile-nearby/src/index.ts"],
       "@sdkwork/react-mobile-skills": ["./packages/sdkwork-react-mobile-skills/src/index.ts"],
       "@sdkwork/react-mobile-moments": ["./packages/sdkwork-react-mobile-moments/src/index.ts"],

@@ -8,7 +8,6 @@ const config: CapacitorConfig = {
   appId: 'com.openchat.ai',
   appName: 'OpenChat',
   webDir: 'dist',
-  bundledWebRuntime: false,
   server: useNativeDevServer
     ? {
         url: capServerUrl,
@@ -39,6 +38,12 @@ const config: CapacitorConfig = {
       resize: 'body',
       style: 'DARK',
       resizeOnFullScreen: true,
+    },
+    Camera: {
+      promptLabelHeader: '相机与相册权限',
+      promptLabelPhoto: '从相册选择',
+      promptLabelPicture: '拍照',
+      promptLabelCancel: '取消',
     },
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],

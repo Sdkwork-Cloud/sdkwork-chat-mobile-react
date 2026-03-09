@@ -98,3 +98,13 @@ export function deepMerge<T extends Record<string, any>>(target: T, source: Part
   
   return result as T;
 }
+
+export {
+  buildOpenChatQrLink,
+  parseOpenChatQrLink,
+  OPENCHAT_QR_LINK_VERSION,
+  OPENCHAT_QR_LINK_ROUTE,
+  type OpenChatQrType,
+  type OpenChatQrLinkBuildInput,
+  type OpenChatQrLinkPayload,
+} from './qrLinkProtocol';

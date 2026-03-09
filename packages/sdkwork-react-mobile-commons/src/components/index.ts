@@ -18,3 +18,4 @@ export * from './Switch';
 export * from './TopTabsNavbar';
 export * from './Cell';
 export * from './ModelSelectorPopup';
+export * from './InlineFeedback';

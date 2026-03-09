@@ -5,7 +5,7 @@ export type IconName =
   | 'back' | 'more' | 'close' | 'search' | 'plus' | 'check' | 'settings' | 'qrcode' | 'bell' | 'clear'
   | 'chat' | 'agents' | 'creation' | 'discover' | 'me'
   | 'loading' | 'arrow-right' | 'arrow-left' | 'copy' | 'scan' | 'wallet'
-  | 'moments' | 'video-channel' | 'shop' | 'gig' | 'miniapp' | 'drive' | 'game'
+  | 'moments' | 'video-channel' | 'shop' | 'gig' | 'miniapp' | 'drive' | 'email' | 'game'
   | 'favorites' | 'card' | 'order' | 'distribution' | 'service'
   | 'voice' | 'keyboard' | 'emoji' | 'add-circle' | 'plus-circle'
   | 'flashlight' | 'flashlight-off' | 'picture' | 'share' | 'comment' | 'heart' | 'heart-fill' | 'bill' | 'money-transfer'
@@ -60,6 +60,7 @@ const PATHS: Record<string, React.ReactElement> = {
   gig: <path d="M12 2a9 9 0 0 0-9 9c0 4.97 9 13 9 13s9-8.03 9-13a9 9 0 0 0-9-9zm0 13c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z" />,
   miniapp: <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />,
   drive: <><path d="M3 8h7l2 2h9v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z" /><path d="M3 8V6a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2" /></>,
+  email: <><rect x="3" y="5" width="18" height="14" rx="2" /><polyline points="4 7 12 13 20 7" /></>,
   game: <path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4-3c-.83 0-1.5-.67-1.5-1.5S18.67 9 19.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" />,
   favorites: <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z" />,
   card: <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" />,

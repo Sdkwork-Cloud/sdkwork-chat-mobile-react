@@ -47,6 +47,8 @@ export default defineConfig(({ mode }) => {
           { find: '@sdkwork/react-mobile-wallet', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-wallet/src/index.ts') },
           { find: '@sdkwork/react-mobile-vip', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-vip/src/index.ts') },
           { find: '@sdkwork/react-mobile-drive', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-drive/src/index.ts') },
+          { find: '@sdkwork/react-mobile-email', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-email/src/index.ts') },
+          { find: '@sdkwork/react-mobile-notes', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-notes/src/index.ts') },
           { find: '@sdkwork/react-mobile-nearby', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-nearby/src/index.ts') },
           { find: '@sdkwork/react-mobile-skills', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-skills/src/index.ts') },
           { find: '@sdkwork/react-mobile-moments', replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-moments/src/index.ts') },
@@ -97,6 +99,8 @@ export default defineConfig(({ mode }) => {
               if (normalized.includes('/packages/sdkwork-react-mobile-social/')) return 'feature-social';
               if (normalized.includes('/packages/sdkwork-react-mobile-wallet/')) return 'feature-wallet';
               if (normalized.includes('/packages/sdkwork-react-mobile-drive/')) return 'feature-drive';
+              if (normalized.includes('/packages/sdkwork-react-mobile-email/')) return 'feature-email';
+              if (normalized.includes('/packages/sdkwork-react-mobile-notes/')) return 'feature-notes';
               if (normalized.includes('/packages/sdkwork-react-mobile-nearby/')) return 'feature-nearby';
               if (normalized.includes('/packages/sdkwork-react-mobile-skills/')) return 'feature-skills';
               if (normalized.includes('/packages/sdkwork-react-mobile-moments/')) return 'feature-moments';

@@ -43,6 +43,8 @@ const prefetchCoreBundles = () => {
     import('@sdkwork/react-mobile-app'),
     import('@sdkwork/react-mobile-agents'),
     import('@sdkwork/react-mobile-nearby'),
+    import('@sdkwork/react-mobile-email'),
+    import('@sdkwork/react-mobile-notes'),
     import('@sdkwork/react-mobile-creation'),
     import('@sdkwork/react-mobile-user'),
     import('@sdkwork/react-mobile-contacts'),
@@ -98,6 +100,12 @@ const SkillDetailPage = lazyExport(() => import('@sdkwork/react-mobile-skills'),
 const NotificationPage = lazyExport(() => import('@sdkwork/react-mobile-notification'), (m) => m.NotificationPage);
 const WalletPage = lazyExport(() => import('@sdkwork/react-mobile-wallet'), (m) => m.WalletPage);
 const CloudDrivePage = lazyExport(() => import('@sdkwork/react-mobile-drive'), (m) => m.CloudDrivePage);
+const EmailPage = lazyExport(() => import('@sdkwork/react-mobile-email'), (m) => m.EmailPage);
+const EmailThreadPage = lazyExport(() => import('@sdkwork/react-mobile-email'), (m) => m.EmailThreadPage);
+const EmailComposePage = lazyExport(() => import('@sdkwork/react-mobile-email'), (m) => m.EmailComposePage);
+const NotesPage = lazyExport(() => import('@sdkwork/react-mobile-notes'), (m) => m.NotesPage);
+const NotesDocPage = lazyExport(() => import('@sdkwork/react-mobile-notes'), (m) => m.NotesDocPage);
+const NotesCreatePage = lazyExport(() => import('@sdkwork/react-mobile-notes'), (m) => m.NotesCreatePage);
 const NearbyPage = lazyExport(() => import('@sdkwork/react-mobile-nearby'), (m) => m.NearbyPage);
 const VideosPage = lazyExport(() => import('@sdkwork/react-mobile-video'), (m) => m.VideosPage);
 const ShoppingPage = lazyExport(() => import('@sdkwork/react-mobile-shopping'), (m) => m.ShoppingPage);
@@ -261,6 +269,12 @@ const routes: Record<RoutePath, RouteConfig> = {
   [ROUTE_PATHS.wallet]: { component: WalletPage },
 
   [ROUTE_PATHS.drive]: { component: CloudDrivePage },
+  [ROUTE_PATHS.email]: { component: EmailPage },
+  [ROUTE_PATHS.emailThread]: { component: EmailThreadPage },
+  [ROUTE_PATHS.emailCompose]: { component: EmailComposePage },
+  [ROUTE_PATHS.notes]: { component: NotesPage },
+  [ROUTE_PATHS.notesDoc]: { component: NotesDocPage },
+  [ROUTE_PATHS.notesCreate]: { component: NotesCreatePage },
   [ROUTE_PATHS.nearby]: { component: NearbyPage },
 
   [ROUTE_PATHS.search]: { component: SearchPage },
@@ -1338,6 +1352,75 @@ const buildRouteProps = (
     };
   }
 
+  if (path === ROUTE_PATHS.email) {
+    return {
+      ...commonAuthProps,
+      onBack: () => navigateBack(ROUTE_PATHS.discover),
+      onCompose: () => navigate(ROUTE_PATHS.emailCompose),
+      onThreadClick: (threadId: string) => navigate(ROUTE_PATHS.emailThread, { id: threadId }),
+    };
+  }
+
+  if (path === ROUTE_PATHS.emailThread) {
+    const threadId = (currentParams.id || '').trim();
+    const entrySource = (currentParams.source || '').trim();
+    return {
+      ...commonAuthProps,
+      threadId,
+      entrySource: entrySource || undefined,
+      onBack: () => navigateBack(ROUTE_PATHS.email),
+      onReply: (nextThreadId: string) =>
+        navigate(ROUTE_PATHS.emailCompose, { id: (nextThreadId || threadId || '').trim() }),
+    };
+  }
+
+  if (path === ROUTE_PATHS.emailCompose) {
+    const draftFromThreadId = (currentParams.id || '').trim();
+    return {
+      ...commonAuthProps,
+      draftFromThreadId: draftFromThreadId || undefined,
+      onBack: () => navigateBack(ROUTE_PATHS.email),
+      onSend: (draftId: string) => navigate(ROUTE_PATHS.emailThread, {
+        id: draftId || 'mail-compose-new',
+        source: draftFromThreadId ? 'reply' : 'compose',
+      }),
+    };
+  }
+
+  if (path === ROUTE_PATHS.notes) {
+    return {
+      ...commonAuthProps,
+      onBack: () => navigateBack(ROUTE_PATHS.discover),
+      onCreate: () => navigate(ROUTE_PATHS.notesCreate),
+      onOpenDoc: (docId: string) => navigate(ROUTE_PATHS.notesDoc, { id: docId }),
+    };
+  }
+
+  if (path === ROUTE_PATHS.notesDoc) {
+    const docId = (currentParams.id || '').trim();
+    const entrySource = (currentParams.source || '').trim();
+    return {
+      ...commonAuthProps,
+      docId: docId || undefined,
+      entrySource: entrySource || undefined,
+      onBack: () => navigateBack(ROUTE_PATHS.notes),
+      onEdit: (nextDocId: string) => navigate(ROUTE_PATHS.notesCreate, { id: nextDocId || docId || '' }),
+    };
+  }
+
+  if (path === ROUTE_PATHS.notesCreate) {
+    const templateDocId = (currentParams.id || '').trim();
+    return {
+      ...commonAuthProps,
+      templateDocId: templateDocId || undefined,
+      onBack: () => navigateBack(ROUTE_PATHS.notes),
+      onCreated: (docId: string) => navigate(ROUTE_PATHS.notesDoc, {
+        id: docId || templateDocId || 'doc-new',
+        source: templateDocId ? 'edit' : 'create',
+      }),
+    };
+  }
+
   if (path === ROUTE_PATHS.nearby) {
     return {
       ...commonAuthProps,
@@ -1568,9 +1651,31 @@ const buildRouteProps = (
   }
 
   if (path === ROUTE_PATHS.scan) {
+    const inlineQrResult = (currentParams.qr || '').trim();
+    const shouldBootstrapFromQuery = Boolean(
+      currentParams.type
+      || currentParams.id
+      || currentParams.entity
+      || currentParams.target
+      || currentParams.kind
+      || currentParams.userId
+      || currentParams.groupId
+      || currentParams.agentId
+      || currentParams.v
+      || currentParams.version
+      || currentParams.qrType
+      || currentParams.qrId
+    );
+    const initialScanResult = inlineQrResult || (
+      shouldBootstrapFromQuery
+        ? `${window.location.origin}${ROUTE_PATHS.scan}?${new URLSearchParams(currentParams).toString()}`
+        : undefined
+    );
+
     return {
       ...commonAuthProps,
       onBack: () => navigateBack(ROUTE_PATHS.discover),
+      initialScanResult,
       onScanResult: (result: string) => {
         const intent = resolveScanRouteIntent(result);
 

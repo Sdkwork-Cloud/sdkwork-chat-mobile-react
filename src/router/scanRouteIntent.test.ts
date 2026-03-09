@@ -2,6 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { resolveScanRouteIntent } from './scanRouteIntent';
 
 describe('resolveScanRouteIntent', () => {
+  it('parses standard openchat http qr protocol link', () => {
+    const intent = resolveScanRouteIntent('https://sdkwork.ai/scan?qr=1&v=1&type=user&id=u_1001&name=Alice');
+    expect(intent.type).toBe('user');
+    expect(intent.id).toBe('u_1001');
+    expect(intent.name).toBe('Alice');
+  });
+
   it('parses sdkwork scheme qr payload for user', () => {
     const intent = resolveScanRouteIntent('sdkwork://qr/entity?type=user&id=u_1001&name=Alice');
     expect(intent.type).toBe('user');
@@ -29,4 +36,3 @@ describe('resolveScanRouteIntent', () => {
     expect(intent.raw).toBe('https://example.com/random-content');
   });
 });
-

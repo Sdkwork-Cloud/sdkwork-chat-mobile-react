@@ -1,3 +1,5 @@
+import { parseOpenChatQrLink } from '@sdkwork/react-mobile-core';
+
 export type ScanRouteIntentType = 'user' | 'group' | 'agent' | 'unknown';
 
 export interface ScanRouteIntent {
@@ -137,6 +139,16 @@ export const resolveScanRouteIntent = (content: string): ScanRouteIntent => {
   const raw = normalizeText(content);
   if (!raw) return { type: 'unknown', raw: '' };
 
+  const standardLink = parseOpenChatQrLink(raw);
+  if (standardLink) {
+    return {
+      type: standardLink.type,
+      raw,
+      id: standardLink.id,
+      name: standardLink.name,
+    };
+  }
+
   const byJson = tryResolveFromJson(raw);
   if (byJson) return byJson;
 
@@ -151,4 +163,3 @@ export const resolveScanRouteIntent = (content: string): ScanRouteIntent => {
     raw,
   };
 };
-

@@ -14,6 +14,8 @@ import notification from './en-US/notification';
 import drive from './en-US/drive';
 import discover from './en-US/discover';
 import contacts from './en-US/contacts';
+import email from './en-US/email';
+import notes from './en-US/notes';
 
 export default {
   ...common,
@@ -31,4 +33,6 @@ export default {
   ...drive,
   ...discover,
   ...contacts,
+  ...email,
+  ...notes,
 };

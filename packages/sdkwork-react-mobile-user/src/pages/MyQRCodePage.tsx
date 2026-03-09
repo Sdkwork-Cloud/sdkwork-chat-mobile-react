@@ -1,5 +1,7 @@
 import React from 'react';
 import { ActionSheet, Icon, Navbar, Toast } from '@sdkwork/react-mobile-commons';
+import { buildOpenChatQrLink } from '@sdkwork/react-mobile-core';
+import * as QRCode from 'qrcode';
 import './MyQRCodePage.css';
 
 type QRStyle = 'classic' | 'dot' | 'liquid';
@@ -26,6 +28,8 @@ export const MyQRCodePage: React.FC<MyQRCodePageProps> = ({
   onBack,
 }) => {
   const [style, setStyle] = React.useState<QRStyle>('classic');
+  const [qrCodeDataUrl, setQrCodeDataUrl] = React.useState('');
+  const [isQrReady, setIsQrReady] = React.useState(false);
 
   const tr = React.useCallback(
     (key: string, fallback: string) => {
@@ -61,13 +65,44 @@ export const MyQRCodePage: React.FC<MyQRCodePageProps> = ({
       : type === 'agent'
         ? 'omni_core'
         : 'user_self';
-    const query = new URLSearchParams({
+    return buildOpenChatQrLink({
       type,
       id: entityId || defaultId,
       name: displayName,
     });
-    return `sdkwork://qr/entity?${query.toString()}`;
   }, [displayName, entityId, type]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    setIsQrReady(false);
+
+    void QRCode.toDataURL(qrPayload, {
+      width: 240,
+      margin: 2,
+      errorCorrectionLevel: 'M',
+      color: {
+        dark: '#111111',
+        light: '#FFFFFF',
+      },
+    })
+      .then((value) => {
+        if (cancelled) return;
+        setQrCodeDataUrl(value);
+      })
+      .catch((error) => {
+        console.error('[MyQRCodePage] Failed to generate QR code:', error);
+        if (cancelled) return;
+        setQrCodeDataUrl('');
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setIsQrReady(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [qrPayload]);
 
   const handleMore = async () => {
     const result = await ActionSheet.showActions({
@@ -138,19 +173,12 @@ export const MyQRCodePage: React.FC<MyQRCodePageProps> = ({
               </div>
             </div>
 
-          <div className={`my-qrcode-page__qr my-qrcode-page__qr--${style}`}>
-            <div className="my-qrcode-page__finder my-qrcode-page__finder--tl">
-              <span />
-            </div>
-            <div className="my-qrcode-page__finder my-qrcode-page__finder--tr">
-              <span />
-            </div>
-            <div className="my-qrcode-page__finder my-qrcode-page__finder--bl">
-              <span />
-            </div>
-            <div className="my-qrcode-page__center">
-              <div className="my-qrcode-page__center-avatar" style={{ backgroundImage: `url(${avatarUrl})` }} />
-            </div>
+          <div className={`my-qrcode-page__qr-shell my-qrcode-page__qr-shell--${style}`}>
+            {isQrReady && qrCodeDataUrl ? (
+              <img src={qrCodeDataUrl} alt={title} className="my-qrcode-page__qr-image" aria-label="qrcode-image" />
+            ) : (
+              <div className="my-qrcode-page__qr-loading">{tr('qrcode.generating', 'Generating QR...')}</div>
+            )}
           </div>
 
           <div className="my-qrcode-page__desc">{desc}</div>

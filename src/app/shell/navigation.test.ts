@@ -51,6 +51,12 @@ describe('resolveTabByPath', () => {
       '/communication',
       '/look',
       '/media',
+      '/email',
+      '/email/thread',
+      '/email/compose',
+      '/notes',
+      '/notes/doc',
+      '/notes/create',
     ];
 
     for (const path of discoverRoutes) {

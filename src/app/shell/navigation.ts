@@ -74,6 +74,8 @@ const TAB_ROUTE_RULES: ReadonlyArray<TabRouteRule> = [
       matchesPathSegment(path, ROUTE_PATHS.category) ||
       matchesPathSegment(path, ROUTE_PATHS.product) ||
       matchesPathSegment(path, ROUTE_PATHS.drive) ||
+      matchesPathSegment(path, ROUTE_PATHS.email) ||
+      matchesPathSegment(path, ROUTE_PATHS.notes) ||
       matchesPathSegment(path, ROUTE_PATHS.communication),
   },
   {

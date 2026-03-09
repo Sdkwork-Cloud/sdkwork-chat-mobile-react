@@ -10,6 +10,7 @@ import { chatService } from '../services/ChatService';
 import { useChatStoreActions, useChatStoreState } from '../stores/chatStore';
 import type { Message } from '../types';
 import { resolveChatBackground } from './chatBackgroundResolver';
+import { resolveChatConfig } from './chatConfigResolver';
 import './ChatPage.css';
 
 const fileToBase64 = (file: File): Promise<string> =>
@@ -176,13 +177,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({
     [handleSend]
   );
 
-  const chatConfig = useMemo(
-    () => ({
-      showUserAvatar: session.sessionConfig?.showAvatar ?? false,
-      showModelAvatar: session.sessionConfig?.showAvatar ?? false,
-    }),
-    [session.sessionConfig?.showAvatar]
-  );
+  const chatConfig = useMemo(() => resolveChatConfig(session), [session?.sessionConfig?.showAvatar]);
 
   const rightNav = (
     <div className="chat-page__right-nav">

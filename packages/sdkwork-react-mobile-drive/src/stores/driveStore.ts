@@ -49,6 +49,7 @@ export const useDriveStore = create<DriveStore>((set, get) => ({
       await get().loadStats();
     } catch (error) {
       set({ error: (error as Error).message });
+      throw error;
     }
   },
 

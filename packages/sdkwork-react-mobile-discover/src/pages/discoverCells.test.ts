@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildServiceCellGroups,
+  buildDiscoverFeaturedCells,
   DISCOVER_DEFAULTS,
   DISCOVER_CELL_DIVIDER_INSET,
   DISCOVER_CELL_MIN_HEIGHT,
@@ -24,11 +25,28 @@ describe('DISCOVER_DEFAULTS', () => {
     expect(routeByKey.get('nearby')).toBe('/nearby');
     expect(routeByKey.get('search-entry')).toBe('/search');
     expect(routeByKey.get('drive')).toBe('/drive');
+    expect(routeByKey.get('email')).toBe('/email');
+    expect(routeByKey.get('notes')).toBe('/notes');
     expect(routeByKey.get('shop')).toBe('/shopping');
     expect(routeByKey.get('order-center')).toBe('/order-center');
     expect(routeByKey.get('miniapp')).toBe('/app');
     expect(routeByKey.get('look')).toBe('/look');
     expect(routeByKey.get('listen')).toBe('/media');
+  });
+
+  it('marks drive, email, notes, and order center as discover featured workspaces', () => {
+    const featuredKeys = buildDiscoverFeaturedCells(DISCOVER_DEFAULTS).map((item) => item.key);
+
+    expect(featuredKeys).toEqual(['order-center', 'drive', 'email', 'notes']);
+
+    for (const key of featuredKeys) {
+      const item = DISCOVER_DEFAULTS.find((entry) => entry.key === key);
+      expect(item?.featured).toBe(true);
+      expect(item?.subtitleKey).toBeTruthy();
+      expect(item?.fallbackSubtitle).toBeTruthy();
+      expect(item?.badgeKey).toBeTruthy();
+      expect(item?.fallbackBadge).toBeTruthy();
+    }
   });
 
   it('uses a premium cell height baseline for discover list rhythm', () => {

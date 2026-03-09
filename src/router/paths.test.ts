@@ -19,6 +19,13 @@ describe('ROUTE_PATHS', () => {
       }
     }
   });
+
+  it('keeps email and notes detail routes under feature namespaces', () => {
+    expect(ROUTE_PATHS.emailThread.startsWith(`${ROUTE_PATHS.email}/`)).toBe(true);
+    expect(ROUTE_PATHS.emailCompose.startsWith(`${ROUTE_PATHS.email}/`)).toBe(true);
+    expect(ROUTE_PATHS.notesDoc.startsWith(`${ROUTE_PATHS.notes}/`)).toBe(true);
+    expect(ROUTE_PATHS.notesCreate.startsWith(`${ROUTE_PATHS.notes}/`)).toBe(true);
+  });
 });
 
 describe('ROUTE_PREFIXES', () => {

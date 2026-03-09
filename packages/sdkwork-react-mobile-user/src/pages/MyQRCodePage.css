@@ -66,92 +66,49 @@
   font-size: 13px;
 }
 
-.my-qrcode-page__qr {
-  position: relative;
+.my-qrcode-page__qr-shell {
   width: 240px;
-  height: 240px;
+  min-height: 240px;
   margin: 0 auto;
-  background-color: #fff;
-  overflow: hidden;
-}
-
-.my-qrcode-page__qr--classic {
-  background-image:
-    linear-gradient(90deg, #111 50%, transparent 50%),
-    linear-gradient(#111 50%, transparent 50%);
-  background-size: 12px 12px;
-  opacity: 0.86;
-}
-
-.my-qrcode-page__qr--dot {
-  background-image: radial-gradient(#111 2.2px, transparent 2.2px);
-  background-size: 9px 9px;
-  opacity: 0.88;
-}
-
-.my-qrcode-page__qr--liquid {
-  background-image: radial-gradient(circle, #111 38%, transparent 40%);
-  background-size: 16px 16px;
-  opacity: 0.85;
-}
-
-.my-qrcode-page__finder {
-  position: absolute;
-  width: 42px;
-  height: 42px;
-  border: 4px solid #111;
   background: #fff;
+  border-radius: 14px;
+  padding: 12px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.my-qrcode-page__finder span {
-  width: 20px;
-  height: 20px;
-  background: #111;
+.my-qrcode-page__qr-shell--classic {
+  border: 1px solid rgba(17, 17, 17, 0.16);
 }
 
-.my-qrcode-page__finder--tl {
-  top: 0;
-  left: 0;
+.my-qrcode-page__qr-shell--dot {
+  border: 1px solid rgba(23, 29, 42, 0.22);
+  box-shadow: 0 6px 14px rgba(18, 28, 48, 0.08);
 }
 
-.my-qrcode-page__finder--tr {
-  top: 0;
-  right: 0;
+.my-qrcode-page__qr-shell--liquid {
+  border: 1px solid rgba(16, 24, 40, 0.2);
+  box-shadow: 0 10px 18px rgba(18, 28, 48, 0.12);
 }
 
-.my-qrcode-page__finder--bl {
-  bottom: 0;
-  left: 0;
+.my-qrcode-page__qr-image {
+  width: 216px;
+  height: 216px;
+  display: block;
 }
 
-.my-qrcode-page__qr--liquid .my-qrcode-page__finder,
-.my-qrcode-page__qr--liquid .my-qrcode-page__finder span {
-  border-radius: 50%;
-}
-
-.my-qrcode-page__center {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 42px;
-  height: 42px;
-  background: #fff;
-  border-radius: 6px;
-  display: flex;
+.my-qrcode-page__qr-loading {
+  width: 216px;
+  height: 216px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-}
-
-.my-qrcode-page__center-avatar {
-  width: 32px;
-  height: 32px;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  border-radius: 10px;
+  background: rgba(120, 132, 155, 0.12);
+  color: var(--text-secondary);
+  font-size: 12px;
 }
 
 .my-qrcode-page__desc {
