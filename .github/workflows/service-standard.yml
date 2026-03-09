@@ -31,3 +31,6 @@ jobs:
 
       - name: Validate service standard
         run: pnpm validate:service-standard
+
+      - name: Validate capacitor baseline
+        run: pnpm validate:capacitor:baseline

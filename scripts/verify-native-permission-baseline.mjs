@@ -7,6 +7,7 @@ import {
   IOS_BACKGROUND_MODES,
   IOS_PERMISSION_ENTRIES,
 } from './native-permission-baseline.mjs';
+import { validateNativePermissionBaselineSchema } from './native-permission-schema.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,6 +15,8 @@ const repoRoot = path.resolve(__dirname, '..');
 
 const androidTemplatePath = path.join(repoRoot, 'config', 'android', 'AndroidManifest.permissions.template.xml');
 const iosTemplatePath = path.join(repoRoot, 'config', 'ios', 'Info.plist.permissions.template.xml');
+const androidManifestPath = path.join(repoRoot, 'android', 'app', 'src', 'main', 'AndroidManifest.xml');
+const iosInfoPlistPath = path.join(repoRoot, 'ios', 'App', 'App', 'Info.plist');
 const syncScriptPath = path.join(repoRoot, 'scripts', 'sync-native-permissions.mjs');
 const auditScriptPath = path.join(repoRoot, 'scripts', 'audit-capacitor-capabilities.mjs');
 
@@ -53,6 +56,7 @@ const iosBackgroundBlocks = [
 ];
 
 let hasFailure = false;
+const schemaResult = validateNativePermissionBaselineSchema();
 
 hasFailure = printMissing('android template features', missingEntries(androidTemplate, ANDROID_FEATURE_LINES)) || hasFailure;
 hasFailure = printMissing('android template permissions', missingEntries(androidTemplate, ANDROID_PERMISSION_LINES)) || hasFailure;
@@ -64,6 +68,37 @@ hasFailure =
 hasFailure =
   printMissing('audit script shared baseline import', missingEntries(auditScript, ["from './native-permission-baseline.mjs'"]))
   || hasFailure;
+
+if (fs.existsSync(androidManifestPath)) {
+  const androidManifest = read(androidManifestPath);
+  hasFailure =
+    printMissing('android native manifest features', missingEntries(androidManifest, ANDROID_FEATURE_LINES)) || hasFailure;
+  hasFailure =
+    printMissing('android native manifest permissions', missingEntries(androidManifest, ANDROID_PERMISSION_LINES))
+    || hasFailure;
+} else {
+  console.log('[verify-permissions] android native manifest: skipped (not initialized)');
+}
+
+if (fs.existsSync(iosInfoPlistPath)) {
+  const iosInfoPlist = read(iosInfoPlistPath);
+  hasFailure = printMissing('ios native Info.plist permission entries', missingEntries(iosInfoPlist, iosPermissionBlocks))
+    || hasFailure;
+  hasFailure = printMissing('ios native Info.plist background modes', missingEntries(iosInfoPlist, iosBackgroundBlocks))
+    || hasFailure;
+} else {
+  console.log('[verify-permissions] ios native Info.plist: skipped (not initialized)');
+}
+
+if (schemaResult.errors.length) {
+  hasFailure = true;
+  console.error(`[verify-permissions] schema validation: ${schemaResult.errors.length} error(s)`);
+  for (const error of schemaResult.errors) {
+    console.error(`  - ${error}`);
+  }
+} else {
+  console.log('[verify-permissions] schema validation: ok');
+}
 
 if (hasFailure) {
   process.exit(1);
