@@ -318,4 +318,58 @@ describe('platform runtime hooks', () => {
       emitted.some((item) => item.event === PLATFORM_RUNTIME_HOOK_EVENTS.PAYMENT_RETRY_DROPPED),
     ).toBe(true);
   });
+
+  it('defers push retry during backoff window after flush failure', async () => {
+    vi.useFakeTimers();
+    try {
+      const now = new Date('2026-03-09T00:00:00.000Z');
+      vi.setSystemTime(now);
+
+      const { platform, storageMap } = createRuntimeHookPlatform('auth-token');
+      const emitted: Array<{ event: string; payload: unknown }> = [];
+      const registerDevice = vi
+        .fn()
+        .mockRejectedValueOnce(new Error('network timeout'))
+        .mockRejectedValueOnce(new Error('gateway timeout'))
+        .mockResolvedValueOnce({ data: { id: 'device-record-3' } });
+      const clientResolver = vi.fn().mockResolvedValue({
+        notification: { registerDevice },
+        orders: { getOrderStatus: vi.fn() },
+      });
+
+      const options = {
+        platform,
+        clientResolver,
+        retryBackoffBaseMs: 60_000,
+        retryBackoffMaxMs: 60_000,
+        emit: (event: string, payload: unknown) => emitted.push({ event, payload }),
+      };
+      const hooks = createDefaultPlatformRuntimeHooks(options);
+
+      await expect(
+        hooks.syncPushToken?.({
+          token: 'push-token-backoff',
+          previousToken: null,
+          source: 'registration',
+        }),
+      ).rejects.toThrow('network timeout');
+
+      await flushDefaultPlatformRuntimeHookQueue(options);
+      const queuedAfterFailedFlush = storageMap.get('sys_platform_push_retry_queue_v1') as
+        | Array<{ nextRetryAt?: number }>
+        | undefined;
+      expect(queuedAfterFailedFlush?.[0]?.nextRetryAt).toBe(now.getTime() + 60_000);
+
+      const skippedFlushResult = await flushDefaultPlatformRuntimeHookQueue(options);
+      expect(skippedFlushResult.push).toBe(0);
+      expect(registerDevice).toHaveBeenCalledTimes(2);
+
+      vi.setSystemTime(new Date(now.getTime() + 60_000));
+      const resumedFlushResult = await flushDefaultPlatformRuntimeHookQueue(options);
+      expect(resumedFlushResult.push).toBe(1);
+      expect(registerDevice).toHaveBeenCalledTimes(3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
