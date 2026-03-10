@@ -317,7 +317,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             <Input
               placeholder={tr('auth_username_placeholder', 'Username')}
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
               variant="outline"
               style={{ height: '52px', background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '14px' }}
               prefix={<Icon name="user" size={18} color="rgba(255,255,255,0.3)" />}
@@ -326,7 +326,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               placeholder={tr('auth_password_placeholder', 'Password')}
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
               variant="outline"
               style={{ height: '52px', background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '14px' }}
               prefix={<Icon name="lock" size={18} color="rgba(255,255,255,0.3)" />}

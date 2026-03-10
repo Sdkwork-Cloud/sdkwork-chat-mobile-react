@@ -12,6 +12,7 @@
   "peerDependencies": {
     "react": "catalog:",
     "react-dom": "catalog:",
+    "@sdkwork/react-mobile-commons": "workspace:*",
     "@sdkwork/react-mobile-core": "workspace:*",
     "zustand": "catalog:",
     "react-i18next": "catalog:",
