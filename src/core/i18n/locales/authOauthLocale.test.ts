@@ -9,6 +9,9 @@ describe('auth oauth locale coverage', () => {
     expect(enUS.auth_oauth_recommended).toBeTruthy();
     expect(enUS.auth_oauth_mode_redirect).toBeTruthy();
     expect(enUS.auth_oauth_mode_native_hint).toBeTruthy();
+    expect(enUS.auth_oauth_callback_success_title).toBeTruthy();
+    expect(enUS.auth_oauth_callback_continue).toBeTruthy();
+    expect(enUS.auth_oauth_callback_detail_label).toBeTruthy();
     expect(enUS.auth_oauth_callback_title).toBeTruthy();
     expect(enUS.auth_oauth_callback_invalid).toBeTruthy();
   });
@@ -19,6 +22,9 @@ describe('auth oauth locale coverage', () => {
     expect(zhCN.auth_oauth_recommended).toBeTruthy();
     expect(zhCN.auth_oauth_mode_redirect).toBeTruthy();
     expect(zhCN.auth_oauth_mode_native_hint).toBeTruthy();
+    expect(zhCN.auth_oauth_callback_success_title).toBeTruthy();
+    expect(zhCN.auth_oauth_callback_continue).toBeTruthy();
+    expect(zhCN.auth_oauth_callback_detail_label).toBeTruthy();
     expect(zhCN.auth_oauth_callback_title).toBeTruthy();
     expect(zhCN.auth_oauth_callback_invalid).toBeTruthy();
   });
