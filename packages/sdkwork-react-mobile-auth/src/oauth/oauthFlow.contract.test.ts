@@ -13,6 +13,7 @@ import {
   parseOAuthCallbackParams,
   resolveOAuthInteractionMode,
 } from './oauthFlow';
+import { executeOAuthAuthorization } from './oauthAuthorization';
 import type { OAuthInteractionRuntime } from './oauthTypes';
 
 const desktopWebRuntime: OAuthInteractionRuntime = {
@@ -107,6 +108,32 @@ describe('regional oauth protocol', () => {
       modeLabel: 'Quick popup',
       hint: 'Opens a secure sign-in window',
       isRecommended: true,
+    });
+  });
+
+  it('can execute native authorization without redirect for apple on ios native', async () => {
+    const openPopup = async () => ({ code: 'popup', state: 'popup' });
+    const beginRedirect = async () => undefined;
+    const openNative = async () => ({ code: 'native-code', state: 'native-state' });
+
+    await expect(
+      executeOAuthAuthorization({
+        mode: resolveOAuthInteractionMode(getOAuthProviderById('apple'), {
+          platform: 'native',
+          isNative: true,
+          isIOS: true,
+          isAndroid: false,
+          prefersRedirect: false,
+        }),
+        authUrl: 'https://example.com/native',
+        popupExecutor: openPopup,
+        redirectExecutor: beginRedirect,
+        nativeExecutor: openNative,
+        provider: 'apple',
+      })
+    ).resolves.toMatchObject({
+      code: 'native-code',
+      transport: 'native',
     });
   });
 

@@ -15,6 +15,8 @@ import type {
   VerifyResultVO,
 } from '@sdkwork/app-sdk';
 import type { SocialLoginRequest, SocialProvider } from '../types';
+import { requestNativeSocialAuthorization } from '../bridge';
+import { executeOAuthAuthorization } from '../oauth/oauthAuthorization';
 import { getOAuthProviderById } from '../oauth/oauthProviders';
 import {
   resolveOAuthInteractionMode,
@@ -454,14 +456,22 @@ export const appAuthService: IAppAuthService = {
       }
       const runtime = resolveOAuthInteractionRuntime();
       const mode = resolveOAuthInteractionMode(providerDescriptor, runtime);
+      const authResult = await executeOAuthAuthorization({
+        mode,
+        authUrl,
+        redirectUri,
+        provider: input.provider,
+        popupExecutor: openSocialOAuthPopup,
+        redirectExecutor: beginOAuthRedirect,
+        nativeExecutor: requestNativeSocialAuthorization,
+      });
 
-      if (mode === 'redirect' || mode === 'native') {
-        return beginOAuthRedirect(authUrl);
+      if (!authResult.code) {
+        return new Promise<never>(() => undefined);
       }
 
-      const popupResult = await openSocialOAuthPopup(authUrl, redirectUri);
-      code = popupResult.code;
-      state = popupResult.state || state;
+      code = authResult.code;
+      state = authResult.state || state;
     }
 
     const oauthLoginResult = await client.auth.oauthLogin({

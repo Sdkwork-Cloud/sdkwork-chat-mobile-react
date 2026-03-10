@@ -39,5 +39,6 @@ export { authTranslations } from './i18n';
 export {
   initAuthBridge,
   isBiometricAvailable,
+  requestNativeSocialAuthorization,
   requestBiometricAuth,
 } from './bridge';
