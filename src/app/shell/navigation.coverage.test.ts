@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const ROUTER_SOURCE_PATH = path.join(__dirname, '../../router/index.tsx');
-const PUBLIC_ROUTES = new Set(['/login', '/register', '/forgot-password']);
+const PUBLIC_ROUTES = new Set(['/login', '/register', '/forgot-password', '/auth/callback']);
 
 const extractRoutePaths = (): string[] => {
   const source = fs.readFileSync(ROUTER_SOURCE_PATH, 'utf8');

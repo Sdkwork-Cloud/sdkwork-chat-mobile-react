@@ -1,4 +1,5 @@
 import type { BaseEntity, Result } from '@sdkwork/react-mobile-core';
+import type { OAuthProviderId } from '../oauth/oauthTypes';
 
 /**
  * 用户账户信息
@@ -73,7 +74,7 @@ export interface PasswordResetVerifyInfo {
 /**
  * 社交登录提供者
  */
-export type SocialProvider = 'github' | 'google' | 'wechat' | 'apple';
+export type SocialProvider = OAuthProviderId;
 
 /**
  * 社交登录凭证
@@ -82,6 +83,16 @@ export interface SocialCredentials {
   provider: SocialProvider;
   code: string;
   state?: string;
+}
+
+export interface SocialLoginRequest {
+  provider: SocialProvider;
+  code?: string;
+  state?: string;
+  redirectUri?: string;
+  scope?: string;
+  deviceId?: string;
+  deviceType?: 'ios' | 'android' | 'web';
 }
 
 /**
@@ -131,7 +142,7 @@ export interface IAuthService {
   requestPasswordReset(request: PasswordResetRequest): Promise<Result<void>>;
   verifyPasswordResetCode(info: PasswordResetVerifyInfo): Promise<Result<void>>;
   resetPassword(info: PasswordResetInfo): Promise<Result<void>>;
-  loginWithSocial(provider: SocialProvider): Promise<Result<AuthResponse>>;
+  loginWithSocial(input: SocialLoginRequest): Promise<Result<AuthResponse>>;
   logout(): Promise<void>;
   checkSession(): Promise<Result<AuthResponse>>;
   refreshToken(): Promise<Result<string>>;

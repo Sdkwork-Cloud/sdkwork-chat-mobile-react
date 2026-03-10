@@ -2,6 +2,7 @@ export const ROUTE_PATHS = {
   login: '/login',
   register: '/register',
   forgotPassword: '/forgot-password',
+  authCallback: '/auth/callback',
 
   root: '/',
   contacts: '/contacts',

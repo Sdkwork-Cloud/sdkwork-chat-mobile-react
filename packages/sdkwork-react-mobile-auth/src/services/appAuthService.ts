@@ -14,7 +14,12 @@ import type {
   VerifyCodeSendForm,
   VerifyResultVO,
 } from '@sdkwork/app-sdk';
-import type { SocialProvider } from '../types';
+import type { SocialLoginRequest, SocialProvider } from '../types';
+import { getOAuthProviderById } from '../oauth/oauthProviders';
+import {
+  resolveOAuthInteractionMode,
+  resolveOAuthInteractionRuntime,
+} from '../oauth/oauthFlow';
 import {
   applyAppSdkSessionTokens,
   clearAppSdkSessionTokens,
@@ -68,15 +73,7 @@ export interface AppAuthPasswordResetInput {
   confirmPassword: string;
 }
 
-export interface AppAuthSocialLoginInput {
-  provider: SocialProvider;
-  code?: string;
-  state?: string;
-  redirectUri?: string;
-  scope?: string;
-  deviceId?: string;
-  deviceType?: 'ios' | 'android' | 'web';
-}
+export interface AppAuthSocialLoginInput extends SocialLoginRequest {}
 
 export interface AppAuthSession {
   userId: string;
@@ -139,6 +136,7 @@ function mapSocialProvider(provider: SocialProvider): OAuthAuthUrlForm['provider
   if (provider === 'github') return 'GITHUB';
   if (provider === 'google') return 'GOOGLE';
   if (provider === 'wechat') return 'WECHAT';
+  if (provider === 'qq') return 'QQ';
   if (provider === 'apple') return 'APPLE';
   throw new Error(`Unsupported social provider: ${provider}`);
 }
@@ -239,6 +237,14 @@ async function openSocialOAuthPopup(
       reject(new Error('OAuth login timeout'));
     }, timeoutMs);
   });
+}
+
+function beginOAuthRedirect(authUrl: string): Promise<never> {
+  if (typeof window === 'undefined') {
+    throw new Error('OAuth redirect requires browser runtime');
+  }
+  window.location.assign(authUrl);
+  return new Promise<never>(() => undefined);
 }
 
 function mapUserSessionFields(
@@ -427,6 +433,7 @@ export const appAuthService: IAppAuthService = {
 
   async loginWithSocial(input: AppAuthSocialLoginInput): Promise<AppAuthSession> {
     const client = getAppSdkClientWithSession();
+    const providerDescriptor = getOAuthProviderById(input.provider);
     const provider = mapSocialProvider(input.provider);
     const redirectUri = input.redirectUri || resolveDefaultRedirectUri();
 
@@ -445,6 +452,13 @@ export const appAuthService: IAppAuthService = {
       if (!authUrl) {
         throw new Error('OAuth authorization URL is empty');
       }
+      const runtime = resolveOAuthInteractionRuntime();
+      const mode = resolveOAuthInteractionMode(providerDescriptor, runtime);
+
+      if (mode === 'redirect' || mode === 'native') {
+        return beginOAuthRedirect(authUrl);
+      }
+
       const popupResult = await openSocialOAuthPopup(authUrl, redirectUri);
       code = popupResult.code;
       state = popupResult.state || state;

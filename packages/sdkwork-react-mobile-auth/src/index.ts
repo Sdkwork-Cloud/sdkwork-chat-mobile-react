@@ -20,7 +20,7 @@ export { useAuthStore } from './stores/authStore';
 export { useAuth, useCurrentUser, useIsAuthenticated, useAuthToken } from './hooks/useAuth';
 
 // Pages
-export { LoginPage, RegisterPage, ForgotPasswordPage } from './pages';
+export { LoginPage, OAuthCallbackPage, RegisterPage, ForgotPasswordPage } from './pages';
 
 // Utils
 export {

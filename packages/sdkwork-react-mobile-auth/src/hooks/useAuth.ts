@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
-import type { SocialProvider } from '../types';
+import type { SocialLoginRequest, SocialProvider } from '../types';
 
 export function useAuth() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -38,8 +38,8 @@ export function useAuth() {
   );
 
   const handleSocialLogin = useCallback(
-    async (provider: SocialProvider) => {
-      return loginWithSocial(provider);
+    async (input: SocialLoginRequest | SocialProvider) => {
+      return loginWithSocial(input);
     },
     [loginWithSocial]
   );

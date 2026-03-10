@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { AuthState, SocialProvider } from '../types';
+import type { AuthState, SocialLoginRequest, SocialProvider } from '../types';
 import { appAuthService } from '../services/appAuthService';
 
 export interface AuthStore extends AuthState {
@@ -10,7 +10,7 @@ export interface AuthStore extends AuthState {
   requestPasswordReset: (account: string, channel?: 'EMAIL' | 'SMS') => Promise<boolean>;
   verifyPasswordResetCode: (account: string, code: string, channel?: 'EMAIL' | 'SMS') => Promise<boolean>;
   resetPassword: (account: string, code: string, newPassword: string, confirmPassword: string) => Promise<boolean>;
-  loginWithSocial: (provider: SocialProvider) => Promise<boolean>;
+  loginWithSocial: (input: SocialLoginRequest | SocialProvider) => Promise<boolean>;
   logout: () => Promise<void>;
   checkSession: () => Promise<boolean>;
   refreshToken: () => Promise<boolean>;
@@ -152,10 +152,11 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       // Social login action
-      loginWithSocial: async (provider: SocialProvider) => {
+      loginWithSocial: async (input: SocialLoginRequest | SocialProvider) => {
         set({ isLoading: true, error: null });
         try {
-          const session = await appAuthService.loginWithSocial({ provider });
+          const request = typeof input === 'string' ? { provider: input } : input;
+          const session = await appAuthService.loginWithSocial(request);
           const user = {
             id: session.userId,
             username: session.username,

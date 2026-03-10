@@ -57,6 +57,7 @@ const CreationDetailPage = lazyExport(() => import('@sdkwork/react-mobile-creati
 const CreationSearchPage = lazyExport(() => import('@sdkwork/react-mobile-creation'), (m) => m.CreationSearchPage);
 
 const LoginPage = lazyExport(() => import('@sdkwork/react-mobile-auth'), (m) => m.LoginPage);
+const OAuthCallbackPage = lazyExport(() => import('@sdkwork/react-mobile-auth'), (m) => m.OAuthCallbackPage);
 const RegisterPage = lazyExport(() => import('@sdkwork/react-mobile-auth'), (m) => m.RegisterPage);
 const ForgotPasswordPage = lazyExport(() => import('@sdkwork/react-mobile-auth'), (m) => m.ForgotPasswordPage);
 
@@ -215,6 +216,7 @@ const routes: Record<RoutePath, RouteConfig> = {
   [ROUTE_PATHS.login]: { component: LoginPage, useLayout: false, public: true },
   [ROUTE_PATHS.register]: { component: RegisterPage, useLayout: false, public: true },
   [ROUTE_PATHS.forgotPassword]: { component: ForgotPasswordPage, useLayout: false, public: true },
+  [ROUTE_PATHS.authCallback]: { component: OAuthCallbackPage, useLayout: false, public: true },
 
   [ROUTE_PATHS.root]: { component: ConversationListPage, showTabbar: true },
   [ROUTE_PATHS.contacts]: { component: ContactsPage, showTabbar: true },
@@ -611,10 +613,12 @@ const buildRouteProps = (
   path: RoutePath,
   t: (key: string) => string,
   logout?: () => Promise<void>,
-  setLocale?: (locale: 'zh-CN' | 'en-US') => void
+  setLocale?: (locale: 'zh-CN' | 'en-US') => void,
+  locale?: 'zh-CN' | 'en-US'
 ) => {
   const commonAuthProps = {
     t,
+    locale,
     onLoginSuccess: () => navigate(ROUTE_PATHS.root),
     onForgotPasswordClick: () => navigate(ROUTE_PATHS.forgotPassword),
     onRegisterClick: () => navigate(ROUTE_PATHS.register),
@@ -640,6 +644,13 @@ const buildRouteProps = (
   const profileBackTarget = accountCenterFallback === ROUTE_PATHS.accountSecurity
     ? ROUTE_PATHS.accountSecurity
     : ROUTE_PATHS.me;
+
+  if (path === ROUTE_PATHS.authCallback) {
+    return {
+      ...commonAuthProps,
+      onSuccess: () => navigate(ROUTE_PATHS.root),
+    };
+  }
 
   if (path === ROUTE_PATHS.chat) {
     return {
@@ -1754,7 +1765,7 @@ export const Router: React.FC = () => {
     search: window.location.search,
   }));
   const { isAuthenticated, isLoading, logout } = useAuth();
-  const { t, setLocale } = useTranslation();
+  const { t, setLocale, locale } = useTranslation();
 
   useEffect(() => {
     const syncRouteState = () => {
@@ -1832,8 +1843,8 @@ export const Router: React.FC = () => {
   }, [path, route.showTabbar, locationState.search]);
   const disableLayoutBottomSafeArea = path === ROUTE_PATHS.chat;
   const routeProps = useMemo(
-    () => buildRouteProps(path, t, logout, setLocale),
-    [path, locationState.search, t, logout, setLocale]
+    () => buildRouteProps(path, t, logout, setLocale, locale),
+    [path, locationState.search, t, logout, setLocale, locale]
   );
   const pageProps = useMemo(
     () => (shouldShowTabbar ? { ...routeProps, showBack: false } : routeProps),
