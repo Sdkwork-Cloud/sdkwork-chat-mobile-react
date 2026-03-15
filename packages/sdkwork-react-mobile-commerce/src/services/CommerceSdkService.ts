@@ -370,10 +370,10 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
     try {
       const client = await this.getClient();
       const result = params?.keyword
-        ? await client.products.search(query) as SdkApiResult<unknown>
+        ? await client.product.searchProducts(query) as SdkApiResult<unknown>
         : params?.categoryId
-          ? await client.products.getProductsByCategory(params.categoryId, query) as SdkApiResult<unknown>
-          : await client.products.getProducts(query) as SdkApiResult<unknown>;
+          ? await client.product.getProductsByCategory(params.categoryId, query) as SdkApiResult<unknown>
+          : await client.product.getProducts(query) as SdkApiResult<unknown>;
       if (!this.isSuccessCode(result.code)) return this.failBusiness(result, 'Fetch products failed');
       const page = this.extractPage<Record<string, unknown>>(result.data);
       return { products: page.list.map((item) => this.mapProduct(item)).filter((item): item is Product => item !== null), total: page.total };
@@ -387,7 +387,7 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
     this.setLastError(null);
     try {
       const client = await this.getClient();
-      const result = await client.products.getProductDetail(id) as SdkApiResult<unknown>;
+      const result = await client.product.getProductDetail(id) as SdkApiResult<unknown>;
       if (!this.isSuccessCode(result.code)) return this.failBusiness(result, 'Fetch product detail failed');
       return this.mapProduct(this.asRecord(result.data));
     } catch (error) {
@@ -506,7 +506,7 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
     this.setLastError(null);
     try {
       const client = await this.getClient();
-      const result = await client.orders.listOrders({
+      const result = await client.order.listOrders({
         page: params?.page,
         pageNo: params?.page,
         pageSize: params?.pageSize,
@@ -540,7 +540,7 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
     }
     try {
       const client = await this.getClient();
-      const result = await client.orders.createOrder({
+      const result = await client.order.createOrder({
         orderType: 'NORMAL',
         productId: String(first.productId),
         quantity: params.items.reduce((sum, item) => sum + Math.max(1, this.toNumber(item.quantity, 1)), 0),
@@ -570,7 +570,7 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
     this.setLastError(null);
     try {
       const client = await this.getClient();
-      const result = await client.orders.getOrderDetail(orderId) as SdkApiResult<unknown>;
+      const result = await client.order.getOrderDetail(orderId) as SdkApiResult<unknown>;
       if (!this.isSuccessCode(result.code)) return this.failBusiness(result, 'Fetch order detail failed');
       return this.mapOrder(this.asRecord(result.data));
     } catch (error) {
@@ -583,7 +583,7 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
     this.setLastError(null);
     try {
       const client = await this.getClient();
-      const result = await client.orders.payOrder(orderId, { paymentMethod: this.toSdkPaymentMethod(method) }) as SdkApiResult<unknown>;
+      const result = await client.order.pay(orderId, { paymentMethod: this.toSdkPaymentMethod(method) }) as SdkApiResult<unknown>;
       if (!this.isSuccessCode(result.code)) return this.failBusiness(result, 'Pay order failed');
       return this.getOrderDetail(orderId);
     } catch (error) {
@@ -594,7 +594,7 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
   async cancelOrder(orderId: string, reason?: string): Promise<Order | null> {
     return this.simpleOrderMutation(
       orderId,
-      (client) => client.orders.cancelOrder(orderId, { reason: reason || 'user_cancelled' }) as Promise<SdkApiResult<unknown>>,
+      (client) => client.order.cancel(orderId, { reason: reason || 'user_cancelled' }) as Promise<SdkApiResult<unknown>>,
       'Cancel order failed',
     );
   }
@@ -602,7 +602,7 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
   async confirmOrder(orderId: string): Promise<Order | null> {
     return this.simpleOrderMutation(
       orderId,
-      (client) => client.orders.confirmReceipt(orderId) as Promise<SdkApiResult<unknown>>,
+      (client) => client.order.confirmReceipt(orderId) as Promise<SdkApiResult<unknown>>,
       'Confirm order failed',
     );
   }
@@ -610,7 +610,7 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
   async refundOrder(orderId: string, reason: string): Promise<Order | null> {
     return this.simpleOrderMutation(
       orderId,
-      (client) => client.orders.applyRefund(orderId, { reason: reason || 'user_refund_request' }) as Promise<SdkApiResult<unknown>>,
+      (client) => client.order.applyRefund(orderId, { reason: reason || 'user_refund_request' }) as Promise<SdkApiResult<unknown>>,
       'Refund order failed',
     );
   }
@@ -637,7 +637,7 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
     this.setLastError(null);
     try {
       const client = await this.getClient();
-      const result = await client.orders.getOrderStatistics() as SdkApiResult<unknown>;
+      const result = await client.order.getOrderStatistics() as SdkApiResult<unknown>;
       if (!this.isSuccessCode(result.code)) return this.failBusiness(result, 'Fetch order statistics failed');
       const data = this.asRecord(result.data);
       return {

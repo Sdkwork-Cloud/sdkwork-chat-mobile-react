@@ -272,7 +272,7 @@ class DriveSdkServiceImpl implements IDriveSdkService {
 
     try {
       const client = await this.getClient();
-      const result = await client.fileSystem.getPrimaryDisk() as SdkApiResult<SdkFileSystemDiskVO>;
+      const result = await client.filesystem.getPrimaryDisk() as SdkApiResult<SdkFileSystemDiskVO>;
       if (!this.isSuccessCode(result.code)) {
         this.deps.logger.warn(TAG, 'SDK getStats business failure', { code: result.code, message: result.msg });
         return null;

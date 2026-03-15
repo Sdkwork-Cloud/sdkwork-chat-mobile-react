@@ -108,7 +108,7 @@ class SettingsSdkServiceImpl implements ISettingsSdkService {
     try {
       const client = await this.getClient();
 
-      const uiResult = await client.settings.getUi() as SdkApiResult<unknown>;
+      const uiResult = await client.setting.getUi() as SdkApiResult<unknown>;
       if (this.isSuccessCode(uiResult.code)) {
         const mapped = this.mapRemoteConfig(uiResult.data);
         if (mapped) return mapped;
@@ -133,9 +133,9 @@ class SettingsSdkServiceImpl implements ISettingsSdkService {
       const client = await this.getClient();
 
       const uiBody = this.buildUiUpdateForm(body);
-      const uiResult = await client.settings.updateUi(uiBody) as SdkApiResult<unknown>;
+      const uiResult = await client.setting.updateUi(uiBody) as SdkApiResult<unknown>;
       if (this.isSuccessCode(uiResult.code)) {
-        const latestUi = await client.settings.getUi() as SdkApiResult<unknown>;
+        const latestUi = await client.setting.getUi() as SdkApiResult<unknown>;
         if (this.isSuccessCode(latestUi.code)) {
           return this.mapRemoteConfig(latestUi.data);
         }

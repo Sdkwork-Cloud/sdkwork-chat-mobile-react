@@ -69,6 +69,7 @@
     "backup",
     "dist",
     "node_modules",
-    "sdkwork-sdk-app"
+    "sdkwork-sdk-app",
+    "tmp"
   ]
 }
