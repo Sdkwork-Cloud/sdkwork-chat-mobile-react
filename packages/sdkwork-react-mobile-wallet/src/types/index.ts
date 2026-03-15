@@ -1,7 +1,5 @@
-import type { BaseEntity } from '@sdkwork/react-mobile-core';
-
 /**
- * 钱包数据
+ * Wallet data
  */
 export interface WalletData {
   balance: number;
@@ -10,9 +8,12 @@ export interface WalletData {
 }
 
 /**
- * 交易记录
+ * Wallet transaction record
  */
-export interface Transaction extends BaseEntity {
+export interface Transaction {
+  id: string;
+  createTime: number;
+  updateTime: number;
   title: string;
   description?: string;
   amount: number;
@@ -21,7 +22,7 @@ export interface Transaction extends BaseEntity {
 }
 
 /**
- * 钱包状态
+ * Wallet store state
  */
 export interface WalletState {
   walletData: WalletData | null;
@@ -31,7 +32,7 @@ export interface WalletState {
 }
 
 /**
- * 红包数据
+ * Red packet data
  */
 export interface RedPacket {
   id: string;
@@ -43,7 +44,7 @@ export interface RedPacket {
 }
 
 /**
- * 钱包事件类型
+ * Wallet event types
  */
 export type WalletEventType =
   | 'wallet:balance_updated'
@@ -51,7 +52,7 @@ export type WalletEventType =
   | 'wallet:red_packet_received';
 
 /**
- * 钱包事件载荷
+ * Wallet event payloads
  */
 export interface WalletEventPayload {
   'wallet:balance_updated': { balance: number };
@@ -60,7 +61,7 @@ export interface WalletEventPayload {
 }
 
 /**
- * 钱包服务接口
+ * Wallet service contract
  */
 export interface IWalletService {
   getBalance(): Promise<WalletData>;
@@ -70,7 +71,7 @@ export interface IWalletService {
 }
 
 /**
- * 红包服务接口
+ * Red packet service contract
  */
 export interface IRedPacketService {
   openRedPacket(id: string): Promise<number>;

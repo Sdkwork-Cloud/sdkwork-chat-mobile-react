@@ -1,6 +1,9 @@
-﻿import { AbstractStorageService, resolveServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
+import { AbstractStorageService, resolveServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
 import type { ServiceFactoryDeps, ServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
-import type { Transaction, WalletData, IWalletService } from '../types';
+
+import type { IWalletService, Transaction, WalletData } from '../types';
+import { createWalletSdkService } from './WalletSdkService';
+import type { IWalletSdkService } from './WalletSdkService';
 
 const TAG = 'WalletService';
 
@@ -9,10 +12,12 @@ class WalletServiceImpl extends AbstractStorageService<Transaction> implements I
   private baseBalance = 1000;
   private readonly SHOW_BALANCE_KEY = 'wallet_show_balance';
   private readonly deps: ServiceFactoryRuntimeDeps;
+  private readonly sdkService: IWalletSdkService;
 
   constructor(deps?: ServiceFactoryDeps) {
     super();
     this.deps = resolveServiceFactoryRuntimeDeps(deps);
+    this.sdkService = createWalletSdkService(deps);
   }
 
   protected async onInitialize() {
@@ -47,8 +52,13 @@ class WalletServiceImpl extends AbstractStorageService<Transaction> implements I
   }
 
   async getBalance(): Promise<WalletData> {
+    const remoteWalletData = await this.sdkService.getBalance();
+    if (remoteWalletData) {
+      return remoteWalletData;
+    }
+
     const list = await this.findAll();
-    const transactionSum = list.content.reduce((acc, curr) => acc + curr.amount, 0);
+    const transactionSum = list.content.reduce((acc: number, curr: Transaction) => acc + curr.amount, 0);
     const totalBalance = this.baseBalance + transactionSum;
 
     const start = new Date(this.deps.clock.now());
@@ -56,8 +66,8 @@ class WalletServiceImpl extends AbstractStorageService<Transaction> implements I
     const startOfDay = start.getTime();
 
     const dailyIncome = list.content
-      .filter((t) => t.type === 'income' && t.createTime >= startOfDay)
-      .reduce((acc, curr) => acc + curr.amount, 0);
+      .filter((item: Transaction) => item.type === 'income' && item.createTime >= startOfDay)
+      .reduce((acc: number, curr: Transaction) => acc + curr.amount, 0);
 
     return {
       balance: totalBalance,
@@ -67,6 +77,11 @@ class WalletServiceImpl extends AbstractStorageService<Transaction> implements I
   }
 
   async getTransactions(page: number = 1, size: number = 20): Promise<Transaction[]> {
+    const remoteTransactions = await this.sdkService.getTransactions(page, size);
+    if (remoteTransactions) {
+      return remoteTransactions;
+    }
+
     const result = await this.findAll({
       sort: { field: 'createTime', order: 'desc' },
     });
@@ -76,6 +91,13 @@ class WalletServiceImpl extends AbstractStorageService<Transaction> implements I
   }
 
   async addTransaction(type: 'income' | 'expense', amount: number, description: string): Promise<Transaction> {
+    const remoteTransaction = type === 'income'
+      ? await this.sdkService.topup(amount, description)
+      : await this.sdkService.withdraw(amount, description);
+    if (remoteTransaction) {
+      return remoteTransaction;
+    }
+
     const now = this.deps.clock.now();
     const newTransaction: Transaction = {
       id: this.deps.idGenerator.next('tx'),

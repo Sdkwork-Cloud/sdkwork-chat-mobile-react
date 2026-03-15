@@ -9,6 +9,10 @@
     "build": "tsup src/index.ts --format cjs,esm --dts",
     "dev": "tsup src/index.ts --format cjs,esm --dts --watch"
   },
+  "dependencies": {
+    "@sdkwork/app-sdk": "workspace:*",
+    "@sdkwork/react-mobile-commons": "workspace:*"
+  },
   "devDependencies": {
     "@types/react": "catalog:",
     "typescript": "catalog:",
@@ -21,6 +25,7 @@
     "react-i18next": "catalog:",
     "i18next": "catalog:",
     "lucide-react": "catalog:",
+    "@sdkwork/react-mobile-commons": "workspace:*",
     "@sdkwork/react-mobile-core": "workspace:*"
   }
 }

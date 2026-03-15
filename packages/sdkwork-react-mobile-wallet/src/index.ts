@@ -3,6 +3,7 @@ export * from './types';
 
 // Services
 export { walletService, createWalletService } from './services/WalletService';
+export { walletSdkService, createWalletSdkService } from './services/WalletSdkService';
 export { redPacketService, createRedPacketService } from './services/RedPacketService';
 
 // Stores

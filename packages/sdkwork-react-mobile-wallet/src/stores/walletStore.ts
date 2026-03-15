@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { WalletState, WalletData, Transaction } from '../types';
+import type { WalletState } from '../types';
 import { walletService } from '../services/WalletService';
 
 interface WalletStore extends WalletState {
