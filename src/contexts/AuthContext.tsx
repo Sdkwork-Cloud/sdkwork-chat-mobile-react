@@ -1,6 +1,6 @@
-
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, ReactNode } from 'react';
 import { useAuthStore, useCurrentUser, useIsAuthenticated } from '@sdkwork/react-mobile-auth';
+import { useUserStore } from '@sdkwork/react-mobile-user';
 
 interface AuthContextType {
   user: any;
@@ -14,15 +14,26 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [isLoading, setIsLoading] = useState(true);
   const user = useCurrentUser();
   const isAuthenticated = useIsAuthenticated();
-  const { login: authLogin, register: authRegister, logout: authLogout } = useAuthStore();
+  const authStatus = useAuthStore((state) => state.authStatus);
+  const initializeAuth = useAuthStore((state) => state.initializeAuth);
+  const authLogin = useAuthStore((state) => state.login);
+  const authRegister = useAuthStore((state) => state.register);
+  const authLogout = useAuthStore((state) => state.logout);
+  const clearCurrentUser = useUserStore((state) => state.clearCurrentUser);
+
+  const isLoading = authStatus === 'idle' || authStatus === 'restoring';
 
   useEffect(() => {
-    // Simulate initialization
-    setTimeout(() => setIsLoading(false), 500);
-  }, []);
+    void initializeAuth();
+  }, [initializeAuth]);
+
+  useEffect(() => {
+    if (authStatus === 'logged_out') {
+      clearCurrentUser();
+    }
+  }, [authStatus, clearCurrentUser]);
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {

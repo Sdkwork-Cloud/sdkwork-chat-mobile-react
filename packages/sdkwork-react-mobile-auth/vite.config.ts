@@ -44,6 +44,10 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
+      '@sdkwork/app-sdk': resolve(__dirname, '../../../../spring-ai-plus-app-api/sdkwork-sdk-app/sdkwork-app-sdk-typescript/src/index.ts'),
+      '@sdkwork/sdk-common': resolve(__dirname, '../../../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript/src/index.ts'),
+      '@sdkwork/react-mobile-core': resolve(__dirname, '../sdkwork-react-mobile-core/src/index.ts'),
+      '@sdkwork/react-mobile-commons': resolve(__dirname, '../sdkwork-react-mobile-commons/src/index.ts'),
     },
   },
 });

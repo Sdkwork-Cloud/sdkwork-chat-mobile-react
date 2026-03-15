@@ -4,6 +4,7 @@ import type { UserState, UserProfile, Address, InvoiceTitle } from '../types';
 import { userService } from '../services/UserService';
 import { invoiceService } from '../services/InvoiceService';
 import { mapUserCenterProfileToUserProfile, resolveProfileWithFallback } from './profileResolution';
+import { appUserService } from '../services/appUserService';
 import {
   userCenterService,
   type UserCenterAddress,
@@ -12,6 +13,10 @@ import {
 
 interface UserStore extends UserState {
   // Actions
+  ensureCurrentUser: () => Promise<UserProfile | null>;
+  refreshCurrentUser: () => Promise<UserProfile | null>;
+  updateCurrentUser: (updates: Partial<UserProfile>) => Promise<UserProfile | null>;
+  clearCurrentUser: () => void;
   loadProfile: () => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
   updateAvatar: (file: File) => Promise<void>;
@@ -76,8 +81,60 @@ export const useUserStore = create<UserStore>()(
         userService.setCurrentUserId(id);
       },
 
+      ensureCurrentUser: async () => {
+        set({ isLoading: true, error: null });
+        try {
+          const profile = await appUserService.getCurrentProfile();
+          if (profile?.id) {
+            userService.setCurrentUserId(profile.id);
+          }
+          set({ profile, isLoading: false, error: null });
+          return profile;
+        } catch (error) {
+          set({
+            isLoading: false,
+            error: error instanceof Error ? error.message : 'Failed to load profile',
+          });
+          return get().profile;
+        }
+      },
+
+      refreshCurrentUser: async () => {
+        return get().ensureCurrentUser();
+      },
+
+      updateCurrentUser: async (updates: Partial<UserProfile>) => {
+        set({ isLoading: true, error: null });
+        try {
+          const profile = await appUserService.updateCurrentProfile(updates);
+          if (profile?.id) {
+            userService.setCurrentUserId(profile.id);
+          }
+          set({ profile, isLoading: false, error: null });
+          return profile;
+        } catch (error) {
+          set({
+            isLoading: false,
+            error: error instanceof Error ? error.message : 'Failed to update profile',
+          });
+          return get().profile;
+        }
+      },
+
+      clearCurrentUser: () => {
+        set({
+          profile: null,
+          error: null,
+        });
+      },
+
       // Load profile
       loadProfile: async () => {
+        const remoteProfile = await get().ensureCurrentUser();
+        if (remoteProfile) {
+          return;
+        }
+
         set({ isLoading: true, error: null });
         try {
           const cachedProfile = get().profile;
@@ -104,6 +161,11 @@ export const useUserStore = create<UserStore>()(
 
       // Update profile
       updateProfile: async (updates: Partial<UserProfile>) => {
+        const remoteUpdated = await get().updateCurrentUser(updates);
+        if (remoteUpdated) {
+          return;
+        }
+
         set({ isLoading: true });
         try {
           const input = toUserCenterUpdateProfileInput(updates);
@@ -237,9 +299,7 @@ export const useUserStore = create<UserStore>()(
     }),
     {
       name: 'user-storage',
-      partialize: (state) => ({
-        profile: state.profile,
-      }),
+      partialize: () => ({}),
     }
   )
 );

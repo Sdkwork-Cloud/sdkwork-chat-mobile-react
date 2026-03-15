@@ -3,8 +3,12 @@ import { persist } from 'zustand/middleware';
 import type { AuthState, SocialLoginRequest, SocialProvider } from '../types';
 import { appAuthService } from '../services/appAuthService';
 
+export type AuthStatus = 'idle' | 'restoring' | 'authenticated' | 'logged_out' | 'error';
+
 export interface AuthStore extends AuthState {
+  authStatus: AuthStatus;
   // Actions
+  initializeAuth: () => Promise<boolean>;
   login: (username: string, password: string, remember?: boolean) => Promise<boolean>;
   register: (username: string, password: string, confirmPassword: string) => Promise<boolean>;
   requestPasswordReset: (account: string, channel?: 'EMAIL' | 'SMS') => Promise<boolean>;
@@ -13,34 +17,87 @@ export interface AuthStore extends AuthState {
   loginWithSocial: (input: SocialLoginRequest | SocialProvider) => Promise<boolean>;
   logout: () => Promise<void>;
   checkSession: () => Promise<boolean>;
+  refreshSession: () => Promise<boolean>;
   refreshToken: () => Promise<boolean>;
   clearError: () => void;
 }
 
+function mapSessionToAuthUser(session: {
+  userId: string;
+  username: string;
+  displayName: string;
+}) {
+  return {
+    id: session.userId,
+    username: session.username,
+    name: session.displayName,
+    avatar: '',
+  };
+}
+
 export const useAuthStore = create<AuthStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       // Initial state
+      authStatus: 'idle',
       isAuthenticated: false,
       isLoading: false,
       user: null,
       token: null,
       error: null,
 
+      initializeAuth: async () => {
+        set({
+          authStatus: 'restoring',
+          isLoading: true,
+          error: null,
+        });
+
+        try {
+          const session = await appAuthService.restoreSession();
+          if (!session) {
+            set({
+              authStatus: 'logged_out',
+              isAuthenticated: false,
+              isLoading: false,
+              user: null,
+              token: null,
+              error: null,
+            });
+            return false;
+          }
+
+          set({
+            authStatus: 'authenticated',
+            isAuthenticated: true,
+            isLoading: false,
+            user: mapSessionToAuthUser(session),
+            token: session.authToken,
+            error: null,
+          });
+          return true;
+        } catch (error) {
+          set({
+            authStatus: 'error',
+            isAuthenticated: false,
+            isLoading: false,
+            user: null,
+            token: null,
+            error: error instanceof Error ? error.message : 'Failed to restore session',
+          });
+          return false;
+        }
+      },
+
       // Login action
       login: async (username: string, password: string, remember = false) => {
         set({ isLoading: true, error: null });
         try {
           const session = await appAuthService.login({ username, password, remember });
-          const user = {
-            id: session.userId,
-            username: session.username,
-            name: session.displayName,
-            avatar: '',
-          };
           set({
+            authStatus: 'authenticated',
             isAuthenticated: true,
-            user,
+            user: mapSessionToAuthUser(session),
             token: session.authToken,
             isLoading: false,
             error: null,
@@ -48,6 +105,7 @@ export const useAuthStore = create<AuthStore>()(
           return true;
         } catch (error) {
           set({
+            authStatus: 'error',
             isAuthenticated: false,
             isLoading: false,
             error: error instanceof Error ? error.message : 'Login failed',
@@ -65,15 +123,10 @@ export const useAuthStore = create<AuthStore>()(
             password,
             confirmPassword,
           });
-          const user = {
-            id: session.userId,
-            username: session.username,
-            name: session.displayName,
-            avatar: '',
-          };
           set({
+            authStatus: 'authenticated',
             isAuthenticated: true,
-            user,
+            user: mapSessionToAuthUser(session),
             token: session.authToken,
             isLoading: false,
             error: null,
@@ -81,6 +134,7 @@ export const useAuthStore = create<AuthStore>()(
           return true;
         } catch (error) {
           set({
+            authStatus: 'error',
             isAuthenticated: false,
             isLoading: false,
             error: error instanceof Error ? error.message : 'Registration failed',
@@ -157,15 +211,10 @@ export const useAuthStore = create<AuthStore>()(
         try {
           const request = typeof input === 'string' ? { provider: input } : input;
           const session = await appAuthService.loginWithSocial(request);
-          const user = {
-            id: session.userId,
-            username: session.username,
-            name: session.displayName,
-            avatar: '',
-          };
           set({
+            authStatus: 'authenticated',
             isAuthenticated: true,
-            user,
+            user: mapSessionToAuthUser(session),
             token: session.authToken,
             isLoading: false,
             error: null,
@@ -173,6 +222,7 @@ export const useAuthStore = create<AuthStore>()(
           return true;
         } catch (error) {
           set({
+            authStatus: 'error',
             isAuthenticated: false,
             isLoading: false,
             error: error instanceof Error ? error.message : 'Social login failed',
@@ -186,6 +236,7 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true });
         await appAuthService.logout();
         set({
+          authStatus: 'logged_out',
           isAuthenticated: false,
           user: null,
           token: null,
@@ -196,26 +247,26 @@ export const useAuthStore = create<AuthStore>()(
 
       // Check session action
       checkSession: async () => {
-        const session = await appAuthService.getCurrentSession();
-        if (session) {
-          const user = {
-            id: session.userId,
-            username: session.username,
-            name: session.displayName,
-            avatar: '',
-          };
+        return get().initializeAuth();
+      },
+
+      refreshSession: async () => {
+        try {
+          const session = await appAuthService.refreshToken();
           set({
+            authStatus: 'authenticated',
             isAuthenticated: true,
-            user,
+            user: mapSessionToAuthUser(session),
             token: session.authToken,
             error: null,
           });
           return true;
-        } else {
+        } catch (error) {
           set({
+            authStatus: 'error',
             isAuthenticated: false,
-            user: null,
             token: null,
+            error: error instanceof Error ? error.message : 'Failed to refresh session',
           });
           return false;
         }
@@ -223,13 +274,7 @@ export const useAuthStore = create<AuthStore>()(
 
       // Refresh token action
       refreshToken: async () => {
-        try {
-          const session = await appAuthService.refreshToken();
-          set({ token: session.authToken });
-          return true;
-        } catch {
-          return false;
-        }
+        return get().refreshSession();
       },
 
       // Clear error
@@ -250,3 +295,12 @@ export const selectUser = (state: AuthStore) => state.user;
 export const selectIsAuthenticated = (state: AuthStore) => state.isAuthenticated;
 export const selectIsLoading = (state: AuthStore) => state.isLoading;
 export const selectAuthError = (state: AuthStore) => state.error;
+export const selectAuthStatus = (state: AuthStore) => state.authStatus;
+export const selectSessionIdentity = (state: AuthStore) =>
+  state.user
+    ? {
+        userId: state.user.id,
+        username: state.user.username,
+        displayName: state.user.name,
+      }
+    : null;

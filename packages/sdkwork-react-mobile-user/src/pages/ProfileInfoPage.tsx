@@ -79,7 +79,7 @@ export const ProfileInfoPage: React.FC<ProfileInfoPageProps> = ({
     updateAvatar,
     isLoading,
     error,
-    loadProfile,
+    refreshCurrentUser,
   } = useUser();
   const [isUploading, setIsUploading] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -207,7 +207,7 @@ export const ProfileInfoPage: React.FC<ProfileInfoPageProps> = ({
             <button
               type="button"
               className="profile-info-page__alert-retry"
-              onClick={() => void loadProfile()}
+              onClick={() => void refreshCurrentUser()}
             >
               {labels.retry}
             </button>
@@ -331,7 +331,7 @@ export const ProfileInfoPage: React.FC<ProfileInfoPageProps> = ({
               description={labels.emptyDescription}
               value={labels.retry}
               isLink
-              onClick={() => void loadProfile()}
+              onClick={() => void refreshCurrentUser()}
               noBorder
             />
           </CellGroup>

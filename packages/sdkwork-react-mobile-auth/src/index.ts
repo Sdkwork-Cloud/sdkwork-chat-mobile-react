@@ -15,6 +15,14 @@ export {
 
 // Stores
 export { useAuthStore } from './stores/authStore';
+export {
+  selectUser,
+  selectIsAuthenticated,
+  selectIsLoading,
+  selectAuthError,
+  selectAuthStatus,
+  selectSessionIdentity,
+} from './stores/authStore';
 
 // Hooks
 export { useAuth, useCurrentUser, useIsAuthenticated, useAuthToken } from './hooks/useAuth';

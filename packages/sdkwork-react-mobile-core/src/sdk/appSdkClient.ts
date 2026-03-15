@@ -1,16 +1,22 @@
 import { createClient, type SdkworkAppClient, type SdkworkAppConfig } from '@sdkwork/app-sdk';
 import type { ServiceStorageAdapter } from '../types';
+import {
+  APP_SDK_AUTH_TOKEN_STORAGE_KEY,
+  applyStoredAppSdkSessionTokens,
+  configureAppSdkSessionTokenApplier,
+  normalizeAppSdkAuthToken,
+  readStoredAppSdkSessionTokens,
+} from './authSession';
+
+export { APP_SDK_AUTH_TOKEN_STORAGE_KEY } from './authSession';
 
 const DEFAULT_TIMEOUT = 30000;
-const DEFAULT_AUTH_STORAGE_KEY = 'sdkwork_token';
 const DEFAULT_DEV_BASE_URL = 'https://api-dev.sdkwork.com';
 const DEFAULT_PROD_BASE_URL = 'https://api.sdkwork.com';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
 export type AppRuntimeEnv = 'development' | 'staging' | 'production' | 'test';
-
-export const APP_SDK_AUTH_TOKEN_STORAGE_KEY = DEFAULT_AUTH_STORAGE_KEY;
 
 export interface AppSdkCoreSessionOptions {
   storage?: ServiceStorageAdapter;
@@ -102,32 +108,6 @@ function normalizeBody(body: unknown): unknown {
     return JSON.parse(raw) as unknown;
   } catch {
     return body;
-  }
-}
-
-function normalizeAuthToken(value?: string): string {
-  const normalized = (value || '').trim();
-  if (!normalized) {
-    return '';
-  }
-  if (normalized.toLowerCase().startsWith('bearer ')) {
-    return normalized.slice(7).trim();
-  }
-  return normalized;
-}
-
-async function readStorageToken(
-  storage: ServiceStorageAdapter | undefined,
-  key: string,
-): Promise<string> {
-  if (!storage || !key) {
-    return '';
-  }
-  try {
-    const value = await Promise.resolve(storage.get<string>(key));
-    return (value || '').trim();
-  } catch {
-    return '';
   }
 }
 
@@ -244,20 +224,25 @@ export function applyAppSdkCoreSessionTokens(tokens: {
   accessToken?: string;
 }): void {
   const client = getAppSdkCoreClient();
-  client.setAuthToken(normalizeAuthToken(tokens.authToken));
+  client.setAuthToken(normalizeAppSdkAuthToken(tokens.authToken));
   if (tokens.accessToken !== undefined) {
     client.setAccessToken((tokens.accessToken || '').trim());
   }
 }
 
+configureAppSdkSessionTokenApplier(applyAppSdkCoreSessionTokens);
+
 async function resolveCoreSessionTokens(
   options: AppSdkCoreSessionOptions = {},
 ): Promise<{ authToken: string; accessToken: string }> {
-  const configuredAuthStorageKey = (options.authStorageKey || DEFAULT_AUTH_STORAGE_KEY).trim();
-  const storageToken = await readStorageToken(options.storage, configuredAuthStorageKey);
-  const authToken = normalizeAuthToken(options.authToken || storageToken || '');
+  const storedTokens = await readStoredAppSdkSessionTokens({
+    storage: options.storage,
+    authTokenStorageKey: options.authStorageKey || APP_SDK_AUTH_TOKEN_STORAGE_KEY,
+  });
+  const authToken = normalizeAppSdkAuthToken(options.authToken || storedTokens.authToken || '');
   const accessToken = (
     options.accessToken ||
+    storedTokens.accessToken ||
     firstDefined(readRuntimeEnv('VITE_ACCESS_TOKEN'), readRuntimeEnv('SDKWORK_ACCESS_TOKEN')) ||
     ''
   ).trim();
@@ -271,7 +256,7 @@ export async function getAppSdkCoreClientWithSession(
     ? initAppSdkCoreClient(options.configOverrides)
     : getAppSdkCoreClient();
   const tokens = await resolveCoreSessionTokens(options);
-  applyAppSdkCoreSessionTokens(tokens);
+  applyStoredAppSdkSessionTokens(tokens);
   return client;
 }
 

@@ -60,10 +60,7 @@
       "@sdkwork/react-mobile-core/constants": ["./packages/sdkwork-react-mobile-core/src/constants/index.ts"],
       "@sdkwork/react-mobile-core": ["./packages/sdkwork-react-mobile-core/src/index.ts"],
       "@sdkwork/react-mobile-commons": ["./packages/sdkwork-react-mobile-commons/src/index.ts"],
-      "@sdkwork/react-mobile-creation": ["./packages/sdkwork-react-mobile-creation/src/index.ts"],
-      "@sdkwork/app-sdk": ["../../spring-ai-plus-app-api/sdkwork-sdk-app/sdkwork-app-sdk-typescript/src/index.ts"],
-      "@sdkwork/sdk-common": ["../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript/src/index.ts"],
-      "@sdkwork/sdk-common/*": ["../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript/src/*"]
+      "@sdkwork/react-mobile-creation": ["./packages/sdkwork-react-mobile-creation/src/index.ts"]
     },
     "allowImportingTsExtensions": true,
     "noEmit": true

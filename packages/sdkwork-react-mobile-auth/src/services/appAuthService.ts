@@ -89,6 +89,7 @@ export interface AppAuthSession {
 export interface IAppAuthService {
   login(input: AppAuthLoginInput): Promise<AppAuthSession>;
   register(input: AppAuthRegisterInput): Promise<AppAuthSession>;
+  restoreSession(): Promise<AppAuthSession | null>;
   logout(): Promise<void>;
   refreshToken(refreshToken?: string): Promise<AppAuthSession>;
   sendVerifyCode(input: AppAuthSendVerifyCodeInput): Promise<void>;
@@ -114,6 +115,30 @@ function unwrapApiData<T>(payload: T | ApiEnvelope<T>): T {
     }
   }
   return payload as T;
+}
+
+function isInvalidAuthError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const record = error as Record<string, unknown>;
+  const status = record.status;
+  if (status === 401 || status === 403) {
+    return true;
+  }
+
+  const code = String(record.code || '').trim().toLowerCase();
+  const message = String(record.message || record.msg || '').trim().toLowerCase();
+  return (
+    code.includes('unauthorized') ||
+    code.includes('forbidden') ||
+    code.includes('invalid_token') ||
+    code.includes('token_invalid') ||
+    message.includes('unauthorized') ||
+    message.includes('token invalid') ||
+    message.includes('invalid token')
+  );
 }
 
 function mapScene(scene: AppAuthScene): VerifyCodeSendForm['type'] {
@@ -341,10 +366,38 @@ export const appAuthService: IAppAuthService = {
     });
   },
 
+  async restoreSession(): Promise<AppAuthSession | null> {
+    const tokens = readAppSdkSessionTokens();
+    const authToken = (tokens.authToken || '').trim();
+    if (!authToken) {
+      return null;
+    }
+
+    try {
+      const client = getAppSdkClientWithSession();
+      const profileResponse = await client.user.getUserProfile();
+      const profile = unwrapApiData<UserProfileVO>(profileResponse);
+      const userFields = mapUserSessionFields(profile, '');
+      return {
+        ...userFields,
+        authToken,
+        accessToken: resolveAppSdkAccessToken(),
+        refreshToken: tokens.refreshToken,
+      };
+    } catch (error) {
+      if (isInvalidAuthError(error)) {
+        clearAppSdkSessionTokens();
+      }
+      return null;
+    }
+  },
+
   async logout(): Promise<void> {
     const client = getAppSdkClientWithSession();
     try {
       await client.auth.logout();
+    } catch {
+      // Local cleanup is authoritative for logout completion.
     } finally {
       clearAppSdkSessionTokens();
     }
@@ -489,25 +542,6 @@ export const appAuthService: IAppAuthService = {
   },
 
   async getCurrentSession(): Promise<AppAuthSession | null> {
-    const tokens = readAppSdkSessionTokens();
-    const authToken = (tokens.authToken || '').trim();
-    if (!authToken) {
-      return null;
-    }
-
-    try {
-      const client = getAppSdkClientWithSession();
-      const profileResponse = await client.user.getUserProfile();
-      const profile = unwrapApiData<UserProfileVO>(profileResponse);
-      const userFields = mapUserSessionFields(profile, '');
-      return {
-        ...userFields,
-        authToken,
-        accessToken: resolveAppSdkAccessToken(),
-        refreshToken: tokens.refreshToken,
-      };
-    } catch {
-      return null;
-    }
+    return this.restoreSession();
   },
 };

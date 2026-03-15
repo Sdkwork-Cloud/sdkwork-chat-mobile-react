@@ -118,7 +118,6 @@ export { logger } from './utils/logger';
 // SDK
 // ============================================
 export {
-  APP_SDK_AUTH_TOKEN_STORAGE_KEY,
   appSdkCoreRequest,
   applyAppSdkCoreSessionTokens,
   getAppSdkCoreClientWithSession,
@@ -133,6 +132,26 @@ export {
   type AppSdkCoreSessionOptions,
   type AppSdkCoreRequestOptions,
 } from './sdk/appSdkClient';
+
+export {
+  APP_SDK_ACCESS_TOKEN_STORAGE_KEY,
+  APP_SDK_AUTH_TOKEN_STORAGE_KEY,
+  APP_SDK_REFRESH_TOKEN_STORAGE_KEY,
+  applyStoredAppSdkSessionTokens,
+  clearStoredAppSdkSessionTokens,
+  configureAppSdkSessionTokenApplier,
+  normalizeAppSdkAuthToken,
+  persistAppSdkSessionTokens,
+  readStoredAppSdkSessionTokens,
+  type AppSdkStoredSessionTokens,
+  type AppSdkSessionStorageOptions,
+} from './sdk/authSession';
+
+export {
+  mapSdkUserProfile,
+  type AppSdkUserProfile,
+  type AppSdkUserProfileDto,
+} from './sdk/userMappers';
 
 // ============================================
 // Constants

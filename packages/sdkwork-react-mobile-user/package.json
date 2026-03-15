@@ -7,7 +7,9 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
-    "dev": "tsup src/index.ts --format cjs,esm --dts --watch"
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "peerDependencies": {
     "react": "catalog:",
@@ -25,8 +27,11 @@
   },
   "devDependencies": {
     "@sdkwork/react-mobile-commons": "workspace:*",
+    "@testing-library/react": "catalog:",
     "@types/react": "catalog:",
     "typescript": "catalog:",
-    "tsup": "catalog:"
+    "tsup": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
   }
 }

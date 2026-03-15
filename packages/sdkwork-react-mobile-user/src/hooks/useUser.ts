@@ -19,6 +19,10 @@ export function useUser() {
   const isLoading = useUserStore((state) => state.isLoading);
   const error = useUserStore((state) => state.error);
 
+  const ensureCurrentUser = useUserStore((state) => state.ensureCurrentUser);
+  const refreshCurrentUser = useUserStore((state) => state.refreshCurrentUser);
+  const updateCurrentUser = useUserStore((state) => state.updateCurrentUser);
+  const clearCurrentUser = useUserStore((state) => state.clearCurrentUser);
   const loadProfile = useUserStore((state) => state.loadProfile);
   const updateProfile = useUserStore((state) => state.updateProfile);
   const updateAvatar = useUserStore((state) => state.updateAvatar);
@@ -32,8 +36,8 @@ export function useUser() {
   const setCurrentUserId = useUserStore((state) => state.setCurrentUserId);
 
   useEffect(() => {
-    void loadProfile();
-  }, [loadProfile]);
+    void ensureCurrentUser();
+  }, [ensureCurrentUser]);
 
   const handleUpdateProfile = useCallback(
     async (updates: Partial<UserProfile>) => {
@@ -170,6 +174,10 @@ export function useUser() {
     invoices,
     isLoading,
     error,
+    ensureCurrentUser,
+    refreshCurrentUser,
+    updateCurrentUser,
+    clearCurrentUser,
     loadProfile,
     updateProfile: handleUpdateProfile,
     updateAvatar: handleUpdateAvatar,
