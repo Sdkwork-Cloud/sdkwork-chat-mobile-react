@@ -1,8 +1,9 @@
 export { NotesPage, NotesDocPage, NotesCreatePage } from './pages';
 export { useNotesWorkspace } from './hooks/useNotesWorkspace';
-export { notesService, createNotesService } from './services/notesService';
+export { notesService, createNotesService } from './services/NotesService';
 export type {
   CreateNotesDocInput,
+  NotesDraftState,
   NotesPrimaryTab,
   NotesDoc,
   NotesTask,
@@ -10,4 +11,4 @@ export type {
   NotesActivity,
   NotesWorkspaceSnapshot,
   NotesService,
-} from './services/notesService';
+} from './services/NotesService';

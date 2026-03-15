@@ -1,2 +1,2 @@
 export { createMomentsService, momentsService } from './MomentsService';
-export { formatMomentRelativeTime } from './momentTime';
+export { formatMomentRelativeTime } from '../utils/momentTime';

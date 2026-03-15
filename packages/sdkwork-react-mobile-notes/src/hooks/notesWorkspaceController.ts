@@ -1,4 +1,4 @@
-import type { CreateNotesDocInput, NotesDoc, NotesService, NotesWorkspaceSnapshot } from '../services/notesService';
+import type { CreateNotesDocInput, NotesDoc, NotesService, NotesWorkspaceSnapshot } from '../services/NotesService';
 
 export interface NotesWorkspaceController {
   getSnapshot(): NotesWorkspaceSnapshot;

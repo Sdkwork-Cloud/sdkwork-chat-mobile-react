@@ -1,5 +1,5 @@
 import React from 'react';
-import { emailService, type EmailComposeInput, type EmailWorkspaceSnapshot } from '../services/emailService';
+import { emailService, type EmailComposeInput, type EmailWorkspaceSnapshot } from '../services/EmailService';
 import { createEmailWorkspaceController } from './emailWorkspaceController';
 
 const EMPTY_WORKSPACE: EmailWorkspaceSnapshot = {

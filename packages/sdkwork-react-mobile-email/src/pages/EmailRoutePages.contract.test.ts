@@ -48,9 +48,10 @@ describe('email module route pages contract', () => {
     expect(source).toContain('useEmailWorkspace');
     expect(source).toContain('const { snapshot, sendThread } = useEmailWorkspace();');
     expect(source).toContain('const replyThread = React.useMemo(');
-    expect(source).toContain('window.localStorage.getItem');
-    expect(source).toContain('window.localStorage.setItem');
-    expect(source).toContain('window.localStorage.removeItem');
+    expect(source).toContain("import { clearComposeDraft, persistComposeDraft, readComposeDraft } from '../services/EmailService';");
+    expect(source).toContain('const persistedDraft = readComposeDraft(draftStorageKey);');
+    expect(source).toContain('persistComposeDraft(draftStorageKey, currentDraft);');
+    expect(source).toContain('clearComposeDraft(draftStorageKey);');
     expect(source).toContain('const replyDraft = {');
     expect(source).toContain("recipient: replyThread.sender.replace(/^To\\s+/i, ''),");
     expect(source).toContain('setRecipient(replyDraft.recipient);');

@@ -12,7 +12,7 @@ describe('notes package exports contract', () => {
 
     expect(source).toContain("export { NotesPage, NotesDocPage, NotesCreatePage } from './pages';");
     expect(source).toContain("export { useNotesWorkspace } from './hooks/useNotesWorkspace';");
-    expect(source).toContain("export { notesService, createNotesService } from './services/notesService';");
+    expect(source).toContain("export { notesService, createNotesService } from './services/NotesService';");
     expect(source).toContain('export type {');
     expect(source).toContain('NotesWorkspaceSnapshot');
     expect(source).toContain('NotesService');

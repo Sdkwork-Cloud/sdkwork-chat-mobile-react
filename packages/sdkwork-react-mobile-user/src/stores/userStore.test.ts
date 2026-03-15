@@ -13,7 +13,7 @@ vi.mock('zustand/middleware', async () => {
   };
 });
 
-vi.mock('../services/appUserService', () => ({
+vi.mock('../services/AppUserService', () => ({
   appUserService: serviceMocks,
 }));
 

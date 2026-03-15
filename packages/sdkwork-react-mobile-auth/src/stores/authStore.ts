@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { AuthState, SocialLoginRequest, SocialProvider } from '../types';
-import { appAuthService } from '../services/appAuthService';
+import { appAuthService } from '../services/AppAuthService';
 
 export type AuthStatus = 'idle' | 'restoring' | 'authenticated' | 'logged_out' | 'error';
 

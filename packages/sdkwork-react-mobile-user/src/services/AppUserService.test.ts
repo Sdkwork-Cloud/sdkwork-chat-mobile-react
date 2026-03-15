@@ -9,7 +9,7 @@ vi.mock('./UserCenterService', () => ({
   userCenterService: serviceMocks,
 }));
 
-describe('appUserService', () => {
+describe('AppUserService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -28,7 +28,7 @@ describe('appUserService', () => {
       updatedAt: '2026-03-15T11:00:00.000Z',
     });
 
-    const { appUserService } = await import('./appUserService');
+    const { appUserService } = await import('./AppUserService');
 
     await expect(appUserService.getCurrentProfile()).resolves.toMatchObject({
       id: 'u_1',
@@ -56,7 +56,7 @@ describe('appUserService', () => {
       updatedAt: '2026-03-15T12:00:00.000Z',
     });
 
-    const { appUserService } = await import('./appUserService');
+    const { appUserService } = await import('./AppUserService');
 
     await expect(
       appUserService.updateCurrentProfile({
@@ -73,11 +73,9 @@ describe('appUserService', () => {
   });
 
   it('classifies sdk failures into app-facing error categories', async () => {
-    serviceMocks.getUserProfile.mockRejectedValue(
-      Object.assign(new Error('Unauthorized'), { status: 401 }),
-    );
+    serviceMocks.getUserProfile.mockRejectedValue(Object.assign(new Error('Unauthorized'), { status: 401 }));
 
-    const { appUserService } = await import('./appUserService');
+    const { appUserService } = await import('./AppUserService');
 
     await expect(appUserService.getCurrentProfile()).rejects.toMatchObject({
       type: 'auth_expired',

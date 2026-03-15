@@ -30,7 +30,7 @@ const mocks = vi.hoisted(() => {
   };
 });
 
-vi.mock('./useAppSdkClient', () => ({
+vi.mock('../sdk/useAppSdkClient', () => ({
   applyAppSdkSessionTokens: mocks.applyAppSdkSessionTokens,
   clearAppSdkSessionTokens: mocks.clearAppSdkSessionTokens,
   getAppSdkClientWithSession: mocks.getAppSdkClientWithSession,
@@ -58,7 +58,7 @@ describe('appAuthService', () => {
       },
     });
 
-    const { appAuthService } = await import('./appAuthService');
+    const { appAuthService } = await import('./AppAuthService');
 
     await expect(appAuthService.restoreSession()).resolves.toEqual({
       userId: '42',
@@ -77,7 +77,7 @@ describe('appAuthService', () => {
       Object.assign(new Error('Unauthorized'), { status: 401, code: 'UNAUTHORIZED' }),
     );
 
-    const { appAuthService } = await import('./appAuthService');
+    const { appAuthService } = await import('./AppAuthService');
 
     await expect(appAuthService.restoreSession()).resolves.toBeNull();
     expect(mocks.clearAppSdkSessionTokens).toHaveBeenCalledTimes(1);
@@ -86,7 +86,7 @@ describe('appAuthService', () => {
   it('always clears persisted tokens during logout even when remote logout fails', async () => {
     mocks.client.auth.logout.mockRejectedValue(new Error('network down'));
 
-    const { appAuthService } = await import('./appAuthService');
+    const { appAuthService } = await import('./AppAuthService');
 
     await expect(appAuthService.logout()).resolves.toBeUndefined();
     expect(mocks.clearAppSdkSessionTokens).toHaveBeenCalledTimes(1);

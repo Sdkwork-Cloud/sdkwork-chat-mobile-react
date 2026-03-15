@@ -1,3 +1,5 @@
+import { getPersistStorage } from '@sdkwork/react-mobile-core';
+
 export type EmailPrimaryTab = 'inbox' | 'starred' | 'sent' | 'spaces';
 
 export interface EmailThread {
@@ -37,6 +39,12 @@ export interface EmailComposeInput {
   subject?: string;
   body?: string;
   replyToThreadId?: string;
+}
+
+export interface EmailComposeDraft {
+  recipient: string;
+  subject: string;
+  body: string;
 }
 
 interface EmailWorkspaceState {
@@ -142,6 +150,59 @@ const buildSummaries = (state: EmailWorkspaceState): EmailCategorySummary[] => [
   { id: 'updates', label: 'Updates', count: state.starred.length, accent: '#6366f1' },
   { id: 'forums', label: 'Forums', count: state.spaces.length, accent: '#0f766e' },
 ];
+
+function safeJsonParse<T>(value: string | null): T | null {
+  if (!value) {
+    return null;
+  }
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeDraft(draft: EmailComposeDraft): EmailComposeDraft {
+  return {
+    recipient: draft.recipient,
+    subject: draft.subject,
+    body: draft.body,
+  };
+}
+
+export function readComposeDraft(storageKey: string): EmailComposeDraft | null {
+  const key = storageKey.trim();
+  if (!key) {
+    return null;
+  }
+
+  const parsed = safeJsonParse<Partial<EmailComposeDraft>>(getPersistStorage().getItem(key));
+  if (!parsed) {
+    return null;
+  }
+
+  return normalizeDraft({
+    recipient: typeof parsed.recipient === 'string' ? parsed.recipient : '',
+    subject: typeof parsed.subject === 'string' ? parsed.subject : '',
+    body: typeof parsed.body === 'string' ? parsed.body : '',
+  });
+}
+
+export function persistComposeDraft(storageKey: string, draft: EmailComposeDraft): void {
+  const key = storageKey.trim();
+  if (!key) {
+    return;
+  }
+  getPersistStorage().setItem(key, JSON.stringify(normalizeDraft(draft)));
+}
+
+export function clearComposeDraft(storageKey: string): void {
+  const key = storageKey.trim();
+  if (!key) {
+    return;
+  }
+  getPersistStorage().removeItem(key);
+}
 
 export interface EmailService {
   getSnapshot(): EmailWorkspaceSnapshot;

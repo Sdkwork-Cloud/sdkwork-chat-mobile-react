@@ -12,7 +12,7 @@ describe('email package exports contract', () => {
 
     expect(source).toContain("export { EmailPage, EmailThreadPage, EmailComposePage } from './pages';");
     expect(source).toContain("export { useEmailWorkspace } from './hooks/useEmailWorkspace';");
-    expect(source).toContain("export { emailService, createEmailService } from './services/emailService';");
+    expect(source).toContain("export { emailService, createEmailService } from './services/EmailService';");
     expect(source).toContain('export type {');
     expect(source).toContain('EmailWorkspaceSnapshot');
     expect(source).toContain('EmailService');

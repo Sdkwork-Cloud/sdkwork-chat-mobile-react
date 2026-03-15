@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createNotesService } from '../services/notesService';
+import { createNotesService } from '../services/NotesService';
 import { createNotesWorkspaceController } from './notesWorkspaceController';
 
 describe('notesWorkspaceController', () => {

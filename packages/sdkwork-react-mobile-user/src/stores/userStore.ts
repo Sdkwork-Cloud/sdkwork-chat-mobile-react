@@ -4,7 +4,7 @@ import type { UserState, UserProfile, Address, InvoiceTitle } from '../types';
 import { userService } from '../services/UserService';
 import { invoiceService } from '../services/InvoiceService';
 import { mapUserCenterProfileToUserProfile, resolveProfileWithFallback } from './profileResolution';
-import { appUserService } from '../services/appUserService';
+import { appUserService } from '../services/AppUserService';
 import {
   userCenterService,
   type UserCenterAddress,

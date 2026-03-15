@@ -1,4 +1,4 @@
-import type { EmailComposeInput, EmailService, EmailThread, EmailWorkspaceSnapshot } from '../services/emailService';
+import type { EmailComposeInput, EmailService, EmailThread, EmailWorkspaceSnapshot } from '../services/EmailService';
 
 export interface EmailWorkspaceController {
   getSnapshot(): EmailWorkspaceSnapshot;

@@ -1,7 +1,7 @@
 import React from 'react';
 import { InlineFeedback } from '@sdkwork/react-mobile-commons';
 import { useEmailWorkspace } from '../hooks/useEmailWorkspace';
-import type { EmailThread } from '../services/emailService';
+import type { EmailThread } from '../services/EmailService';
 import './EmailThreadPage.css';
 
 const FEEDBACK_VISIBLE_MS = 2800;

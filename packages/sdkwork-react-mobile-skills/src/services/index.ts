@@ -9,4 +9,4 @@ export {
   filterSkillEntriesByKeyword,
   mapSkillListItem,
   resolveSkillInstallStatus,
-} from './skillViewModel';
+} from '../view-models/skillViewModel';

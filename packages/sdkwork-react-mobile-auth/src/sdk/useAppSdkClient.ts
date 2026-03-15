@@ -7,6 +7,7 @@ import {
   createAppSdkCoreRuntimeConfig,
   getAppSdkCoreClient,
   getAppSdkCoreConfig,
+  getPersistStorage,
   initAppSdkCoreClient,
   resetAppSdkCoreClient,
   type AppRuntimeEnv,
@@ -33,11 +34,8 @@ export const APP_SDK_REFRESH_TOKEN_STORAGE_KEY = 'sdkwork_refresh_token';
 let appSdkConfig: AppSdkClientConfig | null = null;
 
 function readStorage(key: string): string | undefined {
-  if (typeof window === 'undefined') {
-    return undefined;
-  }
   try {
-    const value = window.localStorage.getItem(key);
+    const value = getPersistStorage().getItem(key);
     return value || undefined;
   } catch {
     return undefined;
@@ -45,14 +43,12 @@ function readStorage(key: string): string | undefined {
 }
 
 function writeStorage(key: string, value?: string): void {
-  if (typeof window === 'undefined') {
-    return;
-  }
   try {
+    const storage = getPersistStorage();
     if (value && value.trim()) {
-      window.localStorage.setItem(key, value.trim());
+      storage.setItem(key, value.trim());
     } else {
-      window.localStorage.removeItem(key);
+      storage.removeItem(key);
     }
   } catch {
     // ignore storage errors
@@ -60,11 +56,8 @@ function writeStorage(key: string, value?: string): void {
 }
 
 function removeStorage(key: string): void {
-  if (typeof window === 'undefined') {
-    return;
-  }
   try {
-    window.localStorage.removeItem(key);
+    getPersistStorage().removeItem(key);
   } catch {
     // ignore storage errors
   }

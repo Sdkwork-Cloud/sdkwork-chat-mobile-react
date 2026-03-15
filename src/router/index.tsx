@@ -1,4 +1,5 @@
 import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { readStoredChatBackground } from '@sdkwork/react-mobile-settings';
 import { MobileLayout } from '../layouts/MobileLayout';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../core/i18n/I18nContext';
@@ -319,23 +320,7 @@ const routes: Record<RoutePath, RouteConfig> = {
   [ROUTE_PATHS.communication]: { component: CallsPage },
 };
 const routeExists = (path: string): path is RoutePath => Object.prototype.hasOwnProperty.call(routes, path);
-const SETTINGS_STORAGE_KEY = 'sys_app_config_v3';
-const SETTINGS_CONFIG_ID = 'sys_global_config';
 const ROUTER_HISTORY_INDEX_KEY = '__sdkwork_route_index';
-
-const readGlobalChatBackgroundFromStorage = (): string => {
-  try {
-    if (typeof window === 'undefined' || !window.localStorage) return '';
-    const raw = window.localStorage.getItem(SETTINGS_STORAGE_KEY);
-    if (!raw) return '';
-    const parsed = JSON.parse(raw) as Array<Record<string, unknown>>;
-    if (!Array.isArray(parsed)) return '';
-    const config = parsed.find((item) => item?.id === SETTINGS_CONFIG_ID);
-    return typeof config?.chatBackground === 'string' ? config.chatBackground : '';
-  } catch {
-    return '';
-  }
-};
 
 const decodeUnicodeEscapes = (value: string): string =>
   value.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex: string) => String.fromCharCode(Number.parseInt(hex, 16)));
@@ -656,7 +641,7 @@ const buildRouteProps = (
     return {
       ...commonAuthProps,
       sessionId,
-      globalBackground: readGlobalChatBackgroundFromStorage(),
+      globalBackground: readStoredChatBackground(),
       highlightMsgId,
       onBack: () => navigateBack(ROUTE_PATHS.conversationList),
       onDetails: () => navigate(ROUTE_PATHS.chatDetails, { id: sessionId }),
@@ -1044,12 +1029,12 @@ const buildRouteProps = (
   if (path === ROUTE_PATHS.myQRCode) {
     const qrCodeFrom = (currentParams.from || '').trim();
     const qrCodeSessionId = (currentParams.sessionId || '').trim();
-    const qrCodeFallback = qrCodeFrom === 'account-security'
+    const qrCodeFallback: RoutePathInput = qrCodeFrom === 'account-security'
       ? ROUTE_PATHS.accountSecurity
       : qrCodeFrom === 'profile-info'
         ? ROUTE_PATHS.profileInfo
         : qrCodeFrom === 'chat-details' && qrCodeSessionId
-          ? `${ROUTE_PATHS.chatDetails}?id=${qrCodeSessionId}`
+          ? `${ROUTE_PATHS.chatDetails}?id=${qrCodeSessionId}` as RoutePathInput
           : ROUTE_PATHS.me;
     const qrCodeType = currentParams.type === 'group'
       ? 'group'

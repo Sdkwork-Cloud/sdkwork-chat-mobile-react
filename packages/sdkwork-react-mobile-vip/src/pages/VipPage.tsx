@@ -1,7 +1,7 @@
 ﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Crown, Gift, Sparkles, TimerReset } from 'lucide-react';
 import { Page, Skeleton, Toast } from '@sdkwork/react-mobile-commons';
-import { vipService, type MobileVipOverview, type MobileVipPlan } from '../services/vipService';
+import { vipService, type MobileVipOverview, type MobileVipPlan } from '../services/VipService';
 
 interface VipPageProps {
   t?: (key: string) => string;

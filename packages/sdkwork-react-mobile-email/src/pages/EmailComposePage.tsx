@@ -1,4 +1,5 @@
 import React from 'react';
+import { clearComposeDraft, persistComposeDraft, readComposeDraft } from '../services/EmailService';
 import { useEmailWorkspace } from '../hooks/useEmailWorkspace';
 import './EmailComposePage.css';
 
@@ -10,10 +11,6 @@ interface ComposeDraftState {
   body: string;
 }
 
-interface PersistedComposeDraft extends ComposeDraftState {
-  updatedAt: number;
-}
-
 const EMPTY_DRAFT: ComposeDraftState = {
   recipient: '',
   subject: '',
@@ -23,44 +20,6 @@ const EMPTY_DRAFT: ComposeDraftState = {
 const buildDraftStorageKey = (draftFromThreadId?: string) => {
   const scope = (draftFromThreadId || '').trim() || 'new';
   return `${COMPOSE_DRAFT_KEY_PREFIX}${scope}`;
-};
-
-const readComposeDraft = (storageKey: string): ComposeDraftState | null => {
-  try {
-    if (typeof window === 'undefined' || !window.localStorage) return null;
-    const raw = window.localStorage.getItem(storageKey);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<PersistedComposeDraft>;
-    return {
-      recipient: typeof parsed.recipient === 'string' ? parsed.recipient : '',
-      subject: typeof parsed.subject === 'string' ? parsed.subject : '',
-      body: typeof parsed.body === 'string' ? parsed.body : '',
-    };
-  } catch {
-    return null;
-  }
-};
-
-const persistComposeDraft = (storageKey: string, draft: ComposeDraftState) => {
-  try {
-    if (typeof window === 'undefined' || !window.localStorage) return;
-    const payload: PersistedComposeDraft = {
-      ...draft,
-      updatedAt: Date.now(),
-    };
-    window.localStorage.setItem(storageKey, JSON.stringify(payload));
-  } catch {
-    // Ignore quota/storage exceptions to keep compose page interactive.
-  }
-};
-
-const clearComposeDraft = (storageKey: string) => {
-  try {
-    if (typeof window === 'undefined' || !window.localStorage) return;
-    window.localStorage.removeItem(storageKey);
-  } catch {
-    // Ignore storage exceptions.
-  }
 };
 
 interface EmailComposePageProps {

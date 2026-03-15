@@ -29,7 +29,7 @@ import {
   persistAppSdkSessionTokens,
   readAppSdkSessionTokens,
   resolveAppSdkAccessToken,
-} from './useAppSdkClient';
+} from '../sdk/useAppSdkClient';
 
 export type AppAuthVerifyType = 'EMAIL' | 'PHONE';
 export type AppAuthScene = 'LOGIN' | 'REGISTER' | 'RESET_PASSWORD';
@@ -153,7 +153,7 @@ function mapVerifyType(type: AppAuthVerifyType): VerifyCodeSendForm['verifyType'
 
 function mapPasswordResetChannel(
   channel: AppAuthPasswordResetRequestInput['channel'],
-  account: string
+  account: string,
 ): PasswordResetRequestForm['channel'] {
   if (channel === 'EMAIL' || channel === 'SMS') return channel;
   return account.includes('@') ? 'EMAIL' : 'SMS';
@@ -188,7 +188,7 @@ function resolveDefaultDeviceType(): OAuthLoginForm['deviceType'] {
 async function openSocialOAuthPopup(
   authUrl: string,
   redirectUri?: string,
-  timeoutMs = 120000
+  timeoutMs = 120000,
 ): Promise<{ code: string; state?: string }> {
   if (typeof window === 'undefined') {
     throw new Error('Social login requires browser runtime');
@@ -196,7 +196,7 @@ async function openSocialOAuthPopup(
   const popup = window.open(
     authUrl,
     'sdkworkOAuth',
-    'width=500,height=640,left=200,top=120'
+    'width=500,height=640,left=200,top=120',
   );
   if (!popup) {
     throw new Error('OAuth popup blocked');
@@ -276,7 +276,7 @@ function beginOAuthRedirect(authUrl: string): Promise<never> {
 
 function mapUserSessionFields(
   profile: UserInfoVO | UserProfileVO | undefined,
-  usernameHint: string
+  usernameHint: string,
 ): Pick<AppAuthSession, 'userId' | 'username' | 'displayName'> {
   const profileRecord = (profile ?? {}) as Record<string, unknown>;
   const idRaw = profileRecord.id;
@@ -292,7 +292,7 @@ function mapUserSessionFields(
 
 async function resolveProfileOrFallback(
   usernameHint: string,
-  loginUserInfo?: UserInfoVO
+  loginUserInfo?: UserInfoVO,
 ): Promise<Pick<AppAuthSession, 'userId' | 'username' | 'displayName'>> {
   if (loginUserInfo) {
     return mapUserSessionFields(loginUserInfo, usernameHint);
@@ -309,7 +309,7 @@ async function resolveProfileOrFallback(
 
 function mapSessionFromLoginVO(
   loginData: LoginVO,
-  userFields: Pick<AppAuthSession, 'userId' | 'username' | 'displayName'>
+  userFields: Pick<AppAuthSession, 'userId' | 'username' | 'displayName'>,
 ): AppAuthSession {
   const authToken = (((loginData as LoginVO & { authToken?: string })?.authToken) || '').trim();
   if (!authToken) {

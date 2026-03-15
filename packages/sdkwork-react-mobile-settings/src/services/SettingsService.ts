@@ -11,6 +11,12 @@ import type {
   ThemePreset,
   ThemeType,
 } from '../types';
+import {
+  DEFAULT_ACCENT_PRESET,
+  normalizeAccentPresetKey,
+  THEME_COLOR_PRESET_HEX_MAP,
+  THEME_COLOR_PRESET_KEYS,
+} from '../themeColorPresets';
 import { createSettingsSdkService } from './SettingsSdkService';
 import type { ISettingsSdkService } from './SettingsSdkService';
 
@@ -24,15 +30,7 @@ const SETTINGS_EVENTS = {
 const CONFIG_ID = 'sys_global_config';
 const CONFIG_SCHEMA_VERSION = 2;
 
-const DEFAULT_ACCENT_PRESET: AccentPreset = 'blue';
-const DEFAULT_ACCENT_HEX_MAP: Record<AccentPreset, string> = {
-  blue: '#2979FF',
-  teal: '#14B8A6',
-  green: '#22C55E',
-  orange: '#F97316',
-  rose: '#F43F5E',
-  violet: '#8B5CF6',
-};
+const DEFAULT_ACCENT_HEX_MAP: Record<AccentPreset, string> = THEME_COLOR_PRESET_HEX_MAP;
 const DEFAULT_APPEARANCE_CONFIG = {
   appearanceMode: 'system' as AppearanceMode,
   themePreset: 'wechat' as ThemePreset,
@@ -45,7 +43,7 @@ const DEFAULT_APPEARANCE_CONFIG = {
 const APPEARANCE_MODE_SET: Set<AppearanceMode> = new Set(['system', 'light', 'dark']);
 const THEME_PRESET_SET: Set<ThemePreset> = new Set(['wechat', 'classic', 'midnight', 'oled']);
 const ACCENT_TYPE_SET: Set<'preset' | 'custom'> = new Set(['preset', 'custom']);
-const ACCENT_PRESET_SET: Set<AccentPreset> = new Set(['blue', 'teal', 'green', 'orange', 'rose', 'violet']);
+const ACCENT_PRESET_SET: Set<AccentPreset> = new Set(THEME_COLOR_PRESET_KEYS);
 const FONT_FAMILY_PRESET_SET: Set<FontFamilyPreset> = new Set(['system', 'rounded', 'serif', 'mono']);
 const LANGUAGE_SET: Set<AppConfig['language']> = new Set(['zh-CN', 'en-US']);
 
@@ -59,7 +57,9 @@ const normalizeAccentType = (value: unknown): 'preset' | 'custom' =>
     ? (value as 'preset' | 'custom')
     : DEFAULT_APPEARANCE_CONFIG.accentType;
 const normalizeAccentPreset = (value: unknown): AccentPreset =>
-  ACCENT_PRESET_SET.has(value as AccentPreset) ? (value as AccentPreset) : DEFAULT_ACCENT_PRESET;
+  ACCENT_PRESET_SET.has(value as AccentPreset)
+    ? (value as AccentPreset)
+    : normalizeAccentPresetKey(value, DEFAULT_ACCENT_PRESET);
 const normalizeFontFamilyPreset = (value: unknown): FontFamilyPreset =>
   FONT_FAMILY_PRESET_SET.has(value as FontFamilyPreset)
     ? (value as FontFamilyPreset)
@@ -112,6 +112,20 @@ const toLegacyTheme = (appearanceMode: AppearanceMode, themePreset: ThemePreset)
   }
   return 'dark';
 };
+
+export function readStoredChatBackground(): string {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return '';
+    const raw = window.localStorage.getItem('sys_app_config_v3');
+    if (!raw) return '';
+    const parsed = JSON.parse(raw) as Array<Record<string, unknown>>;
+    if (!Array.isArray(parsed)) return '';
+    const config = parsed.find((item) => item?.id === CONFIG_ID);
+    return typeof config?.chatBackground === 'string' ? config.chatBackground : '';
+  } catch {
+    return '';
+  }
+}
 
 class SettingsServiceImpl extends AbstractStorageService<AppConfig> implements ISettingsService {
   protected STORAGE_KEY = 'sys_app_config_v3';

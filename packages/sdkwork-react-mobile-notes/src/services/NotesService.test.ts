@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { createNotesService } from './notesService';
 
-describe('notesService', () => {
+import { clearDraft, createNotesService, persistDraft, readDraft } from './NotesService';
+
+describe('NotesService', () => {
   it('returns seeded workspace snapshot', () => {
     const service = createNotesService();
     const snapshot = service.getSnapshot();
@@ -39,6 +40,24 @@ describe('notesService', () => {
     expect(doc.content).toContain('verify routes');
     expect(snapshot.docs.length).toBe(before + 1);
     expect(snapshot.docs[0].id).toBe(doc.id);
+  });
+
+  it('persists and clears create drafts', () => {
+    const key = 'sdkwork.notes.create.test';
+    clearDraft(key);
+
+    persistDraft(key, {
+      title: 'Draft title',
+      content: 'Draft content',
+    });
+
+    expect(readDraft(key)).toEqual({
+      title: 'Draft title',
+      content: 'Draft content',
+    });
+
+    clearDraft(key);
+    expect(readDraft(key)).toBeNull();
   });
 
   it('resets workspace to seeded state', () => {

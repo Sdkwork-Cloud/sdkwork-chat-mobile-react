@@ -1,4 +1,4 @@
-export { appAuthService } from './appAuthService';
+export { appAuthService } from './AppAuthService';
 export type {
   IAppAuthService,
   AppAuthLoginInput,
@@ -11,7 +11,7 @@ export type {
   AppAuthSocialLoginInput,
   AppAuthScene,
   AppAuthVerifyType,
-} from './appAuthService';
+} from './AppAuthService';
 export {
   useAppSdkClient,
   getAppSdkClient,
@@ -20,4 +20,4 @@ export {
   createAppSdkClientConfig,
   createAppSdkRuntimeConfig,
   applyAppSdkSessionTokens,
-} from './useAppSdkClient';
+} from '../sdk/useAppSdkClient';

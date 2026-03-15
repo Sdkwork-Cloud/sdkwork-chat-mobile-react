@@ -1,6 +1,6 @@
 import React from 'react';
 import { useEmailWorkspace } from '../hooks/useEmailWorkspace';
-import type { EmailPrimaryTab, EmailThread } from '../services/emailService';
+import type { EmailPrimaryTab, EmailThread } from '../services/EmailService';
 import './EmailPage.css';
 
 interface EmailPageProps {

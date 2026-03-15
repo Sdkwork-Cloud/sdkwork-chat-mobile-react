@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createEmailService } from '../services/emailService';
+import { createEmailService } from '../services/EmailService';
 import { createEmailWorkspaceController } from './emailWorkspaceController';
 
 describe('emailWorkspaceController', () => {

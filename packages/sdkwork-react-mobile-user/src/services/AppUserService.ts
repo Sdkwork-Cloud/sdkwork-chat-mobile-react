@@ -3,6 +3,10 @@ import { mapSdkUserProfile, type AppSdkUserProfileDto } from '@sdkwork/react-mob
 import { userCenterService, type UserCenterProfile } from './UserCenterService';
 import type { UserProfile } from '../types';
 
+const FALLBACK_USER_ID = 'user_local';
+const FALLBACK_USER_NAME = 'User';
+const FALLBACK_TIMESTAMP = Date.parse('2026-01-01T00:00:00.000Z');
+
 export type AppUserErrorType =
   | 'auth_expired'
   | 'network_error'
@@ -20,7 +24,7 @@ export class AppUserServiceError extends Error {
   }
 }
 
-export interface IAppUserService {
+export interface AppUserService {
   getCurrentProfile(): Promise<UserProfile | null>;
   updateCurrentProfile(updates: Partial<UserProfile>): Promise<UserProfile>;
 }
@@ -45,12 +49,13 @@ function toTimestamp(value: string | undefined, fallback: number): number {
 
 function mapToUserProfile(profile: UserCenterProfile): UserProfile {
   const base = mapSdkUserProfile(toSdkUserProfileDto(profile));
-  const now = Date.now();
+  const fallbackId = (profile.userId || '').trim() || base.id || FALLBACK_USER_ID;
+  const fallbackName = base.displayName || profile.nickname || FALLBACK_USER_NAME;
 
   return {
-    id: base.id || profile.userId || `user_${now.toString(36)}`,
-    name: base.displayName || 'User',
-    wxid: base.username || base.id || profile.userId || `user_${now.toString(36)}`,
+    id: fallbackId,
+    name: fallbackName,
+    wxid: base.username || base.id || profile.userId || fallbackId,
     avatar: base.avatarUrl,
     email: base.email || undefined,
     phone: base.phone || undefined,
@@ -62,8 +67,8 @@ function mapToUserProfile(profile: UserCenterProfile): UserProfile {
     },
     gender: profile.gender === 'female' ? 'female' : 'male',
     signature: (profile.bio || '').trim(),
-    createTime: toTimestamp(profile.createdAt, now),
-    updateTime: toTimestamp(profile.updatedAt, now),
+    createTime: toTimestamp(profile.createdAt, FALLBACK_TIMESTAMP),
+    updateTime: toTimestamp(profile.updatedAt, FALLBACK_TIMESTAMP),
   };
 }
 
@@ -107,7 +112,7 @@ function toUserCenterUpdateInput(updates: Partial<UserProfile>) {
   };
 }
 
-export const appUserService: IAppUserService = {
+export const appUserService: AppUserService = {
   async getCurrentProfile(): Promise<UserProfile | null> {
     try {
       const profile = await userCenterService.getUserProfile();

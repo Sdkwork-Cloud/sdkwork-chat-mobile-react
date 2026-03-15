@@ -1,17 +1,9 @@
 import React from 'react';
+import { clearDraft, persistDraft, readDraft, type NotesDraftState } from '../services/NotesService';
 import { useNotesWorkspace } from '../hooks/useNotesWorkspace';
 import './NotesCreatePage.css';
 
 const CREATE_DRAFT_KEY_PREFIX = 'sdkwork.notes.create.';
-
-interface NotesDraftState {
-  title: string;
-  content: string;
-}
-
-interface PersistedNotesDraft extends NotesDraftState {
-  updatedAt: number;
-}
 
 const EMPTY_DRAFT: NotesDraftState = {
   title: '',
@@ -21,43 +13,6 @@ const EMPTY_DRAFT: NotesDraftState = {
 const buildDraftStorageKey = (templateDocId?: string) => {
   const scope = (templateDocId || '').trim() || 'new';
   return `${CREATE_DRAFT_KEY_PREFIX}${scope}`;
-};
-
-const readNotesDraft = (storageKey: string): NotesDraftState | null => {
-  try {
-    if (typeof window === 'undefined' || !window.localStorage) return null;
-    const raw = window.localStorage.getItem(storageKey);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<PersistedNotesDraft>;
-    return {
-      title: typeof parsed.title === 'string' ? parsed.title : '',
-      content: typeof parsed.content === 'string' ? parsed.content : '',
-    };
-  } catch {
-    return null;
-  }
-};
-
-const persistNotesDraft = (storageKey: string, draft: NotesDraftState) => {
-  try {
-    if (typeof window === 'undefined' || !window.localStorage) return;
-    const payload: PersistedNotesDraft = {
-      ...draft,
-      updatedAt: Date.now(),
-    };
-    window.localStorage.setItem(storageKey, JSON.stringify(payload));
-  } catch {
-    // Ignore quota/storage exceptions to keep editor usable.
-  }
-};
-
-const clearNotesDraft = (storageKey: string) => {
-  try {
-    if (typeof window === 'undefined' || !window.localStorage) return;
-    window.localStorage.removeItem(storageKey);
-  } catch {
-    // Ignore storage exceptions.
-  }
 };
 
 interface NotesCreatePageProps {
@@ -95,7 +50,7 @@ export const NotesCreatePage: React.FC<NotesCreatePageProps> = ({ t, onBack, tem
   React.useEffect(() => {
     if (hasHydratedDraft) return;
 
-    const persistedDraft = readNotesDraft(draftStorageKey);
+    const persistedDraft = readDraft(draftStorageKey);
     if (persistedDraft) {
       setTitle(persistedDraft.title);
       setContent(persistedDraft.content);
@@ -124,10 +79,10 @@ export const NotesCreatePage: React.FC<NotesCreatePageProps> = ({ t, onBack, tem
     if (!hasHydratedDraft) return;
     const currentDraft = { title, content };
     if (!title.trim() && !content.trim()) {
-      clearNotesDraft(draftStorageKey);
+      clearDraft(draftStorageKey);
       return;
     }
-    persistNotesDraft(draftStorageKey, currentDraft);
+    persistDraft(draftStorageKey, currentDraft);
   }, [hasHydratedDraft, draftStorageKey, title, content]);
 
   const isDirty = React.useMemo(() => {
@@ -161,7 +116,7 @@ export const NotesCreatePage: React.FC<NotesCreatePageProps> = ({ t, onBack, tem
       content,
       templateDocId,
     });
-    clearNotesDraft(draftStorageKey);
+    clearDraft(draftStorageKey);
     onCreated?.(doc.id);
   }, [createDoc, title, content, templateDocId, draftStorageKey, onCreated]);
 

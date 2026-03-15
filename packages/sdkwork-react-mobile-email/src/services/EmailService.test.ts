@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { createEmailService } from './emailService';
 
-describe('emailService', () => {
+import { clearComposeDraft, createEmailService, persistComposeDraft, readComposeDraft } from './EmailService';
+
+describe('EmailService', () => {
   it('returns seeded workspace snapshot', () => {
     const service = createEmailService();
     const snapshot = service.getSnapshot();
@@ -42,6 +43,26 @@ describe('emailService', () => {
     expect(thread.snippet).toContain('Confirm sent mail');
     expect(snapshot.sent.length).toBe(before + 1);
     expect(snapshot.sent[0].id).toBe(thread.id);
+  });
+
+  it('persists and clears compose drafts', () => {
+    const key = 'sdkwork.email.compose.test';
+    clearComposeDraft(key);
+
+    persistComposeDraft(key, {
+      recipient: 'qa@sdkwork.com',
+      subject: 'Draft',
+      body: 'Draft body',
+    });
+
+    expect(readComposeDraft(key)).toEqual({
+      recipient: 'qa@sdkwork.com',
+      subject: 'Draft',
+      body: 'Draft body',
+    });
+
+    clearComposeDraft(key);
+    expect(readComposeDraft(key)).toBeNull();
   });
 
   it('resets workspace to initial seeded state', () => {

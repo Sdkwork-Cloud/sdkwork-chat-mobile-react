@@ -21,7 +21,7 @@ vi.mock('zustand/middleware', async () => {
   };
 });
 
-vi.mock('../services/appAuthService', () => ({
+vi.mock('../services/AppAuthService', () => ({
   appAuthService: serviceMocks,
 }));
 

@@ -1,7 +1,7 @@
 import { AbstractStorageService, resolveServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
 import type { ServiceFactoryDeps, ServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
 import type { Comment, IMomentsService, Moment } from '../types';
-import { formatMomentRelativeTime } from './momentTime';
+import { formatMomentRelativeTime } from '../utils/momentTime';
 
 const TAG = 'MomentsService';
 const MOMENTS_EVENTS = {

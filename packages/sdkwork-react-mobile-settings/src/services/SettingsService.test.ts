@@ -1,13 +1,29 @@
-import { describe, expect, it } from 'vitest';
-import { settingsService } from './SettingsService';
+import { beforeEach, describe, expect, it } from 'vitest';
+import type { ISettingsService } from '../types';
+import { createSettingsService } from './SettingsService';
 
 describe('SettingsService', () => {
+  let settingsService: ISettingsService;
+
+  beforeEach(() => {
+    settingsService = createSettingsService();
+  });
+
+  it('creates lobster as the default theme color preset for a fresh config', async () => {
+    const config = await settingsService.getConfig();
+
+    expect(config).not.toBeNull();
+    expect(config?.accentType).toBe('preset');
+    expect(config?.accentPreset).toBe('lobster');
+    expect(config?.accentHex).toBe('#E5484D');
+  });
+
   it('resets appearance fields to defaults but keeps non-appearance fields', async () => {
     await settingsService.updateConfig({
       appearanceMode: 'dark',
       themePreset: 'midnight',
       accentType: 'custom',
-      accentPreset: 'rose',
+      accentPreset: 'violet-signal',
       accentHex: '#FF00AA',
       fontScale: 1.3,
       fontSize: 21,
@@ -24,8 +40,8 @@ describe('SettingsService', () => {
     expect(config?.appearanceMode).toBe('system');
     expect(config?.themePreset).toBe('wechat');
     expect(config?.accentType).toBe('preset');
-    expect(config?.accentPreset).toBe('blue');
-    expect(config?.accentHex).toBe('#2979FF');
+    expect(config?.accentPreset).toBe('lobster');
+    expect(config?.accentHex).toBe('#E5484D');
     expect(config?.fontScale).toBe(1);
     expect(config?.fontSize).toBe(16);
     expect(config?.fontFamilyPreset).toBe('system');
@@ -50,8 +66,8 @@ describe('SettingsService', () => {
     expect(config?.appearanceMode).toBe('dark');
     expect(config?.themePreset).toBe('wechat');
     expect(config?.accentType).toBe('preset');
-    expect(config?.accentPreset).toBe('blue');
-    expect(config?.accentHex).toBe('#2979FF');
+    expect(config?.accentPreset).toBe('lobster');
+    expect(config?.accentHex).toBe('#E5484D');
     expect(config?.fontFamilyPreset).toBe('system');
     expect(config?.language).toBe('zh-CN');
   });
@@ -59,15 +75,35 @@ describe('SettingsService', () => {
   it('uses preset accent color when accentType is preset', async () => {
     await settingsService.updateConfig({
       accentType: 'preset',
-      accentPreset: 'orange',
+      accentPreset: 'green-tech',
       accentHex: '#00FF00',
     });
 
     const config = await settingsService.getConfig();
     expect(config).not.toBeNull();
     expect(config?.accentType).toBe('preset');
-    expect(config?.accentPreset).toBe('orange');
-    expect(config?.accentHex).toBe('#F97316');
+    expect(config?.accentPreset).toBe('green-tech');
+    expect(config?.accentHex).toBe('#19B36B');
+  });
+
+  it.each([
+    ['blue', 'tech-blue', '#2F6BFF'],
+    ['teal', 'aurora-teal', '#14B8C4'],
+    ['green', 'green-tech', '#19B36B'],
+    ['orange', 'sunset-coral', '#F07A5A'],
+    ['rose', 'lobster', '#E5484D'],
+    ['violet', 'violet-signal', '#7C5CFF'],
+  ])('normalizes legacy accent preset %s to %s', async (legacyPreset, expectedPreset, expectedHex) => {
+    await settingsService.updateConfig({
+      accentType: 'preset',
+      accentPreset: legacyPreset as never,
+      accentHex: '#000000',
+    });
+
+    const config = await settingsService.getConfig();
+    expect(config).not.toBeNull();
+    expect(config?.accentPreset).toBe(expectedPreset);
+    expect(config?.accentHex).toBe(expectedHex);
   });
 
   it('exposes stable defaults for settings-center toggle fields', async () => {

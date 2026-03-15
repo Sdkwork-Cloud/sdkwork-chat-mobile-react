@@ -1,5 +1,5 @@
 import React from 'react';
-import { notesService, type CreateNotesDocInput, type NotesWorkspaceSnapshot } from '../services/notesService';
+import { notesService, type CreateNotesDocInput, type NotesWorkspaceSnapshot } from '../services/NotesService';
 import { createNotesWorkspaceController } from './notesWorkspaceController';
 
 const EMPTY_WORKSPACE: NotesWorkspaceSnapshot = {

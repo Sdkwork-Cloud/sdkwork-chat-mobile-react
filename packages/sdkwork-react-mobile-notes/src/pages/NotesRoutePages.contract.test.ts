@@ -48,9 +48,10 @@ describe('notes module route pages contract', () => {
     expect(source).toContain('useNotesWorkspace');
     expect(source).toContain('const { snapshot, createDoc } = useNotesWorkspace();');
     expect(source).toContain('const templateDoc = React.useMemo(');
-    expect(source).toContain('window.localStorage.getItem');
-    expect(source).toContain('window.localStorage.setItem');
-    expect(source).toContain('window.localStorage.removeItem');
+    expect(source).toContain("import { clearDraft, persistDraft, readDraft, type NotesDraftState } from '../services/NotesService';");
+    expect(source).toContain('const persistedDraft = readDraft(draftStorageKey);');
+    expect(source).toContain('persistDraft(draftStorageKey, currentDraft);');
+    expect(source).toContain('clearDraft(draftStorageKey);');
     expect(source).toContain('if (templateDoc) {');
     expect(source).toContain('const templateDraft = {');
     expect(source).toContain('title: templateDoc.title,');

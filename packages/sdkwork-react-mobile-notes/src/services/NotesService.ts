@@ -1,3 +1,5 @@
+import { getPersistStorage } from '@sdkwork/react-mobile-core';
+
 export type NotesPrimaryTab = 'docs' | 'tasks' | 'wiki' | 'activity';
 
 export interface NotesDoc {
@@ -41,6 +43,11 @@ export interface NotesWorkspaceSnapshot {
   tasks: NotesTask[];
   wiki: NotesWikiEntry[];
   activity: NotesActivity[];
+}
+
+export interface NotesDraftState {
+  title: string;
+  content: string;
 }
 
 interface NotesWorkspaceState extends NotesWorkspaceSnapshot {
@@ -126,6 +133,57 @@ const cloneDocs = (docs: NotesDoc[]): NotesDoc[] => docs.map((item) => ({ ...ite
 const cloneTasks = (tasks: NotesTask[]): NotesTask[] => tasks.map((item) => ({ ...item }));
 const cloneWikiEntries = (wiki: NotesWikiEntry[]): NotesWikiEntry[] => wiki.map((item) => ({ ...item }));
 const cloneActivities = (activity: NotesActivity[]): NotesActivity[] => activity.map((item) => ({ ...item }));
+
+function safeJsonParse<T>(value: string | null): T | null {
+  if (!value) {
+    return null;
+  }
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeDraft(draft: NotesDraftState): NotesDraftState {
+  return {
+    title: draft.title,
+    content: draft.content,
+  };
+}
+
+export function readDraft(storageKey: string): NotesDraftState | null {
+  const key = storageKey.trim();
+  if (!key) {
+    return null;
+  }
+
+  const parsed = safeJsonParse<Partial<NotesDraftState>>(getPersistStorage().getItem(key));
+  if (!parsed) {
+    return null;
+  }
+
+  return normalizeDraft({
+    title: typeof parsed.title === 'string' ? parsed.title : '',
+    content: typeof parsed.content === 'string' ? parsed.content : '',
+  });
+}
+
+export function persistDraft(storageKey: string, draft: NotesDraftState): void {
+  const key = storageKey.trim();
+  if (!key) {
+    return;
+  }
+  getPersistStorage().setItem(key, JSON.stringify(normalizeDraft(draft)));
+}
+
+export function clearDraft(storageKey: string): void {
+  const key = storageKey.trim();
+  if (!key) {
+    return;
+  }
+  getPersistStorage().removeItem(key);
+}
 
 export interface NotesService {
   getSnapshot(): NotesWorkspaceSnapshot;

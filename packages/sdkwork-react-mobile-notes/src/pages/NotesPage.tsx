@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNotesWorkspace } from '../hooks/useNotesWorkspace';
-import type { NotesPrimaryTab, NotesTask } from '../services/notesService';
+import type { NotesPrimaryTab, NotesTask } from '../services/NotesService';
 import './NotesPage.css';
 
 interface NotesPageProps {

@@ -18,7 +18,7 @@ import {
 } from '@sdkwork/react-mobile-core';
 import type { ServiceFactoryDeps, ServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
 import type { SkillAction, SkillDetailData, SkillListItem, SkillsCenterGroups, SkillsCenterQuery } from '../types';
-import { buildPackageListItem, filterSkillEntriesByKeyword, mapSkillListItem } from './skillViewModel';
+import { buildPackageListItem, filterSkillEntriesByKeyword, mapSkillListItem } from '../view-models/skillViewModel';
 
 const TAG = 'SkillsSdkService';
 
@@ -367,8 +367,8 @@ class SkillsSdkServiceImpl implements ISkillsSdkService {
   }
 }
 
-export function createSkillsSdkService(deps?: ServiceFactoryDeps): ISkillsSdkService {
-  return new SkillsSdkServiceImpl(deps);
+export function createSkillsSdkService(_deps?: ServiceFactoryDeps): ISkillsSdkService {
+  return new SkillsSdkServiceImpl(_deps);
 }
 
 export const skillsSdkService: ISkillsSdkService = createSkillsSdkService();

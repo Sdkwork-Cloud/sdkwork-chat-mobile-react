@@ -56,7 +56,7 @@ function normalizeText(value: unknown): string {
 }
 
 function mapPlan(pack: VipPackVO): MobileVipPlan | null {
-  const id = toNumber(pack.id, NaN);
+  const id = toNumber(pack.id, Number.NaN);
   if (!Number.isFinite(id)) {
     return null;
   }
@@ -74,9 +74,7 @@ function mapPlan(pack: VipPackVO): MobileVipPlan | null {
     originalPrice: originalPrice > price ? originalPrice : undefined,
     durationDays: Math.max(0, toNumber(pack.vipDurationDays, 0)),
     points: Math.max(0, toNumber(pack.pointAmount, 0)),
-    tags: Array.isArray(pack.tags)
-      ? pack.tags.map((item) => normalizeText(item)).filter(Boolean)
-      : [],
+    tags: Array.isArray(pack.tags) ? pack.tags.map((item) => normalizeText(item)).filter(Boolean) : [],
     recommended: Boolean(pack.recommended),
   };
 }
@@ -115,10 +113,7 @@ async function getOverview(): Promise<MobileVipOverview> {
     packsResponse as PlusApiResultListVipPackVO,
     'Failed to load VIP plans',
   );
-  const points = unwrapResult<number>(
-    pointsResponse as PlusApiResultLong,
-    'Failed to load VIP points balance',
-  );
+  const points = unwrapResult<number>(pointsResponse as PlusApiResultLong, 'Failed to load VIP points balance');
 
   const plans = sortPlans(
     (Array.isArray(packs) ? packs : [])
@@ -136,10 +131,7 @@ async function getOverview(): Promise<MobileVipOverview> {
 async function purchase(packId: number): Promise<VipPurchaseVO> {
   const client = await getClient();
   const response = await client.vip.purchase({ packId });
-  return unwrapResult<VipPurchaseVO>(
-    response as PlusApiResultVipPurchaseVO,
-    'Failed to purchase VIP plan',
-  );
+  return unwrapResult<VipPurchaseVO>(response as PlusApiResultVipPurchaseVO, 'Failed to purchase VIP plan');
 }
 
 export const vipService = {
