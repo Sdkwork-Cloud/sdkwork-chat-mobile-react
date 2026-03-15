@@ -1,6 +1,9 @@
-﻿import { resolveServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
+import { resolveServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
 import type { ServiceFactoryDeps, ServiceFactoryRuntimeDeps, ServiceStorageAdapter } from '@sdkwork/react-mobile-core';
+
 import type { Agent, AgentConfig, AgentConversation, AgentMessage, AgentPromptTemplate, IAgentService } from '../types';
+import { createAgentSdkService } from './AgentSdkService';
+import type { IAgentSdkService } from './AgentSdkService';
 
 // Memory storage fallback when runtime storage throws.
 const memoryStorage: Map<string, unknown> = new Map();
@@ -174,152 +177,231 @@ const SEED_TEMPLATES: Partial<AgentPromptTemplate>[] = [
 class AgentServiceImpl implements IAgentService {
   private readonly deps: ServiceFactoryRuntimeDeps;
   private readonly storage: ServiceStorageAdapter;
+  private readonly sdkService: IAgentSdkService;
 
   constructor(deps?: ServiceFactoryDeps) {
     this.deps = resolveServiceFactoryRuntimeDeps(deps);
     this.storage = createSafeStorage(this.deps.storage);
+    this.sdkService = createAgentSdkService(deps);
   }
 
   private nowIso(): string {
     return new Date(this.deps.clock.now()).toISOString();
   }
 
+  private async readStoredAgents(): Promise<Agent[]> {
+    return await this.storage.get<Agent[]>(STORAGE_KEYS.AGENTS) || [];
+  }
+
+  private async writeStoredAgents(agents: Agent[]): Promise<void> {
+    await this.storage.set(STORAGE_KEYS.AGENTS, agents);
+  }
+
+  private async readFavoriteIds(): Promise<string[]> {
+    return await this.storage.get<string[]>(STORAGE_KEYS.FAVORITES) || [];
+  }
+
+  private async writeFavoriteIds(ids: string[]): Promise<void> {
+    await this.storage.set(STORAGE_KEYS.FAVORITES, [...new Set(ids)]);
+  }
+
+  private async decorateAgents(agents: Agent[]): Promise<Agent[]> {
+    const [defaultId, favoriteIds] = await Promise.all([
+      this.storage.get<string>(STORAGE_KEYS.DEFAULT_AGENT),
+      this.readFavoriteIds(),
+    ]);
+    const favoriteSet = new Set(favoriteIds);
+
+    return agents.map((agent) => ({
+      ...agent,
+      isDefault: agent.id === defaultId,
+      isFavorite: favoriteSet.has(agent.id),
+    }));
+  }
+
+  private async syncRemoteAgents(
+    remoteAgents: Agent[],
+    options?: { preserveLocalOnly?: boolean },
+  ): Promise<Agent[]> {
+    const storedAgents = await this.readStoredAgents();
+    const storedMap = new Map(storedAgents.map((agent) => [agent.id, agent]));
+
+    const merged = remoteAgents.map((agent) => {
+      const previous = storedMap.get(agent.id);
+      return {
+        ...previous,
+        ...agent,
+        updatedAt: agent.updatedAt || this.nowIso(),
+      };
+    });
+
+    const remoteIds = new Set(remoteAgents.map((agent) => agent.id));
+    const preservedLocalOnly = options?.preserveLocalOnly
+      ? storedAgents.filter((agent) => !remoteIds.has(agent.id))
+      : [];
+    const decorated = await this.decorateAgents([...merged, ...preservedLocalOnly]);
+    await this.writeStoredAgents(decorated);
+    return decorated;
+  }
+
   async initialize(): Promise<void> {
-    const storage = this.storage;
-    
-    const existingAgents = await storage.get(STORAGE_KEYS.AGENTS);
+    const existingAgents = await this.storage.get(STORAGE_KEYS.AGENTS);
     if (!existingAgents) {
-      const agents: Agent[] = SEED_AGENTS.map(a => ({
-        ...a,
+      const agents: Agent[] = SEED_AGENTS.map((agent) => ({
+        ...agent,
         createdAt: this.nowIso(),
         updatedAt: this.nowIso(),
       })) as Agent[];
-      await storage.set(STORAGE_KEYS.AGENTS, agents);
-      
-      // Set default agent
-      await storage.set(STORAGE_KEYS.DEFAULT_AGENT, 'agent_gpt4');
+      await this.writeStoredAgents(agents);
+      const existingDefaultAgent = await this.storage.get<string>(STORAGE_KEYS.DEFAULT_AGENT);
+      if (!existingDefaultAgent) {
+        await this.storage.set(STORAGE_KEYS.DEFAULT_AGENT, 'agent_gpt4');
+      }
     }
 
-    const existingTemplates = await storage.get(STORAGE_KEYS.TEMPLATES);
+    const existingTemplates = await this.storage.get(STORAGE_KEYS.TEMPLATES);
     if (!existingTemplates) {
-      const templates: AgentPromptTemplate[] = SEED_TEMPLATES.map(t => ({
-        ...t,
+      const templates: AgentPromptTemplate[] = SEED_TEMPLATES.map((template) => ({
+        ...template,
         usageCount: 0,
         createdAt: this.nowIso(),
         updatedAt: this.nowIso(),
       })) as AgentPromptTemplate[];
-      await storage.set(STORAGE_KEYS.TEMPLATES, templates);
+      await this.storage.set(STORAGE_KEYS.TEMPLATES, templates);
     }
   }
 
   async getAgents(): Promise<Agent[]> {
-    const storage = this.storage;
-    return await storage.get<Agent[]>(STORAGE_KEYS.AGENTS) || [];
+    const remoteAgents = await this.sdkService.getAgents();
+    if (remoteAgents) {
+      return this.syncRemoteAgents(remoteAgents);
+    }
+
+    return this.decorateAgents(await this.readStoredAgents());
   }
 
   async getAgentById(id: string): Promise<Agent | null> {
-    const storage = this.storage;
-    const agents = await storage.get<Agent[]>(STORAGE_KEYS.AGENTS) || [];
-    return agents.find(a => a.id === id) || null;
+    const remoteAgent = await this.sdkService.getAgentById(id);
+    if (remoteAgent) {
+      const synced = await this.syncRemoteAgents([remoteAgent], { preserveLocalOnly: true });
+      return synced.find((agent) => agent.id === id) || null;
+    }
+
+    const agents = await this.decorateAgents(await this.readStoredAgents());
+    return agents.find((agent) => agent.id === id) || null;
   }
 
   async getDefaultAgent(): Promise<Agent | null> {
-    const storage = this.storage;
-    const defaultId = await storage.get<string>(STORAGE_KEYS.DEFAULT_AGENT);
-    if (!defaultId) return null;
+    const defaultId = await this.storage.get<string>(STORAGE_KEYS.DEFAULT_AGENT);
+    if (!defaultId) {
+      const agents = await this.getAgents();
+      return agents.find((agent) => agent.isDefault) || null;
+    }
     return this.getAgentById(defaultId);
   }
 
   async setDefaultAgent(agentId: string): Promise<void> {
-    const storage = this.storage;
-    
-    // Update agents
-    const agents = await storage.get<Agent[]>(STORAGE_KEYS.AGENTS) || [];
-    agents.forEach(a => {
-      a.isDefault = a.id === agentId;
-      a.updatedAt = this.nowIso();
-    });
-    await storage.set(STORAGE_KEYS.AGENTS, agents);
-    
-    // Save default
-    await storage.set(STORAGE_KEYS.DEFAULT_AGENT, agentId);
-    
+    const agents = await this.decorateAgents(await this.readStoredAgents());
+    const nextAgents = agents.map((agent) => ({
+      ...agent,
+      isDefault: agent.id === agentId,
+      updatedAt: this.nowIso(),
+    }));
+    await this.writeStoredAgents(nextAgents);
+    await this.storage.set(STORAGE_KEYS.DEFAULT_AGENT, agentId);
+    void this.sdkService.markAgentUsed(agentId);
     this.deps.eventBus.emit(AGENT_EVENTS.DEFAULT_CHANGED, agentId);
   }
 
   async toggleFavorite(agentId: string): Promise<boolean> {
-    const storage = this.storage;
-    
-    const agents = await storage.get<Agent[]>(STORAGE_KEYS.AGENTS) || [];
-    const agent = agents.find(a => a.id === agentId);
-    if (!agent) return false;
-
-    agent.isFavorite = !agent.isFavorite;
-    agent.updatedAt = this.nowIso();
-    await storage.set(STORAGE_KEYS.AGENTS, agents);
-
-    // Update favorites list
-    let favorites = await storage.get<string[]>(STORAGE_KEYS.FAVORITES) || [];
-    if (agent.isFavorite) {
-      favorites = [...new Set([...favorites, agentId])];
-    } else {
-      favorites = favorites.filter(id => id !== agentId);
+    const agents = await this.decorateAgents(await this.readStoredAgents());
+    const agent = agents.find((item) => item.id === agentId);
+    if (!agent) {
+      return false;
     }
-    await storage.set(STORAGE_KEYS.FAVORITES, favorites);
 
-    this.deps.eventBus.emit(AGENT_EVENTS.FAVORITE_TOGGLED, { agentId, isFavorite: agent.isFavorite });
-    return agent.isFavorite;
+    const nextFavorite = !agent.isFavorite;
+    const sdkResult = nextFavorite
+      ? await this.sdkService.likeAgent(agentId)
+      : await this.sdkService.unlikeAgent(agentId);
+    if (sdkResult === false) {
+      throw new Error(`Failed to ${nextFavorite ? 'favorite' : 'unfavorite'} agent`);
+    }
+
+    const nextAgents = agents.map((item) => item.id === agentId
+      ? { ...item, isFavorite: nextFavorite, updatedAt: this.nowIso() }
+      : item);
+    await this.writeStoredAgents(nextAgents);
+
+    const favoriteIds = await this.readFavoriteIds();
+    const nextFavoriteIds = nextFavorite
+      ? [...favoriteIds, agentId]
+      : favoriteIds.filter((id) => id !== agentId);
+    await this.writeFavoriteIds(nextFavoriteIds);
+
+    this.deps.eventBus.emit(AGENT_EVENTS.FAVORITE_TOGGLED, { agentId, isFavorite: nextFavorite });
+    return nextFavorite;
   }
 
   async getFavoriteAgents(): Promise<Agent[]> {
-    const storage = this.storage;
-    const favoriteIds = await storage.get<string[]>(STORAGE_KEYS.FAVORITES) || [];
-    const agents = await storage.get<Agent[]>(STORAGE_KEYS.AGENTS) || [];
-    return agents.filter(a => favoriteIds.includes(a.id));
+    const remoteFavorites = await this.sdkService.getFavoriteAgents();
+    if (remoteFavorites) {
+      await this.writeFavoriteIds(remoteFavorites.map((agent) => agent.id));
+      const synced = await this.syncRemoteAgents(remoteFavorites.map((agent) => ({ ...agent, isFavorite: true })));
+      return synced.filter((agent) => agent.isFavorite);
+    }
+
+    const favoriteIds = new Set(await this.readFavoriteIds());
+    const agents = await this.decorateAgents(await this.readStoredAgents());
+    return agents.filter((agent) => favoriteIds.has(agent.id));
   }
 
   async updateAgentConfig(agentId: string, config: Partial<AgentConfig>): Promise<Agent | null> {
-    const storage = this.storage;
-    
-    const agents = await storage.get<Agent[]>(STORAGE_KEYS.AGENTS) || [];
-    const agent = agents.find(a => a.id === agentId);
-    if (!agent) return null;
+    const agents = await this.readStoredAgents();
+    const agent = agents.find((item) => item.id === agentId);
+    if (!agent) {
+      return null;
+    }
 
-    Object.assign(agent, config, { updatedAt: this.nowIso() });
-    await storage.set(STORAGE_KEYS.AGENTS, agents);
+    const nextAgent: Agent = {
+      ...agent,
+      ...config,
+      updatedAt: this.nowIso(),
+    };
+    const nextAgents = agents.map((item) => item.id === agentId ? nextAgent : item);
+    await this.writeStoredAgents(nextAgents);
 
-    this.deps.eventBus.emit(AGENT_EVENTS.CONFIG_UPDATED, agent);
-    return agent;
+    this.deps.eventBus.emit(AGENT_EVENTS.CONFIG_UPDATED, nextAgent);
+    return nextAgent;
   }
 
   async getConversations(agentId?: string): Promise<AgentConversation[]> {
-    const storage = this.storage;
-    const conversations = await storage.get<AgentConversation[]>(STORAGE_KEYS.CONVERSATIONS) || [];
-    
+    const conversations = await this.storage.get<AgentConversation[]>(STORAGE_KEYS.CONVERSATIONS) || [];
+
     if (agentId) {
-      return conversations.filter(c => c.agentId === agentId);
+      return conversations.filter((conversation) => conversation.agentId === agentId);
     }
-    
-    // Sort by last message date, pinned first
-    return conversations.sort((a, b) => {
-      if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
-      return new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime();
+
+    return conversations.sort((left, right) => {
+      if (left.isPinned !== right.isPinned) {
+        return left.isPinned ? -1 : 1;
+      }
+      return new Date(right.lastMessageAt).getTime() - new Date(left.lastMessageAt).getTime();
     });
   }
 
   async getConversationById(id: string): Promise<AgentConversation | null> {
-    const storage = this.storage;
-    const conversations = await storage.get<AgentConversation[]>(STORAGE_KEYS.CONVERSATIONS) || [];
-    return conversations.find(c => c.id === id) || null;
+    const conversations = await this.storage.get<AgentConversation[]>(STORAGE_KEYS.CONVERSATIONS) || [];
+    return conversations.find((conversation) => conversation.id === id) || null;
   }
 
   async createConversation(agentId: string, title?: string): Promise<AgentConversation> {
-    const storage = this.storage;
     const agent = await this.getAgentById(agentId);
-    if (!agent) throw new Error('Agent not found');
+    if (!agent) {
+      throw new Error('Agent not found');
+    }
 
-    const conversations = await storage.get<AgentConversation[]>(STORAGE_KEYS.CONVERSATIONS) || [];
-    
+    const conversations = await this.storage.get<AgentConversation[]>(STORAGE_KEYS.CONVERSATIONS) || [];
     const conversation: AgentConversation = {
       id: this.deps.idGenerator.next('conv'),
       agentId,
@@ -337,56 +419,53 @@ class AgentServiceImpl implements IAgentService {
     };
 
     conversations.unshift(conversation);
-    await storage.set(STORAGE_KEYS.CONVERSATIONS, conversations);
-
+    await this.storage.set(STORAGE_KEYS.CONVERSATIONS, conversations);
     this.deps.eventBus.emit(AGENT_EVENTS.CONVERSATION_CREATED, conversation);
     return conversation;
   }
 
   async deleteConversation(id: string): Promise<void> {
-    const storage = this.storage;
-    const conversations = await storage.get<AgentConversation[]>(STORAGE_KEYS.CONVERSATIONS) || [];
-    const filtered = conversations.filter(c => c.id !== id);
-    await storage.set(STORAGE_KEYS.CONVERSATIONS, filtered);
-    
+    const conversations = await this.storage.get<AgentConversation[]>(STORAGE_KEYS.CONVERSATIONS) || [];
+    await this.storage.set(STORAGE_KEYS.CONVERSATIONS, conversations.filter((conversation) => conversation.id !== id));
     this.deps.eventBus.emit(AGENT_EVENTS.CONVERSATION_DELETED, id);
   }
 
   async pinConversation(id: string, isPinned: boolean): Promise<void> {
-    const storage = this.storage;
-    const conversations = await storage.get<AgentConversation[]>(STORAGE_KEYS.CONVERSATIONS) || [];
-    const conversation = conversations.find(c => c.id === id);
-    if (conversation) {
-      conversation.isPinned = isPinned;
-      conversation.updatedAt = this.nowIso();
-      await storage.set(STORAGE_KEYS.CONVERSATIONS, conversations);
-      
-      this.deps.eventBus.emit(AGENT_EVENTS.CONVERSATION_PINNED, { id, isPinned });
+    const conversations = await this.storage.get<AgentConversation[]>(STORAGE_KEYS.CONVERSATIONS) || [];
+    const conversation = conversations.find((item) => item.id === id);
+    if (!conversation) {
+      return;
     }
+
+    conversation.isPinned = isPinned;
+    conversation.updatedAt = this.nowIso();
+    await this.storage.set(STORAGE_KEYS.CONVERSATIONS, conversations);
+    this.deps.eventBus.emit(AGENT_EVENTS.CONVERSATION_PINNED, { id, isPinned });
   }
 
   async archiveConversation(id: string): Promise<void> {
-    const storage = this.storage;
-    const conversations = await storage.get<AgentConversation[]>(STORAGE_KEYS.CONVERSATIONS) || [];
-    const conversation = conversations.find(c => c.id === id);
-    if (conversation) {
-      conversation.isArchived = true;
-      conversation.updatedAt = this.nowIso();
-      await storage.set(STORAGE_KEYS.CONVERSATIONS, conversations);
-      
-      this.deps.eventBus.emit(AGENT_EVENTS.CONVERSATION_ARCHIVED, id);
+    const conversations = await this.storage.get<AgentConversation[]>(STORAGE_KEYS.CONVERSATIONS) || [];
+    const conversation = conversations.find((item) => item.id === id);
+    if (!conversation) {
+      return;
     }
+
+    conversation.isArchived = true;
+    conversation.updatedAt = this.nowIso();
+    await this.storage.set(STORAGE_KEYS.CONVERSATIONS, conversations);
+    this.deps.eventBus.emit(AGENT_EVENTS.CONVERSATION_ARCHIVED, id);
   }
 
   async sendMessage(
     conversationId: string,
     content: string,
-    role: 'user' | 'assistant' = 'user'
+    role: 'user' | 'assistant' = 'user',
   ): Promise<AgentMessage> {
-    const storage = this.storage;
-    const conversations = await storage.get<AgentConversation[]>(STORAGE_KEYS.CONVERSATIONS) || [];
-    const conversation = conversations.find(c => c.id === conversationId);
-    if (!conversation) throw new Error('Conversation not found');
+    const conversations = await this.storage.get<AgentConversation[]>(STORAGE_KEYS.CONVERSATIONS) || [];
+    const conversation = conversations.find((item) => item.id === conversationId);
+    if (!conversation) {
+      throw new Error('Conversation not found');
+    }
 
     const message: AgentMessage = {
       id: this.deps.idGenerator.next('msg'),
@@ -403,31 +482,30 @@ class AgentServiceImpl implements IAgentService {
     conversation.lastMessageAt = message.createdAt;
     conversation.updatedAt = message.createdAt;
 
-    await storage.set(STORAGE_KEYS.CONVERSATIONS, conversations);
-    
+    await this.storage.set(STORAGE_KEYS.CONVERSATIONS, conversations);
     this.deps.eventBus.emit(AGENT_EVENTS.MESSAGE_SENT, { conversationId, message });
     return message;
   }
 
   async getTemplates(): Promise<AgentPromptTemplate[]> {
-    const storage = this.storage;
-    return await storage.get<AgentPromptTemplate[]>(STORAGE_KEYS.TEMPLATES) || [];
+    return await this.storage.get<AgentPromptTemplate[]>(STORAGE_KEYS.TEMPLATES) || [];
   }
 
   async getTemplatesByCategory(category: string): Promise<AgentPromptTemplate[]> {
     const templates = await this.getTemplates();
-    return templates.filter(t => t.category === category);
+    return templates.filter((template) => template.category === category);
   }
 
   async useTemplate(templateId: string): Promise<void> {
-    const storage = this.storage;
-    const templates = await storage.get<AgentPromptTemplate[]>(STORAGE_KEYS.TEMPLATES) || [];
-    const template = templates.find(t => t.id === templateId);
-    if (template) {
-      template.usageCount++;
-      template.updatedAt = this.nowIso();
-      await storage.set(STORAGE_KEYS.TEMPLATES, templates);
+    const templates = await this.storage.get<AgentPromptTemplate[]>(STORAGE_KEYS.TEMPLATES) || [];
+    const template = templates.find((item) => item.id === templateId);
+    if (!template) {
+      return;
     }
+
+    template.usageCount += 1;
+    template.updatedAt = this.nowIso();
+    await this.storage.set(STORAGE_KEYS.TEMPLATES, templates);
   }
 
   onDefaultAgentChanged(handler: (agentId: string) => void): () => void {
@@ -464,6 +542,3 @@ export function createAgentService(_deps?: ServiceFactoryDeps): IAgentService {
 }
 
 export const agentService: IAgentService = createAgentService();
-
-
-

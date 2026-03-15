@@ -28,6 +28,9 @@
     "@sdkwork/react-mobile-auth": "workspace:*",
     "zustand": "catalog:"
   },
+  "dependencies": {
+    "@sdkwork/app-sdk": "workspace:*"
+  },
   "devDependencies": {
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",

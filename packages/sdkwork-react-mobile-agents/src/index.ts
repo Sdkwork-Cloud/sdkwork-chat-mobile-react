@@ -27,6 +27,7 @@ export type {
 // Services
 // ============================================
 export { agentService, createAgentService } from './services/AgentService';
+export { agentSdkService, createAgentSdkService } from './services/AgentSdkService';
 
 // ============================================
 // Stores
