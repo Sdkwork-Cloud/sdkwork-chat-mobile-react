@@ -7,56 +7,8 @@ import { Platform } from '../../platform';
 import { APP_TABS, TabId, resolveTabByPath } from '../../app/shell/navigation';
 import type { RoutePath } from '../../router/paths';
 import { resolveTabClickAction } from './tabClickPolicy';
+import { TabbarIcon } from './tabbarIcons';
 import './Tabbar.mobile.css';
-
-const TabIcon: React.FC<{ id: TabId; active: boolean }> = ({ id, active }) => {
-  const color = 'currentColor';
-  const stroke = active ? 2.2 : 1.9;
-
-  if (id === 'chat') {
-    return (
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
-        <path d="M6 7.2h12a2.2 2.2 0 0 1 2.2 2.2v6a2.2 2.2 0 0 1-2.2 2.2H12.4l-3.7 2.5v-2.5H6a2.2 2.2 0 0 1-2.2-2.2v-6A2.2 2.2 0 0 1 6 7.2Z" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M8.1 11.4h7.8M8.1 14h5.1" stroke={color} strokeWidth={stroke - 0.3} strokeLinecap="round" />
-      </svg>
-    );
-  }
-
-  if (id === 'agents') {
-    return (
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
-        <rect x="5.3" y="7" width="13.4" height="10.5" rx="3.2" stroke={color} strokeWidth={stroke} />
-        <path d="M9.1 11.6h0M14.9 11.6h0" stroke={color} strokeWidth={3} strokeLinecap="round" />
-        <path d="M12 4.2v2.4M8.5 17.5v2.2M15.5 17.5v2.2" stroke={color} strokeWidth={stroke - 0.3} strokeLinecap="round" />
-      </svg>
-    );
-  }
-
-  if (id === 'creation') {
-    return (
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
-        <path d="M7.2 16.8 6 20l3.2-1.2L18.4 9.6a1.8 1.8 0 0 0 0-2.6l-1.4-1.4a1.8 1.8 0 0 0-2.6 0L7.2 16.8Z" stroke={color} strokeWidth={stroke} strokeLinejoin="round" />
-        <path d="m13.6 6.4 4 4M5.8 20h12.7" stroke={color} strokeWidth={stroke - 0.3} strokeLinecap="round" />
-      </svg>
-    );
-  }
-
-  if (id === 'discover') {
-    return (
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
-        <circle cx="12" cy="12" r="8.2" stroke={color} strokeWidth={stroke} />
-        <path d="m14.8 9.2-1.7 4.2-4.2 1.7 1.7-4.2 4.2-1.7Z" stroke={color} strokeWidth={stroke - 0.3} strokeLinejoin="round" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
-      <circle cx="12" cy="8.2" r="3.2" stroke={color} strokeWidth={stroke} />
-      <path d="M5.8 19.3c.8-3 3.3-4.8 6.2-4.8s5.4 1.8 6.2 4.8" stroke={color} strokeWidth={stroke} strokeLinecap="round" />
-    </svg>
-  );
-};
 
 export const Tabbar: React.FC = () => {
   const { totalUnreadCount } = useChatStoreState();
@@ -136,20 +88,24 @@ export const Tabbar: React.FC = () => {
     <nav className="tabbar" role="tablist" aria-label="Bottom navigation">
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
+        const iconVariant = isActive ? 'filled' : 'outline';
+
         return (
           <button
             key={tab.id}
             type="button"
             className={`tabbar__item ${isActive ? 'tabbar__item--active' : ''}`}
+            data-tab-id={tab.id}
+            data-tab-icon-variant={iconVariant}
             onClick={() => handleTabActivate(tab)}
             aria-label={tab.label}
             aria-current={isActive ? 'page' : undefined}
             role="tab"
             aria-selected={isActive}
           >
-            <Badge content={tab.badge} offset={[-5, 7]}>
+            <Badge content={tab.badge} offset={[-6, 4]}>
               <div className="tabbar__icon">
-                <TabIcon id={tab.id} active={isActive} />
+                <TabbarIcon id={tab.id} variant={iconVariant} />
               </div>
             </Badge>
             <div className="tabbar__label">{tab.label}</div>

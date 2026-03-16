@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [
+    "./package-exports.contract.ts",
+    "../../packages/sdkwork-react-mobile-user/src/types/**/*.d.ts",
+    "../../packages/sdkwork-react-mobile-social/src/types/**/*.d.ts",
+    "../../packages/sdkwork-react-mobile-moments/src/types/**/*.d.ts"
+  ]
+}

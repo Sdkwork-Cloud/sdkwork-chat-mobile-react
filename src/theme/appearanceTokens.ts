@@ -1,18 +1,16 @@
-import type { AccentPreset, AppearanceMode, FontFamilyPreset, ThemePreset } from '@sdkwork/react-mobile-settings';
+import {
+  DEFAULT_ACCENT_PRESET,
+  getThemeColorPresetMeta,
+  type AccentPreset,
+  type AppearanceMode,
+  type FontFamilyPreset,
+  type ThemePreset,
+} from '@sdkwork/react-mobile-settings';
 
 type ResolvedMode = 'light' | 'dark';
 type LegacyTheme = 'light' | 'dark' | 'wechat-dark' | 'midnight-blue';
 
-const PRESET_ACCENT_MAP: Record<AccentPreset, string> = {
-  blue: '#2979FF',
-  teal: '#14B8A6',
-  green: '#22C55E',
-  orange: '#F97316',
-  rose: '#F43F5E',
-  violet: '#8B5CF6',
-};
 const DEFAULT_THEME_PRESET: ThemePreset = 'wechat';
-const DEFAULT_ACCENT_PRESET: AccentPreset = 'blue';
 const DEFAULT_FONT_FAMILY_PRESET: FontFamilyPreset = 'system';
 
 const FONT_FAMILY_MAP: Record<FontFamilyPreset, { base: string; display: string; mono: string }> = {
@@ -243,8 +241,6 @@ export const resolveAppearanceTheme = (input: AppearanceThemeInput): ResolvedApp
     input.themePreset in PRESET_PALETTES ? input.themePreset : DEFAULT_THEME_PRESET;
   const accentType: 'preset' | 'custom' =
     input.accentType === 'custom' || input.accentType === 'preset' ? input.accentType : 'preset';
-  const accentPreset: AccentPreset =
-    input.accentPreset in PRESET_ACCENT_MAP ? input.accentPreset : DEFAULT_ACCENT_PRESET;
   const fontFamilyPreset: FontFamilyPreset =
     input.fontFamilyPreset in FONT_FAMILY_MAP ? input.fontFamilyPreset : DEFAULT_FONT_FAMILY_PRESET;
   const mode: ResolvedMode =
@@ -253,18 +249,33 @@ export const resolveAppearanceTheme = (input: AppearanceThemeInput): ResolvedApp
       : appearanceMode;
   const palette = PRESET_PALETTES[themePreset][mode];
   const fontFamily = FONT_FAMILY_MAP[fontFamilyPreset] ?? FONT_FAMILY_MAP.system;
-  const presetAccent = PRESET_ACCENT_MAP[accentPreset];
+  const presetMeta = getThemeColorPresetMeta(input.accentPreset, DEFAULT_ACCENT_PRESET);
+  const presetTone = mode === 'dark' ? presetMeta.dark : presetMeta.light;
+  const presetAccent = presetMeta.accent;
   const accentHex =
     accentType === 'custom'
       ? (normalizeHex(input.accentHex) || presetAccent)
       : presetAccent;
-  const accentStart = mode === 'dark' ? mixHex(accentHex, '#FFFFFF', 0.08) : mixHex(accentHex, '#FFFFFF', 0.02);
-  const accentEnd = mode === 'dark' ? mixHex(accentHex, '#000000', 0.22) : mixHex(accentHex, '#000000', 0.12);
-  const tabActive = mode === 'dark' ? mixHex(accentHex, '#FFFFFF', 0.16) : accentHex;
+  const accentStart =
+    accentType === 'custom'
+      ? (mode === 'dark' ? mixHex(accentHex, '#FFFFFF', 0.08) : mixHex(accentHex, '#FFFFFF', 0.02))
+      : presetTone.gradientStart;
+  const accentEnd =
+    accentType === 'custom'
+      ? (mode === 'dark' ? mixHex(accentHex, '#000000', 0.22) : mixHex(accentHex, '#000000', 0.12))
+      : presetTone.gradientEnd;
+  const tabActive =
+    accentType === 'custom'
+      ? (mode === 'dark' ? mixHex(accentHex, '#FFFFFF', 0.16) : accentHex)
+      : presetTone.tabActive;
   const chatPinned = mode === 'dark' ? mixHex(palette.bgCard, '#FFFFFF', 0.05) : mixHex(palette.bgCard, '#000000', 0.04);
   const chatPressed = mode === 'dark' ? mixHex(palette.bgCard, '#FFFFFF', 0.12) : mixHex(palette.bgCard, '#000000', 0.08);
   const chatDivider = mode === 'dark' ? 'rgba(148, 163, 184, 0.26)' : 'rgba(129, 141, 164, 0.26)';
   const chatUnread = mode === 'dark' ? '#F8FAFC' : '#111827';
+  const accentShadow =
+    mode === 'dark'
+      ? `rgba(${rgbString(accentHex)}, 0.36)`
+      : `rgba(${rgbString(accentHex)}, 0.28)`;
 
   const cssVariables: Record<string, string> = {
     '--primary-color': accentHex,
@@ -302,7 +313,7 @@ export const resolveAppearanceTheme = (input: AppearanceThemeInput): ResolvedApp
     '--chat-list-empty-icon-bg-end': mixHex(accentHex, '#000000', mode === 'dark' ? 0.75 : 0.8),
     '--chat-list-empty-primary-bg-start': accentStart,
     '--chat-list-empty-primary-bg-end': accentEnd,
-    '--chat-list-empty-primary-shadow': mode === 'dark' ? 'rgba(41, 121, 255, 0.35)' : 'rgba(47, 109, 255, 0.28)',
+    '--chat-list-empty-primary-shadow': accentShadow,
     '--chat-list-empty-secondary-bg': mode === 'dark' ? `rgba(${rgbString(palette.bgCard)}, 0.92)` : `rgba(${rgbString(palette.bgCard)}, 0.96)`,
     '--chat-list-spinner-border': mode === 'dark' ? 'rgba(110, 168, 255, 0.35)' : 'rgba(41, 121, 255, 0.22)',
     '--chat-list-spinner-top': mode === 'dark' ? 'rgba(154, 195, 255, 0.95)' : 'rgba(41, 121, 255, 0.82)',

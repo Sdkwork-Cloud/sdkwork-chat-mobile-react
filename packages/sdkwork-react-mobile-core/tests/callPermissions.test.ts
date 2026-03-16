@@ -22,6 +22,21 @@ function restoreNavigator(): void {
   Reflect.deleteProperty(globalThis as Record<string, unknown>, 'navigator');
 }
 
+function createTrack(kind: 'audio' | 'video') {
+  return {
+    kind,
+    stop: vi.fn(),
+  };
+}
+
+function createStream(tracks: Array<ReturnType<typeof createTrack>>) {
+  return {
+    getTracks: () => tracks,
+    getAudioTracks: () => tracks.filter((track) => track.kind === 'audio'),
+    getVideoTracks: () => tracks.filter((track) => track.kind === 'video'),
+  };
+}
+
 describe('call media permissions', () => {
   afterEach(() => {
     restoreNavigator();
@@ -63,11 +78,9 @@ describe('call media permissions', () => {
   });
 
   it('requests permission and stops tracks on success', async () => {
-    const stopAudio = vi.fn();
-    const stopVideo = vi.fn();
-    const getUserMedia = vi.fn(async () => ({
-      getTracks: () => [{ stop: stopAudio }, { stop: stopVideo }],
-    }));
+    const audioTrack = createTrack('audio');
+    const videoTrack = createTrack('video');
+    const getUserMedia = vi.fn(async () => createStream([audioTrack, videoTrack]));
 
     setNavigator({
       mediaDevices: {
@@ -88,8 +101,8 @@ describe('call media permissions', () => {
       video: true,
       audio: true,
     });
-    expect(stopAudio).toHaveBeenCalledTimes(1);
-    expect(stopVideo).toHaveBeenCalledTimes(1);
+    expect(audioTrack.stop).toHaveBeenCalledTimes(1);
+    expect(videoTrack.stop).toHaveBeenCalledTimes(1);
   });
 
   it('maps NotAllowedError to denied for requested permissions', async () => {

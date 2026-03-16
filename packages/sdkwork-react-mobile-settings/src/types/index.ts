@@ -5,7 +5,14 @@ export type AIProviderMode = 'cloud' | 'local';
 export type AppearanceMode = 'system' | 'light' | 'dark';
 export type ThemePreset = 'wechat' | 'classic' | 'midnight' | 'oled';
 export type AccentType = 'preset' | 'custom';
-export type AccentPreset = 'blue' | 'teal' | 'green' | 'orange' | 'rose' | 'violet';
+export type AccentPreset =
+  | 'lobster'
+  | 'tech-blue'
+  | 'green-tech'
+  | 'aurora-teal'
+  | 'sunset-coral'
+  | 'violet-signal'
+  | 'graphite-ice';
 export type FontFamilyPreset = 'system' | 'rounded' | 'serif' | 'mono';
 export type FeedbackType = 'bug' | 'suggestion' | 'complaint' | 'other';
 export type FeedbackStatus = 'submitted' | 'processing' | 'resolved' | 'closed';

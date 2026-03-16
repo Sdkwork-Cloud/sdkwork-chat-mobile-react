@@ -58,6 +58,14 @@ type CreationSnapshot = {
   createdAt?: unknown;
 };
 
+type SearchAgentEntry = {
+  id: string;
+  name: string;
+  description: string;
+  avatar?: string;
+  tags?: string[];
+};
+
 const EMPTY_RESULTS: SearchResults = { agents: [], chats: [], others: [] };
 
 const normalize = (value: string) => value.trim().toLowerCase();
@@ -150,7 +158,7 @@ class SearchServiceImpl extends AbstractStorageService<SearchHistory> implements
     }
 
     const list = await this.findAll();
-    const existing = list.content.find((item) => item.keyword === trimmed);
+    const existing = list.content.find((item: SearchHistory) => item.keyword === trimmed);
 
     if (existing) {
       existing.count += 1;
@@ -164,7 +172,7 @@ class SearchServiceImpl extends AbstractStorageService<SearchHistory> implements
         count: 1,
         createTime: now,
         updateTime: now,
-      });
+      } as Partial<SearchHistory>);
     }
 
     const updatedList = await this.findAll({
@@ -235,8 +243,8 @@ class SearchServiceImpl extends AbstractStorageService<SearchHistory> implements
     }
 
     if (list.length === 0) {
-      const rootFiles = await fileService.getFiles(null).catch(() => []);
-      list = rootFiles.map((item) => ({
+      const rootFiles = await fileService.getFiles(null).catch(() => [] as Array<DriveFileSnapshot>);
+      list = rootFiles.map((item: DriveFileSnapshot) => ({
         id: item.id,
         name: item.name,
         type: item.type,
@@ -347,7 +355,7 @@ class SearchServiceImpl extends AbstractStorageService<SearchHistory> implements
     ]);
 
     const now = this.deps.clock.now();
-    const agents = Object.values(AGENT_REGISTRY);
+    const agents = Object.values(AGENT_REGISTRY) as SearchAgentEntry[];
 
     const agentResults: SearchResultItem[] = agents
       .filter((agent) => {
@@ -406,9 +414,16 @@ class SearchServiceImpl extends AbstractStorageService<SearchHistory> implements
         timestamp: toTimestamp(item.updatedAt || item.createdAt, now),
       }));
 
-    const others = [...fileResults, ...articleResults, ...creationResults]
+    let others = [...fileResults, ...articleResults, ...creationResults]
       .sort((a, b) => b.timestamp - a.timestamp)
       .slice(0, MAX_OTHER_RESULTS);
+
+    if (!contextSessionId) {
+      const remoteOthers = await this.sdkService.searchContent(normalized);
+      if (remoteOthers && remoteOthers.length > 0) {
+        others = remoteOthers.slice(0, MAX_OTHER_RESULTS);
+      }
+    }
 
     return {
       agents: agentResults,

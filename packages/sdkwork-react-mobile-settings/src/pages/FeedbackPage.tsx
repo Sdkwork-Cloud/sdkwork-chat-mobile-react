@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Navbar, Toast } from '@sdkwork/react-mobile-commons';
+import { useSettings } from '../hooks/useSettings';
+import { resolveSettingsTranslation } from '../i18n/resolveSettingsTranslation';
 import { feedbackService } from '../services/FeedbackService';
 import type { FeedbackRecord, FeedbackStatus, FeedbackType } from '../types';
 
@@ -28,6 +30,7 @@ const formatFeedbackTime = (timestamp: number): string => {
 };
 
 export const FeedbackPage: React.FC<FeedbackPageProps> = ({ t, onBack }) => {
+  const { t: settingsT } = useSettings();
   const [type, setType] = useState<FeedbackType>('bug');
   const [content, setContent] = useState('');
   const [contact, setContact] = useState('');
@@ -37,11 +40,9 @@ export const FeedbackPage: React.FC<FeedbackPageProps> = ({ t, onBack }) => {
 
   const tr = React.useCallback(
     (key: string, fallback: string) => {
-      const value = t?.(key);
-      if (value && value !== key) return value;
-      return fallback;
+      return resolveSettingsTranslation({ appT: t, settingsT, key, fallback });
     },
-    [t]
+    [settingsT, t]
   );
 
   const loadHistory = React.useCallback(async () => {

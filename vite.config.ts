@@ -86,6 +86,13 @@ export default defineConfig(({ mode }) => {
             manualChunks(id) {
               const normalized = id.replace(/\\/g, '/');
 
+              if (
+                normalized.includes('vite/preload-helper')
+                || normalized.includes('vite/modulepreload-polyfill')
+              ) {
+                return 'app-runtime';
+              }
+
               if (normalized.includes('/node_modules/')) {
                 return 'vendor';
               }

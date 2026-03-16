@@ -44,6 +44,12 @@ All native commands now run from the root app and no longer depend on the remove
 - Diagnostics:
   - `pnpm cap:doctor`
 
+## Java Policy
+
+- Android workflows in this repository use Java 21.
+- Global Java 25 can stay unchanged for other local projects.
+- The project source of truth is `android/gradle.properties` and Android root scripts that inject the project Java 21 child-process environment.
+
 ## Cross-Platform Build Flow
 
 1. Build web assets:

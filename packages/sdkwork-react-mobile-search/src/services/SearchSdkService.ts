@@ -1,7 +1,7 @@
 import { APP_SDK_AUTH_TOKEN_STORAGE_KEY, createAppSdkCoreConfig, getAppSdkCoreClientWithSession, resolveServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
 import type { ServiceFactoryDeps, ServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
 import type { SdkworkAppClient } from '@sdkwork/app-sdk';
-import type { SearchHistory } from '../types';
+import type { SearchHistory, SearchResultItem } from '../types';
 
 const TAG = 'SearchSdkService';
 
@@ -28,6 +28,7 @@ export interface ISearchSdkService {
   getHistory(): Promise<SearchHistory[] | null>;
   addHistory(keyword: string): Promise<boolean | null>;
   clearHistory(): Promise<boolean | null>;
+  searchContent(keyword: string): Promise<SearchResultItem[] | null>;
 }
 
 class SearchSdkServiceImpl implements ISearchSdkService {
@@ -86,12 +87,56 @@ class SearchSdkServiceImpl implements ISearchSdkService {
       ? remote.count
       : (typeof remote.searchCount === 'number' ? remote.searchCount : 1);
 
-    return {
+    const mapped = {
       id: String(idRaw),
       keyword,
       count,
       createTime: this.toTimestamp(remote.createTime, now),
       updateTime: this.toTimestamp(remote.updateTime ?? remote.searchTime, now),
+    } as SearchHistory;
+    return mapped;
+  }
+
+  private mapContentResult(raw: Record<string, unknown>, type: SearchResultItem['type']): SearchResultItem | null {
+    const idRaw = raw.id;
+    const id = typeof idRaw === 'number' ? String(idRaw) : String(idRaw || '').trim();
+    if (!id) return null;
+
+    const title = String(raw.name || raw.title || raw.username || raw.realName || '').trim() || `Result ${id}`;
+    const now = this.deps.clock.now();
+
+    if (type === 'file') {
+      return {
+        id,
+        title,
+        subTitle: String(raw.type || raw.path || 'File').trim(),
+        avatar: '[FILE]',
+        type,
+        score: 90,
+        timestamp: now,
+      };
+    }
+
+    if (type === 'article') {
+      return {
+        id,
+        title,
+        subTitle: String(raw.summary || raw.folderName || 'Article').trim(),
+        avatar: '[ARTICLE]',
+        type,
+        score: 88,
+        timestamp: now,
+      };
+    }
+
+    return {
+      id,
+      title,
+      subTitle: String(raw.description || raw.workspaceName || raw.type || 'Creation').trim(),
+      avatar: '[CREATION]',
+      type,
+      score: 86,
+      timestamp: now,
     };
   }
 
@@ -149,6 +194,36 @@ class SearchSdkServiceImpl implements ISearchSdkService {
     } catch (error) {
       this.deps.logger.warn(TAG, 'SDK clearHistory request failed', error);
       return false;
+    }
+  }
+
+  async searchContent(keyword: string): Promise<SearchResultItem[] | null> {
+    if (!this.hasSdkBaseUrl()) return null;
+
+    const normalizedKeyword = keyword.trim();
+    if (!normalizedKeyword) return [];
+
+    try {
+      const client = await this.getClient();
+      const result = await client.search.global({ keyword: normalizedKeyword }) as SdkApiResult<unknown>;
+      if (!this.isSuccessCode(result.code)) {
+        this.deps.logger.warn(TAG, 'SDK searchContent business failure', { code: result.code, message: result.msg });
+        return null;
+      }
+
+      const data = (result.data && typeof result.data === 'object') ? result.data as Record<string, unknown> : {};
+      const assets = Array.isArray(data.assets) ? data.assets as Array<Record<string, unknown>> : [];
+      const notes = Array.isArray(data.notes) ? data.notes as Array<Record<string, unknown>> : [];
+      const projects = Array.isArray(data.projects) ? data.projects as Array<Record<string, unknown>> : [];
+
+      return [
+        ...assets.map((item) => this.mapContentResult(item, 'file')),
+        ...notes.map((item) => this.mapContentResult(item, 'article')),
+        ...projects.map((item) => this.mapContentResult(item, 'creation')),
+      ].filter((item): item is SearchResultItem => item !== null);
+    } catch (error) {
+      this.deps.logger.warn(TAG, 'SDK searchContent request failed', error);
+      return null;
     }
   }
 }

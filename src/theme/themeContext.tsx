@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import {
   type AccentPreset,
   type AppearanceMode,
+  DEFAULT_ACCENT_PRESET,
   type FontFamilyPreset,
   type ThemePreset,
   useSettingsStore,
@@ -83,7 +84,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const appearanceMode: AppearanceMode = config?.appearanceMode ?? 'system';
   const themePreset: ThemePreset = config?.themePreset ?? 'wechat';
-  const accentPreset: AccentPreset = config?.accentPreset ?? 'blue';
+  const accentPreset: AccentPreset = config?.accentPreset ?? DEFAULT_ACCENT_PRESET;
   const fontScale = clamp(config?.fontScale ?? 1, 0.85, 1.35);
   const fontFamilyPreset: FontFamilyPreset = config?.fontFamilyPreset ?? 'system';
 

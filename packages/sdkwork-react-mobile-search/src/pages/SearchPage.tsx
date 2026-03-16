@@ -336,7 +336,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({ t, onCancel, onNavigate,
       }
 
       const requests = await contactsService.getFriendRequests();
-      const duplicate = requests.find((item) => (
+      const duplicate = requests.find((item: { status: string; fromUserId?: string; fromUserName?: string }) => (
         item.status === 'pending' &&
         (item.fromUserId === account || item.fromUserName === account)
       ));
@@ -551,7 +551,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({ t, onCancel, onNavigate,
                     {history.map((item) => (
                       <button
                         type="button"
-                        key={item.id}
+                        key={item.keyword}
                         className="search-page__history-tag"
                         onClick={() => setQuery(item.keyword)}
                       >

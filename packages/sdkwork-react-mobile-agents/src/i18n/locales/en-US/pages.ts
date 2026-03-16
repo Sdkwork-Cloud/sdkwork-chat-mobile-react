@@ -3,6 +3,8 @@ export default {
   'pages.agents.search': 'Search Agents',
   'pages.agents.create': 'Create Agent',
   'pages.agents.entering': 'Opening...',
+  'pages.agents.scan.title': 'Recognized Agent',
+  'pages.agents.scan.open': 'Open',
   'pages.agents.hero_title': 'Build your own AI',
   'pages.agents.hero_desc': 'Create quickly and start chatting.',
   'pages.agents.open_failed': 'Failed to create conversation. Please try again later.',

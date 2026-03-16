@@ -1,0 +1,6 @@
+export interface VipStatusVO {
+  isVip?: boolean;
+  vipLevel?: number;
+  expireTime?: string;
+  pointBalance?: number;
+}

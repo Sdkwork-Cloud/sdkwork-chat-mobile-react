@@ -5,6 +5,16 @@
     "jsx": "react-jsx",
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "baseUrl": "../..",
+    "paths": {
+      "@sdkwork/react-mobile-chat": ["./packages/sdkwork-react-mobile-chat/src/index.ts"],
+      "@sdkwork/react-mobile-commons": ["./packages/sdkwork-react-mobile-commons/src/index.ts"],
+      "@sdkwork/react-mobile-contacts": ["./packages/sdkwork-react-mobile-contacts/src/index.ts"],
+      "@sdkwork/react-mobile-content": ["./packages/sdkwork-react-mobile-content/src/index.ts"],
+      "@sdkwork/react-mobile-creation": ["./packages/sdkwork-react-mobile-creation/src/index.ts"],
+      "@sdkwork/react-mobile-core": ["./packages/sdkwork-react-mobile-core/src/index.ts"],
+      "@sdkwork/react-mobile-drive": ["./packages/sdkwork-react-mobile-drive/src/index.ts"]
+    },
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
     "strict": true,

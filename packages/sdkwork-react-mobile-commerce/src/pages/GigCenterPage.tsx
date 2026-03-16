@@ -48,7 +48,7 @@ const formatDateTime = (value: string): string => {
 const formatCountLabel = (count: number, singular: string, plural = `${singular}s`) =>
   `${count} ${count === 1 ? singular : plural}`;
 
-const formatMoney = (amount: number) => `£¤${amount.toFixed(2)}`;
+const formatMoney = (amount: number) => `\u00A5${amount.toFixed(2)}`;
 
 export const GigCenterPage: React.FC<GigCenterPageProps> = ({ t, onBack, onGigClick }) => {
   const tr = React.useCallback(
@@ -334,17 +334,17 @@ export const GigCenterPage: React.FC<GigCenterPageProps> = ({ t, onBack, onGigCl
           <div className="gig-center__order-meta">
             <Icon name="location" size={14} color="var(--text-secondary)" />
             <span>{order.location}</span>
-            {order.destination ? <span>¡ú {order.destination}</span> : null}
+            {order.destination ? <span>\u2192 {order.destination}</span> : null}
             {order.distance > 0 ? (
-              <span>¡¤ {order.distance.toFixed(1)}km</span>
+              <span>\u00B7 {order.distance.toFixed(1)}km</span>
             ) : (
-              <span>¡¤ {tr('commerce.gig_center.online_task', 'Online task')}</span>
+              <span>\u00B7 {tr('commerce.gig_center.online_task', 'Online task')}</span>
             )}
           </div>
         </div>
 
         <div className="gig-center__order-action">
-          <div className="gig-center__order-price">£¤{order.price}</div>
+          <div className="gig-center__order-price">\u00A5{order.price}</div>
           <Button size="sm" loading={takingOrderId === order.id} onClick={() => takeOrder(order)}>
             {order.type === 'design' || order.type === 'video_edit'
               ? tr('commerce.gig_center.take_creative', 'Accept & create')
@@ -390,7 +390,7 @@ export const GigCenterPage: React.FC<GigCenterPageProps> = ({ t, onBack, onGigCl
         </div>
 
         <div className="gig-center__order-action">
-          <div className="gig-center__order-price">£¤{order.price}</div>
+          <div className="gig-center__order-price">\u00A5{order.price}</div>
           {order.status === 'taken' ? (
             <Button
               size="sm"
@@ -490,7 +490,7 @@ export const GigCenterPage: React.FC<GigCenterPageProps> = ({ t, onBack, onGigCl
         </div>
         <div className="gig-center__summary-item">
           <div className="gig-center__summary-label">{tr('commerce.gig_center.my_summary.income', 'Total')}</div>
-          <div className="gig-center__summary-value">£¤{earnings.total.toFixed(0)}</div>
+          <div className="gig-center__summary-value">\u00A5{earnings.total.toFixed(0)}</div>
         </div>
       </div>
 

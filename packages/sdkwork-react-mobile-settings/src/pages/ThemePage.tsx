@@ -1,29 +1,61 @@
 import React, { useMemo, useState } from 'react';
 import { Navbar, Toast } from '@sdkwork/react-mobile-commons';
 import { useSettings } from '../hooks/useSettings';
-
-type AppearanceMode = 'system' | 'light' | 'dark';
-type ThemePreset = 'wechat' | 'classic' | 'midnight' | 'oled';
-type AccentPreset = 'blue' | 'teal' | 'green' | 'orange' | 'rose' | 'violet';
-type FontFamilyPreset = 'system' | 'rounded' | 'serif' | 'mono';
+import { resolveSettingsTranslation } from '../i18n/resolveSettingsTranslation';
+import {
+  DEFAULT_ACCENT_PRESET,
+  THEME_COLOR_PRESET_HEX_MAP,
+  THEME_COLOR_PRESETS,
+  type ThemeColorPresetMeta,
+} from '../themeColorPresets';
+import type { AccentPreset, AppearanceMode, FontFamilyPreset, ThemePreset } from '../types';
 
 interface ThemePageProps {
   t?: (key: string) => string;
   onBack?: () => void;
 }
 
-const ACCENT_OPTIONS: Array<{ key: AccentPreset; color: string }> = [
-  { key: 'blue', color: '#2979FF' },
-  { key: 'teal', color: '#14B8A6' },
-  { key: 'green', color: '#22C55E' },
-  { key: 'orange', color: '#F97316' },
-  { key: 'rose', color: '#F43F5E' },
-  { key: 'violet', color: '#8B5CF6' },
+const THEME_PRESET_OPTIONS: Array<{
+  key: ThemePreset;
+  titleKey: string;
+  titleFallback: string;
+  descriptionKey: string;
+  descriptionFallback: string;
+}> = [
+  {
+    key: 'wechat',
+    titleKey: 'settings.config_center.preset_wechat',
+    titleFallback: 'WeChat',
+    descriptionKey: 'settings.config_center.preset_wechat_desc',
+    descriptionFallback: 'Balanced and familiar',
+  },
+  {
+    key: 'classic',
+    titleKey: 'settings.config_center.preset_classic',
+    titleFallback: 'Classic',
+    descriptionKey: 'settings.config_center.preset_classic_desc',
+    descriptionFallback: 'Neutral and clean',
+  },
+  {
+    key: 'midnight',
+    titleKey: 'settings.config_center.preset_midnight',
+    titleFallback: 'Midnight',
+    descriptionKey: 'settings.config_center.preset_midnight_desc',
+    descriptionFallback: 'Cool dark blue tone',
+  },
+  {
+    key: 'oled',
+    titleKey: 'settings.config_center.preset_oled',
+    titleFallback: 'OLED',
+    descriptionKey: 'settings.config_center.preset_oled_desc',
+    descriptionFallback: 'High-contrast dark',
+  },
 ];
+
 const FONT_OPTIONS: Array<{ key: FontFamilyPreset; preview: string }> = [
-  { key: 'system', preview: 'Aa 系统' },
-  { key: 'rounded', preview: 'Aa 圆角' },
-  { key: 'serif', preview: 'Aa 衬线' },
+  { key: 'system', preview: 'Aa Sans' },
+  { key: 'rounded', preview: 'Aa Round' },
+  { key: 'serif', preview: 'Aa Serif' },
   { key: 'mono', preview: 'Aa Mono' },
 ];
 
@@ -39,17 +71,23 @@ const normalizeHex = (value: string): string => {
   return `#${normalized.toUpperCase()}`;
 };
 
+const hexToRgba = (hex: string, alpha: number): string => {
+  const normalized = normalizeHex(hex);
+  if (!normalized) return `rgba(0, 0, 0, ${alpha})`;
+  const raw = normalized.replace('#', '');
+  const r = Number.parseInt(raw.slice(0, 2), 16);
+  const g = Number.parseInt(raw.slice(2, 4), 16);
+  const b = Number.parseInt(raw.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
 export const ThemePage: React.FC<ThemePageProps> = ({ t, onBack }) => {
   const { t: settingsT, config, updateConfig, resetAppearanceConfig } = useSettings();
   const [customAccentInput, setCustomAccentInput] = useState('');
 
   const tr = React.useCallback(
     (key: string, fallback: string) => {
-      const appValue = t?.(key);
-      if (appValue && appValue !== key) return appValue;
-      const settingsValue = settingsT?.(key);
-      if (settingsValue && settingsValue !== key) return settingsValue;
-      return fallback;
+      return resolveSettingsTranslation({ appT: t, settingsT, key, fallback });
     },
     [settingsT, t]
   );
@@ -57,13 +95,26 @@ export const ThemePage: React.FC<ThemePageProps> = ({ t, onBack }) => {
   const appearanceMode: AppearanceMode = (config?.appearanceMode as AppearanceMode) || 'system';
   const themePreset: ThemePreset = (config?.themePreset as ThemePreset) || 'wechat';
   const accentType = config?.accentType || 'preset';
-  const accentPreset: AccentPreset = (config?.accentPreset as AccentPreset) || 'blue';
-  const accentHex = config?.accentHex || '#2979FF';
+  const accentPreset: AccentPreset = (config?.accentPreset as AccentPreset) || DEFAULT_ACCENT_PRESET;
+  const accentHex = config?.accentHex || THEME_COLOR_PRESET_HEX_MAP[DEFAULT_ACCENT_PRESET];
   const fontScale = config?.fontScale || 1;
   const fontFamilyPreset: FontFamilyPreset = (config?.fontFamilyPreset as FontFamilyPreset) || 'system';
   const fontSize = Math.round(16 * fontScale);
 
-  const activeAccent = useMemo(() => (accentType === 'custom' ? accentHex : ACCENT_OPTIONS.find((item) => item.key === accentPreset)?.color || '#2979FF'), [accentHex, accentPreset, accentType]);
+  const activeThemeColor = useMemo(
+    () =>
+      THEME_COLOR_PRESETS.find((item) => item.key === accentPreset) ||
+      THEME_COLOR_PRESETS.find((item) => item.key === DEFAULT_ACCENT_PRESET)!,
+    [accentPreset]
+  );
+
+  const activeAccent = useMemo(
+    () =>
+      accentType === 'custom'
+        ? accentHex
+        : THEME_COLOR_PRESET_HEX_MAP[accentPreset] || THEME_COLOR_PRESET_HEX_MAP[DEFAULT_ACCENT_PRESET],
+    [accentHex, accentPreset, accentType]
+  );
 
   const updateMode = (mode: AppearanceMode) => {
     void updateConfig({ appearanceMode: mode });
@@ -128,9 +179,9 @@ export const ThemePage: React.FC<ThemePageProps> = ({ t, onBack }) => {
       type="button"
       onClick={onClick}
       style={{
-        border: selected ? '1px solid var(--primary-color)' : '1px solid var(--border-color)',
-        background: selected ? 'rgba(41, 121, 255, 0.12)' : 'var(--bg-card)',
-        color: selected ? 'var(--primary-color)' : 'var(--text-primary)',
+        border: selected ? `1px solid ${activeAccent}` : '1px solid var(--border-color)',
+        background: selected ? hexToRgba(activeAccent, 0.12) : 'var(--bg-card)',
+        color: selected ? activeAccent : 'var(--text-primary)',
         borderRadius: '999px',
         padding: '8px 12px',
         fontSize: '13px',
@@ -142,7 +193,11 @@ export const ThemePage: React.FC<ThemePageProps> = ({ t, onBack }) => {
     </button>
   );
 
-  const renderPresetCard = (preset: ThemePreset, title: string, description: string) => {
+  const renderPresetCard = (
+    preset: ThemePreset,
+    title: string,
+    description: string
+  ) => {
     const selected = themePreset === preset;
     return (
       <button
@@ -151,18 +206,100 @@ export const ThemePage: React.FC<ThemePageProps> = ({ t, onBack }) => {
         onClick={() => updatePreset(preset)}
         style={{
           textAlign: 'left',
-          border: selected ? '1px solid var(--primary-color)' : '1px solid var(--border-color)',
-          background: selected ? 'rgba(41, 121, 255, 0.08)' : 'var(--bg-card)',
-          borderRadius: '12px',
+          border: selected ? `1px solid ${activeAccent}` : '1px solid var(--border-color)',
+          background: selected ? hexToRgba(activeAccent, 0.08) : 'var(--bg-card)',
+          borderRadius: '14px',
           padding: '12px',
           cursor: 'pointer',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '8px' }}>
           <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>{title}</span>
-          {selected ? <span style={{ color: 'var(--primary-color)', fontSize: '14px' }}>●</span> : null}
+          {selected ? (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                borderRadius: '999px',
+                padding: '2px 8px',
+                fontSize: '11px',
+                fontWeight: 600,
+                background: hexToRgba(activeAccent, 0.14),
+                color: activeAccent,
+              }}
+            >
+              {tr('settings.config_center.selected', 'Selected')}
+            </span>
+          ) : null}
         </div>
         <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{description}</div>
+      </button>
+    );
+  };
+
+  const renderThemeColorCard = (preset: ThemeColorPresetMeta) => {
+    const selected = accentType === 'preset' && accentPreset === preset.key;
+    const label = tr(preset.labelKey, preset.labelFallback);
+    const description = tr(preset.descriptionKey, preset.descriptionFallback);
+    const previewGradient = `linear-gradient(135deg, ${preset.light.gradientStart} 0%, ${preset.light.gradientEnd} 100%)`;
+
+    return (
+      <button
+        key={preset.key}
+        type="button"
+        onClick={() => updateAccentPreset(preset.key)}
+        data-theme-color-option={preset.key}
+        data-theme-color-selected={selected ? 'true' : 'false'}
+        style={{
+          textAlign: 'left',
+          border: selected ? `1px solid ${preset.accent}` : '1px solid var(--border-color)',
+          background: selected
+            ? `linear-gradient(180deg, ${hexToRgba(preset.light.gradientStart, 0.18)} 0%, ${hexToRgba(preset.light.gradientEnd, 0.08)} 100%)`
+            : 'var(--bg-card)',
+          boxShadow: selected ? `0 10px 24px ${hexToRgba(preset.accent, 0.16)}` : 'none',
+          borderRadius: '16px',
+          padding: '12px',
+          cursor: 'pointer',
+        }}
+      >
+        <div
+          style={{
+            height: '42px',
+            borderRadius: '12px',
+            background: previewGradient,
+            boxShadow: `inset 0 1px 0 ${hexToRgba('#FFFFFF', 0.18)}`,
+          }}
+        />
+        <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+          <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>{label}</span>
+          {selected ? (
+            <span
+              style={{
+                width: '10px',
+                height: '10px',
+                borderRadius: '50%',
+                background: preset.accent,
+                boxShadow: `0 0 0 4px ${hexToRgba(preset.accent, 0.18)}`,
+                flexShrink: 0,
+              }}
+            />
+          ) : null}
+        </div>
+        <div style={{ marginTop: '6px', minHeight: '36px', fontSize: '12px', lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+          {description}
+        </div>
+        <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+          <span
+            style={{
+              width: '10px',
+              height: '10px',
+              borderRadius: '50%',
+              background: preset.accent,
+              flexShrink: 0,
+            }}
+          />
+          <span>{preset.accent}</span>
+        </div>
       </button>
     );
   };
@@ -186,37 +323,27 @@ export const ThemePage: React.FC<ThemePageProps> = ({ t, onBack }) => {
         tr('settings.config_center.preset_desc', 'Visual style direction')
       )}
       <div style={{ padding: '0 16px 8px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-        {renderPresetCard('wechat', tr('settings.config_center.preset_wechat', 'WeChat'), tr('settings.config_center.preset_wechat_desc', 'Balanced and familiar'))}
-        {renderPresetCard('classic', tr('settings.config_center.preset_classic', 'Classic'), tr('settings.config_center.preset_classic_desc', 'Neutral and clean'))}
-        {renderPresetCard('midnight', tr('settings.config_center.preset_midnight', 'Midnight'), tr('settings.config_center.preset_midnight_desc', 'Cool dark blue tone'))}
-        {renderPresetCard('oled', tr('settings.config_center.preset_oled', 'OLED'), tr('settings.config_center.preset_oled_desc', 'High-contrast dark'))}
+        {THEME_PRESET_OPTIONS.map((option) =>
+          renderPresetCard(
+            option.key,
+            tr(option.titleKey, option.titleFallback),
+            tr(option.descriptionKey, option.descriptionFallback)
+          )
+        )}
       </div>
 
       {renderSectionTitle(
-        tr('settings.config_center.accent_title', 'Accent Color'),
-        tr('settings.config_center.accent_desc', 'Primary actions and highlights')
+        tr('settings.config_center.accent_title', 'Theme Colors'),
+        tr('settings.config_center.accent_desc', 'Curated app-wide accent palettes')
       )}
-      <div style={{ padding: '0 16px 8px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-        {ACCENT_OPTIONS.map((accent) => {
-          const selected = accentType === 'preset' && accentPreset === accent.key;
-          return (
-            <button
-              key={accent.key}
-              type="button"
-              onClick={() => updateAccentPreset(accent.key)}
-              style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: '50%',
-                border: selected ? '2px solid var(--text-primary)' : '1px solid var(--border-color)',
-                background: accent.color,
-                cursor: 'pointer',
-              }}
-              aria-label={accent.key}
-            />
-          );
-        })}
+      <div style={{ padding: '0 16px 8px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+        {THEME_COLOR_PRESETS.map((preset) => renderThemeColorCard(preset))}
       </div>
+
+      {renderSectionTitle(
+        tr('settings.config_center.accent_custom_title', 'Advanced Custom Color'),
+        tr('settings.config_center.accent_custom_desc', 'Use a precise brand color when presets are not enough')
+      )}
       <div style={{ padding: '0 16px 8px', display: 'flex', gap: '8px', alignItems: 'center' }}>
         <input
           value={customAccentInput}
@@ -225,7 +352,7 @@ export const ThemePage: React.FC<ThemePageProps> = ({ t, onBack }) => {
           style={{
             flex: 1,
             border: '1px solid var(--border-color)',
-            borderRadius: '10px',
+            borderRadius: '12px',
             padding: '10px 12px',
             fontSize: '13px',
             background: 'var(--bg-card)',
@@ -237,17 +364,23 @@ export const ThemePage: React.FC<ThemePageProps> = ({ t, onBack }) => {
           onClick={applyCustomAccent}
           style={{
             border: 'none',
-            borderRadius: '10px',
-            padding: '10px 12px',
+            borderRadius: '12px',
+            padding: '10px 14px',
             fontSize: '13px',
             fontWeight: 600,
             background: 'var(--primary-color)',
-            color: '#fff',
+            color: '#FFFFFF',
             cursor: 'pointer',
           }}
         >
           {tr('settings.config_center.apply', 'Apply')}
         </button>
+      </div>
+      <div style={{ padding: '0 16px 8px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+        {tr(
+          'settings.config_center.accent_custom_hint',
+          'Custom color only overrides the accent. Surfaces and shadows still follow the selected theme preset.'
+        )}
       </div>
 
       {renderSectionTitle(
@@ -282,16 +415,18 @@ export const ThemePage: React.FC<ThemePageProps> = ({ t, onBack }) => {
               type="button"
               onClick={() => updateFontFamilyPreset(option.key)}
               style={{
-                border: selected ? '1px solid var(--primary-color)' : '1px solid var(--border-color)',
+                border: selected ? `1px solid ${activeAccent}` : '1px solid var(--border-color)',
                 borderRadius: '12px',
-                background: selected ? 'rgba(41, 121, 255, 0.08)' : 'var(--bg-card)',
-                color: selected ? 'var(--primary-color)' : 'var(--text-primary)',
+                background: selected ? hexToRgba(activeAccent, 0.08) : 'var(--bg-card)',
+                color: selected ? activeAccent : 'var(--text-primary)',
                 padding: '10px 12px',
                 textAlign: 'left',
                 cursor: 'pointer',
               }}
             >
-              <div style={{ fontSize: '13px', fontWeight: 600 }}>{tr(`settings.config_center.font_family_${option.key}`, option.key)}</div>
+              <div style={{ fontSize: '13px', fontWeight: 600 }}>
+                {tr(`settings.config_center.font_family_${option.key}`, option.key)}
+              </div>
               <div style={{ marginTop: '6px', fontSize: '12px', color: 'var(--text-secondary)' }}>{option.preview}</div>
             </button>
           );
@@ -304,11 +439,11 @@ export const ThemePage: React.FC<ThemePageProps> = ({ t, onBack }) => {
           style={{
             background: 'var(--bg-card)',
             border: '1px solid var(--border-color)',
-            borderRadius: '14px',
+            borderRadius: '16px',
             padding: '14px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
             <span style={{ fontSize: `${16 * fontScale}px`, fontWeight: 600, color: 'var(--text-primary)' }}>
               {tr('settings.config_center.preview_title_text', 'Conversation title')}
             </span>
@@ -317,16 +452,33 @@ export const ThemePage: React.FC<ThemePageProps> = ({ t, onBack }) => {
           <div style={{ marginTop: '8px', fontSize: `${13 * fontScale}px`, color: 'var(--text-secondary)' }}>
             {tr('settings.config_center.preview_body', 'Theme, color, and font changes are applied instantly.')}
           </div>
-          <div style={{ marginTop: '10px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <span
               style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: activeAccent,
-                display: 'inline-block',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                borderRadius: '999px',
+                padding: '6px 10px',
+                background: hexToRgba(activeAccent, 0.1),
+                color: activeAccent,
+                fontSize: '12px',
+                fontWeight: 600,
               }}
-            />
+            >
+              <span
+                style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: activeAccent,
+                  display: 'inline-block',
+                }}
+              />
+              {accentType === 'custom'
+                ? tr('settings.config_center.accent_custom_badge', 'Custom Accent')
+                : tr(activeThemeColor.labelKey, activeThemeColor.labelFallback)}
+            </span>
             <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{activeAccent}</span>
           </div>
         </div>

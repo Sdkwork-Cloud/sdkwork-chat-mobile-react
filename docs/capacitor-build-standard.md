@@ -34,6 +34,14 @@ If upgrading to Capacitor 7+, update the catalog first, then all docs and script
 4. Release builds must not set `CAP_SERVER_URL`.
 5. Plugin defaults should remain deterministic across platforms.
 
+## Java Runtime Policy
+
+- Android workflows in this repository use Java 21.
+- The source of truth is `android/gradle.properties` via `org.gradle.java.home`.
+- Root Android command entrypoints also use `scripts/run-with-project-java-home.mjs` so child processes inherit the project Java 21 path.
+- Machine-wide Java 25 may remain the default for unrelated backend projects.
+- For Android Studio, set the project Gradle JDK to the same Java 21 installation used by `android/gradle.properties`.
+
 ## Core Capability Baseline
 
 The following baseline capabilities are required for production mobile builds:

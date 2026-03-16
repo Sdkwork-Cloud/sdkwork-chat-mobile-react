@@ -1,0 +1,6 @@
+export interface StorageUsageVO {
+  totalSize?: number;
+  usedSize?: number;
+  remainingSize?: number;
+  fileCount?: number;
+}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Icon, Navbar, Toast } from '@sdkwork/react-mobile-commons';
 import { useSettings } from '../hooks/useSettings';
+import { resolveSettingsTranslation } from '../i18n/resolveSettingsTranslation';
 
 const COLORS = [
     '#ededed', '#ffffff', '#f5f5f5', 
@@ -52,11 +53,7 @@ export const ChatBackgroundPage: React.FC<ChatBackgroundPageProps> = ({
     const { t: settingsT, config, updateConfig } = useSettings();
     const tr = React.useCallback(
         (key: string, fallback: string) => {
-            const appValue = t?.(key);
-            if (appValue && appValue !== key) return appValue;
-            const settingsValue = settingsT?.(key);
-            if (settingsValue && settingsValue !== key) return settingsValue;
-            return fallback;
+            return resolveSettingsTranslation({ appT: t, settingsT, key, fallback });
         },
         [settingsT, t]
     );

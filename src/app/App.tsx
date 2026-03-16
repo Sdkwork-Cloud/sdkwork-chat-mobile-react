@@ -65,6 +65,7 @@ const App: React.FC = () => {
         const flushRetryQueue = () => {
           if (!flushInFlight) {
             flushInFlight = flushDefaultPlatformRuntimeHookQueue(runtimeHookOptions)
+              .then(() => undefined)
               .catch((error) => {
                 console.warn('[App] Failed to flush runtime retry queue:', error);
               })

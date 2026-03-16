@@ -3,6 +3,8 @@ export default {
   'pages.agents.search': '搜索智能体',
   'pages.agents.create': '创建智能体',
   'pages.agents.entering': '进入中...',
+  'pages.agents.scan.title': '识别到智能体',
+  'pages.agents.scan.open': '打开',
   'pages.agents.hero_title': '创建你的专属 AI',
   'pages.agents.hero_desc': '快速创建并开始对话',
   'pages.agents.open_failed': '创建会话失败，请稍后重试',

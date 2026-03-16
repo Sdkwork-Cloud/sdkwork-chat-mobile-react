@@ -14,6 +14,9 @@
     "typescript": "catalog:",
     "tsup": "catalog:"
   },
+  "dependencies": {
+    "@sdkwork/app-sdk": "workspace:*"
+  },
   "peerDependencies": {
     "react": "catalog:",
     "react-dom": "catalog:",
@@ -22,6 +25,11 @@
     "i18next": "catalog:",
     "lucide-react": "catalog:",
     "@sdkwork/react-mobile-core": "workspace:*",
-    "@sdkwork/react-mobile-contacts": "workspace:*"
+    "@sdkwork/react-mobile-contacts": "workspace:*",
+    "@sdkwork/react-mobile-commons": "workspace:*",
+    "@sdkwork/react-mobile-chat": "workspace:*",
+    "@sdkwork/react-mobile-content": "workspace:*",
+    "@sdkwork/react-mobile-creation": "workspace:*",
+    "@sdkwork/react-mobile-drive": "workspace:*"
   }
 }

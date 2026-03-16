@@ -1,5 +1,7 @@
 
 import type { CapacitorConfig } from '@capacitor/cli';
+import { KeyboardResize, KeyboardStyle } from '@capacitor/keyboard';
+import { Style } from '@capacitor/status-bar';
 
 const capServerUrl = process.env.CAP_SERVER_URL?.trim();
 const useNativeDevServer = Boolean(capServerUrl);
@@ -25,7 +27,7 @@ const config: CapacitorConfig = {
   },
   plugins: {
     StatusBar: {
-      style: 'DARK',
+      style: Style.Dark,
       backgroundColor: '#ffffff',
     },
     SplashScreen: {
@@ -35,8 +37,8 @@ const config: CapacitorConfig = {
       androidSplashResourceName: 'splash',
     },
     Keyboard: {
-      resize: 'body',
-      style: 'DARK',
+      resize: KeyboardResize.Body,
+      style: KeyboardStyle.Dark,
       resizeOnFullScreen: true,
     },
     Camera: {

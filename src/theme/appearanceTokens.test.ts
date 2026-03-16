@@ -7,8 +7,8 @@ describe('resolveAppearanceTheme', () => {
       appearanceMode: 'system',
       themePreset: 'wechat',
       accentType: 'preset',
-      accentPreset: 'blue',
-      accentHex: '#2979FF',
+      accentPreset: 'lobster',
+      accentHex: '#E5484D',
       fontScale: 1,
       fontFamilyPreset: 'system',
       systemPrefersDark: true,
@@ -23,14 +23,32 @@ describe('resolveAppearanceTheme', () => {
       appearanceMode: 'light',
       themePreset: 'classic',
       accentType: 'preset',
-      accentPreset: 'orange',
+      accentPreset: 'tech-blue',
       accentHex: '',
       fontScale: 1,
       fontFamilyPreset: 'system',
       systemPrefersDark: false,
     });
 
-    expect(resolved.cssVariables['--primary-color']).toBe('#F97316');
+    expect(resolved.cssVariables['--primary-color']).toBe('#2F6BFF');
+  });
+
+  it('uses curated preset gradients for named theme colors', () => {
+    const resolved = resolveAppearanceTheme({
+      appearanceMode: 'light',
+      themePreset: 'wechat',
+      accentType: 'preset',
+      accentPreset: 'lobster',
+      accentHex: '',
+      fontScale: 1,
+      fontFamilyPreset: 'system',
+      systemPrefersDark: false,
+    });
+
+    expect(resolved.cssVariables['--primary-gradient']).toBe(
+      'linear-gradient(135deg, #FF8E95 0%, #D83A45 100%)'
+    );
+    expect(resolved.cssVariables['--tab-active-color']).toBe('#D83A45');
   });
 
   it('normalizes custom accent to full uppercase hex', () => {
@@ -38,7 +56,7 @@ describe('resolveAppearanceTheme', () => {
       appearanceMode: 'dark',
       themePreset: 'midnight',
       accentType: 'custom',
-      accentPreset: 'blue',
+      accentPreset: 'lobster',
       accentHex: '#0fa',
       fontScale: 1,
       fontFamilyPreset: 'system',
@@ -53,7 +71,7 @@ describe('resolveAppearanceTheme', () => {
       appearanceMode: 'light',
       themePreset: 'classic',
       accentType: 'preset',
-      accentPreset: 'blue',
+      accentPreset: 'lobster',
       accentHex: '',
       fontScale: 1,
       systemPrefersDark: false,
@@ -78,7 +96,7 @@ describe('resolveAppearanceTheme', () => {
 
     expect(resolved.mode).toBe('light');
     expect(resolved.legacyTheme).toBe('light');
-    expect(resolved.cssVariables['--primary-color']).toBe('#2979FF');
+    expect(resolved.cssVariables['--primary-color']).toBe('#E5484D');
     expect(resolved.cssVariables['--font-family-base']).toContain('SF Pro');
   });
 });

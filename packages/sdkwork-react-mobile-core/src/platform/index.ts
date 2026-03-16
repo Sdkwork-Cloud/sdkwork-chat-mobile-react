@@ -164,6 +164,3 @@ export const Platform: IPlatform = new Proxy({} as IPlatform, {
   },
 });
 
-// Re-export platform implementations
-export { WebPlatform } from './web';
-export { CapacitorPlatform } from './capacitor';

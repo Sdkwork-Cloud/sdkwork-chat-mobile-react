@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActionSheet, CellGroup, CellItem, Navbar, Switch, Toast } from '@sdkwork/react-mobile-commons';
 import { useSettings } from '../hooks/useSettings';
+import { resolveSettingsTranslation } from '../i18n/resolveSettingsTranslation';
 import { settingsService } from '../services/SettingsService';
 
 type GeneralSection =
@@ -65,11 +66,7 @@ export const GeneralPage: React.FC<GeneralPageProps> = ({
 
   const tr = React.useCallback(
     (key: string, fallback: string) => {
-      const appValue = t?.(key);
-      if (appValue && appValue !== key) return appValue;
-      const settingsValue = settingsT?.(key);
-      if (settingsValue && settingsValue !== key) return settingsValue;
-      return fallback;
+      return resolveSettingsTranslation({ appT: t, settingsT, key, fallback });
     },
     [settingsT, t]
   );

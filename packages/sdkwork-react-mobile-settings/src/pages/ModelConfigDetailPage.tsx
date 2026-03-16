@@ -10,7 +10,8 @@ import {
   type ModelChannelOption,
 } from '@sdkwork/react-mobile-commons';
 import { useSettings } from '../hooks/useSettings';
-import type { ModelConfigItem } from '../types';
+import { resolveSettingsTranslation } from '../i18n/resolveSettingsTranslation';
+import type { AIConfig, ModelConfigItem } from '../types';
 import { validateModelConfigInput } from './modelConfigValidation';
 
 interface ModelConfigDetailPageProps {
@@ -20,7 +21,7 @@ interface ModelConfigDetailPageProps {
   onBack?: () => void;
 }
 
-const DOMAIN_PROVIDERS: Record<string, ModelChannelOption[]> = {
+const DOMAIN_PROVIDERS: Record<keyof AIConfig, ModelChannelOption[]> = {
   text: [
     {
       id: 'gemini',
@@ -228,13 +229,10 @@ export const ModelConfigDetailPage: React.FC<ModelConfigDetailPageProps> = ({
   onBack,
 }) => {
   const { config: settingsConfig, updateAIConfig, t: settingsT } = useSettings();
+  const safeDomain = (domain in DOMAIN_PROVIDERS ? domain : 'text') as keyof AIConfig;
   const tr = React.useCallback(
     (key: string, fallback: string) => {
-      const appValue = t?.(key);
-      if (appValue && appValue !== key) return appValue;
-      const settingsValue = settingsT?.(key);
-      if (settingsValue && settingsValue !== key) return settingsValue;
-      return fallback;
+      return resolveSettingsTranslation({ appT: t, settingsT, key, fallback });
     },
     [settingsT, t]
   );
@@ -246,13 +244,13 @@ export const ModelConfigDetailPage: React.FC<ModelConfigDetailPageProps> = ({
   const [showPicker, setShowPicker] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const currentProviders = useMemo(() => DOMAIN_PROVIDERS[domain] || DOMAIN_PROVIDERS.text, [domain]);
+  const currentProviders = useMemo(() => DOMAIN_PROVIDERS[safeDomain], [safeDomain]);
 
   useEffect(() => {
-    const domainConfig = (settingsConfig?.aiConfig as Record<string, ModelConfigItem | undefined> | undefined)?.[domain];
+    const domainConfig = settingsConfig?.aiConfig?.[safeDomain];
     setConfig(createEditableConfig(currentProviders, domainConfig));
     setLoading(false);
-  }, [currentProviders, domain, settingsConfig?.aiConfig]);
+  }, [currentProviders, safeDomain, settingsConfig?.aiConfig]);
 
   const selectedProvider = currentProviders.find((item) => item.id === config.provider) || currentProviders[0];
   const selectedModel =
@@ -267,7 +265,7 @@ export const ModelConfigDetailPage: React.FC<ModelConfigDetailPageProps> = ({
       apiKey: config.apiKey,
       endpoint: config.endpoint,
     });
-    if (!validation.ok) {
+    if (validation.ok === false) {
       if (validation.reason === 'missing-api-key') {
         Toast.info(tr('settings.model_config.api_key_required', 'Please enter API Key'));
       } else {
@@ -286,7 +284,7 @@ export const ModelConfigDetailPage: React.FC<ModelConfigDetailPageProps> = ({
         temperature: clampTemperature(config.temperature),
         maxTokens: normalizeMaxTokens(config.maxTokens),
       };
-      await updateAIConfig(domain as any, payload);
+      await updateAIConfig(safeDomain, payload);
       Toast.success(tr('settings.model_config.saved', 'Configuration updated'));
       onBack?.();
     } catch {

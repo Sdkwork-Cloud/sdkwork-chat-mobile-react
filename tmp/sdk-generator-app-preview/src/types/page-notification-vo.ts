@@ -1,0 +1,19 @@
+import type { NotificationVO } from './notification-vo';
+import type { PageableObject } from './pageable-object';
+import type { SortObject } from './sort-object';
+
+export interface PageNotificationVO {
+  totalElements?: number;
+  totalPages?: number;
+  size?: number;
+  content?: NotificationVO[];
+  number?: number;
+  first?: boolean;
+  last?: boolean;
+  numberOfElements?: number;
+  sort?: SortObject;
+  pageable?: PageableObject;
+  empty?: boolean;
+  records?: NotificationVO[];
+  total?: number;
+}
