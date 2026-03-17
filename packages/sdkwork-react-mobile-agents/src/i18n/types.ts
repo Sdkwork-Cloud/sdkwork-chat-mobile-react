@@ -1,5 +1,5 @@
-// 页面翻译键
-export type AgentsPageKeys = 
+// Page translation keys
+export type AgentsPageKeys =
   | 'pages.agents.title'
   | 'pages.agents.search'
   | 'pages.agents.create'
@@ -14,8 +14,8 @@ export type AgentsPageKeys =
   | 'pages.conversations.title'
   | 'pages.conversations.empty';
 
-// 通用翻译键
-export type AgentsCommonKeys = 
+// Common translation keys
+export type AgentsCommonKeys =
   | 'common.agent'
   | 'common.agents'
   | 'common.conversation'
@@ -35,8 +35,8 @@ export type AgentsCommonKeys =
   | 'common.system'
   | 'common.custom';
 
-// 分类翻译键
-export type AgentsCategoryKeys = 
+// Category translation keys
+export type AgentsCategoryKeys =
   | 'category.all'
   | 'category.productivity'
   | 'category.image'
@@ -44,8 +44,8 @@ export type AgentsCategoryKeys =
   | 'category.life'
   | 'category.mine';
 
-// 操作翻译键
-export type AgentsActionKeys = 
+// Action translation keys
+export type AgentsActionKeys =
   | 'actions.createAgent'
   | 'actions.startChat'
   | 'actions.deleteConversation'
@@ -55,5 +55,9 @@ export type AgentsActionKeys =
   | 'actions.confirmDelete'
   | 'actions.confirmClearHistory';
 
-// 所有翻译键
-export type AgentsTranslationKeys = AgentsPageKeys | AgentsCommonKeys | AgentsCategoryKeys | AgentsActionKeys;
+// Full translation key union
+export type AgentsTranslationKeys =
+  | AgentsPageKeys
+  | AgentsCommonKeys
+  | AgentsCategoryKeys
+  | AgentsActionKeys;

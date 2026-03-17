@@ -7,6 +7,9 @@ export default {
     pay_desc: 'Scan to pay',
     income_yesterday: "Yesterday's Income",
     services_title: 'Services',
+    hidden_balance: 'Hidden',
+    transaction_success: 'Completed',
+    provider_support: 'Service powered by Omni Pay',
     services: {
       credit_card: 'Credit Card',
       top_up: 'Top Up',

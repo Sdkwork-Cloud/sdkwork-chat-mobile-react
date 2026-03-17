@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button, Popup, Toast } from '@sdkwork/react-mobile-commons';
+import { useOptionalTranslation } from '@/src/core/i18n/I18nContext';
 import { EmptyState, PageScaffold, PriceText, SectionCard, SegmentTabs } from '../components';
 import { productService } from '../services/ProductService';
 import { distributionService } from '../services/DistributionService';
@@ -92,7 +93,13 @@ const buildPromotionCopy = (product: Product, mode: string, tr: Tr) => {
 };
 
 export const DistributionGoodsPage: React.FC<DistributionGoodsPageProps> = ({ t, onBack }) => {
+  const appI18n = useOptionalTranslation();
   const tr = (key: string, fallback: string) => {
+    const appValue = appI18n?.t(key);
+    if (appValue && appValue !== key) {
+      return appValue;
+    }
+
     const value = t?.(key) ?? key;
     return value === key ? fallback : value;
   };

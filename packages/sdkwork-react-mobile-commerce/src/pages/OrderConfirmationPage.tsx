@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button, Toast } from '@sdkwork/react-mobile-commons';
+import { useOptionalTranslation } from '@/src/core/i18n/I18nContext';
 import { useCart } from '../hooks/useCart';
 import { useOrders } from '../hooks/useOrders';
 import type { CartItem, PaymentMethod } from '../types';
@@ -53,7 +54,13 @@ const formatVariantText = (item: CartItem): string => {
 };
 
 export const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({ t, onBack, onOrderCreated }) => {
+  const appI18n = useOptionalTranslation();
   const tr = (key: string, fallback: string) => {
+    const appValue = appI18n?.t(key);
+    if (appValue && appValue !== key) {
+      return appValue;
+    }
+
     const value = t?.(key) ?? key;
     return value === key ? fallback : value;
   };

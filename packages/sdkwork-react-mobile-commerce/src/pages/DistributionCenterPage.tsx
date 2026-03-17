@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button, Icon, Toast } from '@sdkwork/react-mobile-commons';
+import { useOptionalTranslation } from '@/src/core/i18n/I18nContext';
 import { PageScaffold, SectionCard } from '../components';
 import { distributionService, type DistributionOverview, type DistributionTask } from '../services/DistributionService';
 
@@ -64,7 +65,13 @@ const EntryItem: React.FC<{
 );
 
 export const DistributionCenterPage: React.FC<DistributionCenterPageProps> = ({ t, onBack, onNavigate }) => {
+  const appI18n = useOptionalTranslation();
   const tr = (key: string, fallback: string) => {
+    const appValue = appI18n?.t(key);
+    if (appValue && appValue !== key) {
+      return appValue;
+    }
+
     const value = t?.(key) ?? key;
     return value === key ? fallback : value;
   };

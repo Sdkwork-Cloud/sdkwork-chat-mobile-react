@@ -1,63 +1,54 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
+import type { Locale } from '@/src/core/i18n/config';
+import { DEFAULT_LOCALE } from '@/src/core/i18n/config';
+import { useTranslation } from '@/src/core/i18n/I18nContext';
+import { getTranslationValue } from '@/src/core/i18n/resources';
 import type { AgentsTranslationKeys } from './types';
 
-// 导入语言包
-import zhCN from './locales/zh-CN';
-import enUS from './locales/en-US';
+let currentLocale: Locale = DEFAULT_LOCALE;
 
-// 语言包映射
-const agentsLocales: Record<string, Record<string, string>> = {
-  'zh-CN': zhCN,
-  'en-US': enUS,
+const interpolate = (message: string, params?: Record<string, string>) => {
+  if (!params) {
+    return message;
+  }
+
+  return Object.entries(params).reduce((output, [paramKey, value]) => {
+    return output
+      .replace(new RegExp(`{{${paramKey}}}`, 'g'), value)
+      .replace(new RegExp(`\\{${paramKey}\\}`, 'g'), value);
+  }, message);
 };
 
-// 当前语言
-let currentLocale = 'zh-CN';
-
-/**
- * 设置当前语言
- */
 export function setLocale(locale: string): void {
-  currentLocale = locale;
+  currentLocale = locale === 'en-US' ? 'en-US' : 'zh-CN';
 }
 
-/**
- * 获取当前语言
- */
-export function getLocale(): string {
+export function getLocale(): Locale {
   return currentLocale;
 }
 
-/**
- * 翻译函数
- */
 export function t(key: AgentsTranslationKeys, params?: Record<string, string>): string {
-  const localeData = agentsLocales[currentLocale] || agentsLocales['zh-CN'];
-  let text = localeData[key] || key;
-  
-  // 替换参数
-  if (params) {
-    Object.entries(params).forEach(([paramKey, value]) => {
-      text = text.replace(new RegExp(`{{${paramKey}}}`, 'g'), value);
-    });
-  }
-  
-  return text;
+  const message = getTranslationValue(currentLocale, key) || key;
+  return interpolate(message, params);
 }
 
-/**
- * 使用智能体模块翻译 Hook
- */
 export function useAgentsI18n() {
+  const appI18n = useTranslation();
+
+  useEffect(() => {
+    currentLocale = appI18n.locale;
+  }, [appI18n.locale]);
+
   const translate = useCallback(
-    (key: AgentsTranslationKeys, params?: Record<string, string>) => {
-      return t(key, params);
-    },
-    []
+    (key: AgentsTranslationKeys, params?: Record<string, string>) => appI18n.t(key, params),
+    [appI18n]
   );
 
-  return { t: translate, locale: currentLocale, setLocale };
+  return {
+    t: translate,
+    locale: appI18n.locale,
+    setLocale: appI18n.setLocale,
+  };
 }
 
-// 导出类型
 export type { AgentsTranslationKeys } from './types';

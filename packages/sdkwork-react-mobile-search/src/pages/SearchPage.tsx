@@ -14,124 +14,6 @@ interface SearchPageProps {
 
 type LocaleCode = 'zh-CN' | 'en-US';
 
-type LocaleCopy = {
-  placeholder: string;
-  contextPlaceholder: string;
-  addFriendPlaceholder: string;
-  addFriendHint: string;
-  addFriendTipsTitle: string;
-  addFriendTipScan: string;
-  addFriendTipQrcode: string;
-  addFriendTipRequests: string;
-  addFriendAction: string;
-  addFriendSending: string;
-  addFriendSuccess: string;
-  addFriendOpenRequests: string;
-  addFriendAlreadySent: string;
-  addFriendAlreadyContact: string;
-  addFriendInvalid: string;
-  addFriendFailed: string;
-  cancel: string;
-  recentSearch: string;
-  clear: string;
-  clearConfirm: string;
-  searchScope: string;
-  quickAgents: string;
-  quickMoments: string;
-  quickFiles: string;
-  sectionAgents: string;
-  sectionChats: string;
-  sectionContextChats: string;
-  sectionOthers: string;
-  searching: string;
-  noResults: string;
-  webSearch: string;
-  webSearchDesc: string;
-  createSessionFailed: string;
-  locateFileHint: string;
-  groupChat: string;
-  conversation: string;
-};
-
-const COPY: Record<LocaleCode, LocaleCopy> = {
-  'zh-CN': {
-    placeholder: '搜索智能体、聊天记录、内容',
-    contextPlaceholder: '搜索“{name}”聊天记录',
-    addFriendPlaceholder: '微信号/手机号',
-    addFriendHint: '输入微信号、手机号或昵称，向对方发送好友申请',
-    addFriendTipsTitle: '你还可以通过以下方式添加',
-    addFriendTipScan: '扫一扫名片二维码',
-    addFriendTipQrcode: '出示我的二维码',
-    addFriendTipRequests: '查看新的朋友',
-    addFriendAction: '发送添加申请',
-    addFriendSending: '发送中...',
-    addFriendSuccess: '已向“{account}”发送好友申请',
-    addFriendOpenRequests: '查看新的朋友',
-    addFriendAlreadySent: '该账号已有待处理申请',
-    addFriendAlreadyContact: '该账号已在通讯录中',
-    addFriendInvalid: '请输入有效账号',
-    addFriendFailed: '发送失败，请稍后重试',
-    cancel: '取消',
-    recentSearch: '最近搜索',
-    clear: '清空',
-    clearConfirm: '确定清空搜索历史？',
-    searchScope: '搜索指定内容',
-    quickAgents: '智能体',
-    quickMoments: '朋友圈',
-    quickFiles: '文件',
-    sectionAgents: '智能体',
-    sectionChats: '聊天记录',
-    sectionContextChats: '找到 {count} 条相关记录',
-    sectionOthers: '内容（文件/文章/创作）',
-    searching: '搜索中...',
-    noResults: '未找到“{keyword}”相关结果',
-    webSearch: '搜一搜',
-    webSearchDesc: '网络搜索、百科、视频',
-    createSessionFailed: '创建会话失败，请稍后重试',
-    locateFileHint: '已进入云盘，请在列表中查看文件：{title}',
-    groupChat: '群聊',
-    conversation: '会话',
-  },
-  'en-US': {
-    placeholder: 'Search agents, chats and content',
-    contextPlaceholder: 'Search messages in "{name}"',
-    addFriendPlaceholder: 'WeChat ID / Phone',
-    addFriendHint: 'Enter WeChat ID, phone number, or nickname to send a friend request',
-    addFriendTipsTitle: 'You can also add friends via',
-    addFriendTipScan: 'Scan a QR code',
-    addFriendTipQrcode: 'Show my QR code',
-    addFriendTipRequests: 'Open New Friends',
-    addFriendAction: 'Send Request',
-    addFriendSending: 'Sending...',
-    addFriendSuccess: 'Friend request sent to "{account}"',
-    addFriendOpenRequests: 'Open New Friends',
-    addFriendAlreadySent: 'A pending request already exists',
-    addFriendAlreadyContact: 'This account is already in contacts',
-    addFriendInvalid: 'Please enter a valid account',
-    addFriendFailed: 'Failed to send request. Please try again.',
-    cancel: 'Cancel',
-    recentSearch: 'Recent Searches',
-    clear: 'Clear',
-    clearConfirm: 'Clear all search history?',
-    searchScope: 'Search specific content',
-    quickAgents: 'Agents',
-    quickMoments: 'Moments',
-    quickFiles: 'Files',
-    sectionAgents: 'Agents',
-    sectionChats: 'Chats',
-    sectionContextChats: '{count} related records',
-    sectionOthers: 'Content (Files / Articles / Creations)',
-    searching: 'Searching...',
-    noResults: 'No results found for "{keyword}"',
-    webSearch: 'Search Web',
-    webSearchDesc: 'Web, encyclopedia and videos',
-    createSessionFailed: 'Failed to create conversation. Please try again.',
-    locateFileHint: 'Cloud drive opened, file: {title}',
-    groupChat: 'Group Chat',
-    conversation: 'Conversation',
-  },
-};
-
 const resolveLocale = (): LocaleCode => {
   const htmlLang = (document.documentElement.lang || '').toLowerCase();
   const navLang = (navigator.language || '').toLowerCase();
@@ -141,15 +23,18 @@ const resolveLocale = (): LocaleCode => {
 
 const interpolate = (text: string, params?: Record<string, string | number>): string => {
   if (!params) return text;
-  return text.replace(/\{(\w+)\}/g, (_, key: string) => String(params[key] ?? ''));
+
+  return Object.entries(params).reduce((output, [key, value]) => {
+    return output.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value));
+  }, text);
 };
 
-const resolveIconEmoji = (type: SearchResultType): string => {
-  if (type === 'file') return '📁';
-  if (type === 'article') return '📰';
-  if (type === 'creation') return '🎨';
-  if (type === 'chat') return '💬';
-  return '🤖';
+const resolveItemBadge = (type: SearchResultType): string => {
+  if (type === 'file') return 'FILE';
+  if (type === 'article') return 'DOC';
+  if (type === 'creation') return 'ART';
+  if (type === 'chat') return 'CHAT';
+  return 'APP';
 };
 
 const HighlightText = React.memo(({ text, keyword }: { text: string; keyword: string }) => {
@@ -175,7 +60,7 @@ const formatTimestamp = (value: number, locale: LocaleCode): string => {
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleDateString(locale === 'zh-CN' ? 'zh-CN' : 'en-US', {
+  return date.toLocaleDateString(locale, {
     month: '2-digit',
     day: '2-digit',
   });
@@ -183,7 +68,6 @@ const formatTimestamp = (value: number, locale: LocaleCode): string => {
 
 export const SearchPage: React.FC<SearchPageProps> = ({ t, onCancel, onNavigate, onResultClick }) => {
   const locale = useMemo(resolveLocale, []);
-  const copy = COPY[locale];
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [query, setQuery] = useState('');
@@ -201,16 +85,12 @@ export const SearchPage: React.FC<SearchPageProps> = ({ t, onCancel, onNavigate,
   const [requestTarget, setRequestTarget] = useState('');
 
   const text = useCallback(
-    (key: keyof LocaleCopy, i18nKey?: string, vars?: Record<string, string | number>) => {
-      if (i18nKey && t) {
-        const external = t(i18nKey);
-        if (external && external !== i18nKey) {
-          return interpolate(external, vars);
-        }
-      }
-      return interpolate(copy[key], vars);
+    (key: string, fallback: string, vars?: Record<string, string | number>) => {
+      const external = t?.(key);
+      const value = external && external !== key ? external : fallback;
+      return interpolate(value, vars);
     },
-    [copy, t]
+    [t]
   );
 
   const navigate = useCallback(
@@ -248,6 +128,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({ t, onCancel, onNavigate,
       setRequestTarget('');
       return;
     }
+
     const value = query.trim();
     if (!value || value !== requestTarget) {
       setRequestState('idle');
@@ -276,12 +157,12 @@ export const SearchPage: React.FC<SearchPageProps> = ({ t, onCancel, onNavigate,
       if (!active || !current) return;
 
       if (current.type === 'group') {
-        setContextName(current.groupName || text('groupChat'));
+        setContextName(current.groupName || text('search.groupChat', 'Group Chat'));
         return;
       }
 
       const agent = AGENT_REGISTRY[current.agentId];
-      setContextName(agent?.name || text('conversation'));
+      setContextName(agent?.name || text('search.conversation', 'Conversation'));
     };
 
     void loadContext();
@@ -313,7 +194,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({ t, onCancel, onNavigate,
   }, [navigate, onCancel]);
 
   const handleClearHistory = useCallback(async () => {
-    const confirmed = window.confirm(text('clearConfirm'));
+    const confirmed = window.confirm(text('search.clearConfirm', 'Clear all search history?'));
     if (!confirmed) return;
     await clearHistory();
   }, [clearHistory, text]);
@@ -321,7 +202,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({ t, onCancel, onNavigate,
   const handleSendFriendRequest = useCallback(async () => {
     const account = query.trim();
     if (!account || account.length < 2) {
-      Toast.info(text('addFriendInvalid'));
+      Toast.info(text('search.addFriendInvalid', 'Please enter a valid account'));
       return;
     }
 
@@ -331,7 +212,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({ t, onCancel, onNavigate,
       const contact = await contactsService.findByName(account);
       if (contact?.id) {
         setRequestState('idle');
-        Toast.info(text('addFriendAlreadyContact'));
+        Toast.info(text('search.addFriendAlreadyContact', 'This account is already in contacts'));
         return;
       }
 
@@ -343,17 +224,22 @@ export const SearchPage: React.FC<SearchPageProps> = ({ t, onCancel, onNavigate,
       if (duplicate) {
         setRequestState('sent');
         setRequestTarget(account);
-        Toast.info(text('addFriendAlreadySent'));
+        Toast.info(text('search.addFriendAlreadySent', 'A pending request already exists'));
         return;
       }
 
-      await contactsService.sendFriendRequest(account, '你好，想添加你为好友');
+      await contactsService.sendFriendRequest(
+        account,
+        text('search.addFriendRequestMessage', 'Hello, I would like to add you as a friend.')
+      );
       setRequestState('sent');
       setRequestTarget(account);
-      Toast.success(text('addFriendSuccess', undefined, { account }));
+      Toast.success(
+        text('search.addFriendSuccess', 'Friend request sent to "{account}"', { account })
+      );
     } catch (_error) {
       setRequestState('idle');
-      Toast.error(text('addFriendFailed'));
+      Toast.error(text('search.addFriendFailed', 'Failed to send request. Please try again.'));
     }
   }, [query, text]);
 
@@ -393,7 +279,9 @@ export const SearchPage: React.FC<SearchPageProps> = ({ t, onCancel, onNavigate,
       if (item.type === 'agent') {
         const ok = await openAgentChat(item.id);
         if (!ok) {
-          Toast.error(text('createSessionFailed'));
+          Toast.error(
+            text('search.createSessionFailed', 'Failed to create conversation. Please try again.')
+          );
         }
         return;
       }
@@ -413,7 +301,9 @@ export const SearchPage: React.FC<SearchPageProps> = ({ t, onCancel, onNavigate,
 
       if (item.type === 'file') {
         navigate('/drive');
-        Toast.info(text('locateFileHint', undefined, { title: item.title }));
+        Toast.info(
+          text('search.locateFileHint', 'Cloud drive opened, file: {title}', { title: item.title })
+        );
         return;
       }
 
@@ -436,7 +326,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({ t, onCancel, onNavigate,
     const keyword = rawQueryValue;
     if (!keyword) return;
     await addHistory(keyword);
-    const toast = Toast.loading(text('searching'));
+    const toast = Toast.loading(text('search.searching', 'Searching...'));
     window.setTimeout(() => toast.close(), 850);
   }, [addHistory, rawQueryValue, text]);
 
@@ -444,10 +334,12 @@ export const SearchPage: React.FC<SearchPageProps> = ({ t, onCancel, onNavigate,
   const hasResults = results.agents.length > 0 || results.chats.length > 0 || results.others.length > 0;
 
   const placeholder = isAddFriendMode
-    ? text('addFriendPlaceholder')
-    : (contextName
-      ? text('contextPlaceholder', undefined, { name: contextName })
-      : text('placeholder', 'search.placeholder'));
+    ? text('search.addFriendPlaceholder', 'WeChat ID / Phone')
+    : (
+      contextName
+        ? text('search.contextPlaceholder', 'Search messages in "{name}"', { name: contextName })
+        : text('search.placeholder', 'Search agents, chats and content')
+    );
 
   return (
     <Page noNavbar noPadding background="var(--bg-body)">
@@ -477,7 +369,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({ t, onCancel, onNavigate,
                 type="button"
                 className="search-page__clear-btn"
                 onClick={() => setQuery('')}
-                aria-label="clear"
+                aria-label={text('search.clear', 'Clear')}
               >
                 <Icon name="clear" size={18} color="var(--text-secondary)" />
               </button>
@@ -485,7 +377,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({ t, onCancel, onNavigate,
           </div>
 
           <button type="button" className="search-page__cancel-btn" onClick={handleCancel}>
-            {text('cancel', 'search.cancel')}
+            {text('search.cancel', 'Cancel')}
           </button>
         </div>
 
@@ -494,30 +386,39 @@ export const SearchPage: React.FC<SearchPageProps> = ({ t, onCancel, onNavigate,
             <div className="search-page__add-friend">
               <div className="search-page__add-hint">
                 <Icon name="addUser" size={16} color="#ffffff" />
-                <span>{text('addFriendHint')}</span>
+                <span>
+                  {text(
+                    'search.addFriendHint',
+                    'Enter WeChat ID, phone number, or nickname to send a friend request'
+                  )}
+                </span>
               </div>
 
               {!hasQuery ? (
                 <div className="search-page__add-empty">
-                  <div className="search-page__add-title">{text('addFriendTipsTitle')}</div>
+                  <div className="search-page__add-title">
+                    {text('search.addFriendTipsTitle', 'You can also add friends via')}
+                  </div>
                   <div className="search-page__add-grid">
                     <button type="button" onClick={() => navigate('/scan')}>
                       <Icon name="scan" size={18} color="var(--primary-color)" />
-                      <span>{text('addFriendTipScan')}</span>
+                      <span>{text('search.addFriendTipScan', 'Scan a QR code')}</span>
                     </button>
                     <button type="button" onClick={() => navigate('/my-qrcode')}>
                       <Icon name="qrcode" size={18} color="var(--primary-color)" />
-                      <span>{text('addFriendTipQrcode')}</span>
+                      <span>{text('search.addFriendTipQrcode', 'Show my QR code')}</span>
                     </button>
                     <button type="button" onClick={handleOpenNewFriends}>
                       <Icon name="addUser" size={18} color="var(--primary-color)" />
-                      <span>{text('addFriendTipRequests')}</span>
+                      <span>{text('search.addFriendTipRequests', 'Open New Friends')}</span>
                     </button>
                   </div>
                 </div>
               ) : (
                 <div className="search-page__add-result">
-                  <div className="search-page__add-account">账号：{rawQueryValue}</div>
+                  <div className="search-page__add-account">
+                    {text('search.addFriendAccountLabel', 'Account')}: {rawQueryValue}
+                  </div>
                   <button
                     type="button"
                     className="search-page__add-submit"
@@ -526,11 +427,13 @@ export const SearchPage: React.FC<SearchPageProps> = ({ t, onCancel, onNavigate,
                       void handleSendFriendRequest();
                     }}
                   >
-                    {requestState === 'sending' ? text('addFriendSending') : text('addFriendAction')}
+                    {requestState === 'sending'
+                      ? text('search.addFriendSending', 'Sending...')
+                      : text('search.addFriendAction', 'Send Request')}
                   </button>
                   {requestState === 'sent' && requestTarget === rawQueryValue ? (
                     <button type="button" className="search-page__add-open" onClick={handleOpenNewFriends}>
-                      {text('addFriendOpenRequests')}
+                      {text('search.addFriendOpenRequests', 'Open New Friends')}
                     </button>
                   ) : null}
                 </div>
@@ -538,196 +441,208 @@ export const SearchPage: React.FC<SearchPageProps> = ({ t, onCancel, onNavigate,
             </div>
           ) : (
             !hasQuery ? (
-            <div className="search-page__empty">
-              {history.length > 0 ? (
-                <section className="search-page__history">
-                  <div className="search-page__history-head">
-                    <span>{text('recentSearch', 'search.history')}</span>
-                    <button type="button" onClick={handleClearHistory}>
-                      {text('clear', 'search.clear')}
-                    </button>
-                  </div>
-                  <div className="search-page__history-tags">
-                    {history.map((item) => (
-                      <button
-                        type="button"
-                        key={item.keyword}
-                        className="search-page__history-tag"
-                        onClick={() => setQuery(item.keyword)}
-                      >
-                        {item.keyword}
+              <div className="search-page__empty">
+                {history.length > 0 ? (
+                  <section className="search-page__history">
+                    <div className="search-page__history-head">
+                      <span>{text('search.history', 'Recent Searches')}</span>
+                      <button type="button" onClick={handleClearHistory}>
+                        {text('search.clear', 'Clear')}
                       </button>
-                    ))}
-                  </div>
-                </section>
-              ) : null}
+                    </div>
+                    <div className="search-page__history-tags">
+                      {history.map((item) => (
+                        <button
+                          type="button"
+                          key={item.keyword}
+                          className="search-page__history-tag"
+                          onClick={() => setQuery(item.keyword)}
+                        >
+                          {item.keyword}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
 
-              {!contextSessionId ? (
-                <section className="search-page__quick-links">
-                  <div className="search-page__quick-title">{text('searchScope')}</div>
-                  <div className="search-page__quick-grid">
-                    <button type="button" onClick={() => navigate('/agents')}>
-                      <Icon name="agents" size={18} color="var(--primary-color)" />
-                      <span>{text('quickAgents')}</span>
-                    </button>
-                    <button type="button" onClick={() => navigate('/moments')}>
-                      <Icon name="moments" size={18} color="var(--primary-color)" />
-                      <span>{text('quickMoments')}</span>
-                    </button>
-                    <button type="button" onClick={() => navigate('/drive')}>
-                      <span className="search-page__emoji-icon">📁</span>
-                      <span>{text('quickFiles')}</span>
-                    </button>
-                  </div>
-                </section>
-              ) : null}
-            </div>
+                {!contextSessionId ? (
+                  <section className="search-page__quick-links">
+                    <div className="search-page__quick-title">
+                      {text('search.searchScope', 'Search specific content')}
+                    </div>
+                    <div className="search-page__quick-grid">
+                      <button type="button" onClick={() => navigate('/agents')}>
+                        <Icon name="agents" size={18} color="var(--primary-color)" />
+                        <span>{text('search.quickAgents', 'Agents')}</span>
+                      </button>
+                      <button type="button" onClick={() => navigate('/moments')}>
+                        <Icon name="moments" size={18} color="var(--primary-color)" />
+                        <span>{text('search.quickMoments', 'Moments')}</span>
+                      </button>
+                      <button type="button" onClick={() => navigate('/drive')}>
+                        <span className="search-page__emoji-icon">FILE</span>
+                        <span>{text('search.quickFiles', 'Files')}</span>
+                      </button>
+                    </div>
+                  </section>
+                ) : null}
+              </div>
             ) : (
-            <div className="search-page__results">
-              {isLoading ? (
-                <div className="search-page__status">{text('searching')}</div>
-              ) : null}
+              <div className="search-page__results">
+                {isLoading ? (
+                  <div className="search-page__status">{text('search.searching', 'Searching...')}</div>
+                ) : null}
 
-              {error ? (
-                <div className="search-page__status search-page__status--error">{error}</div>
-              ) : null}
+                {error ? (
+                  <div className="search-page__status search-page__status--error">{error}</div>
+                ) : null}
 
-              {!isLoading && results.agents.length > 0 ? (
-                <section className="search-page__group">
-                  <div className="search-page__group-title">{text('sectionAgents')}</div>
-                  <div className="search-page__group-content">
-                    {results.agents.map((item) => (
+                {!isLoading && results.agents.length > 0 ? (
+                  <section className="search-page__group">
+                    <div className="search-page__group-title">{text('search.sectionAgents', 'Agents')}</div>
+                    <div className="search-page__group-content">
+                      {results.agents.map((item) => (
+                        <button
+                          key={`agent-${item.id}`}
+                          type="button"
+                          className="search-page__cell"
+                          onClick={() => {
+                            void handleItemClick(item);
+                          }}
+                        >
+                          <div className="search-page__cell-icon">
+                            {typeof item.avatar === 'string' && item.avatar.startsWith('http')
+                              ? <img src={item.avatar} alt={item.title} />
+                              : <span>{item.avatar || resolveItemBadge(item.type)}</span>}
+                          </div>
+                          <div className="search-page__cell-main">
+                            <div className="search-page__cell-title">
+                              <HighlightText text={item.title} keyword={searchQueryValue} />
+                            </div>
+                            <div className="search-page__cell-subtitle">{item.subTitle}</div>
+                          </div>
+                          <Icon name="arrow-right" size={16} color="var(--text-placeholder)" />
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
+
+                {!isLoading && results.chats.length > 0 ? (
+                  <section className="search-page__group">
+                    <div className="search-page__group-title">
+                      {contextSessionId
+                        ? text('search.sectionContextChats', '{count} related records', {
+                          count: results.chats.length,
+                        })
+                        : text('search.sectionChats', 'Chats')}
+                    </div>
+                    <div className="search-page__group-content">
+                      {results.chats.map((item) => (
+                        <button
+                          key={`chat-${item.sessionId || item.id}-${item.messageId || 'latest'}`}
+                          type="button"
+                          className="search-page__cell"
+                          onClick={() => {
+                            void handleItemClick(item);
+                          }}
+                        >
+                          <div className="search-page__cell-icon">
+                            {typeof item.avatar === 'string' && item.avatar.startsWith('http')
+                              ? <img src={item.avatar} alt={item.title} />
+                              : <span>{item.avatar || resolveItemBadge(item.type)}</span>}
+                          </div>
+                          <div className="search-page__cell-main">
+                            <div className="search-page__cell-title">
+                              <HighlightText text={item.title} keyword={searchQueryValue} />
+                            </div>
+                            <div className="search-page__cell-subtitle">
+                              <HighlightText text={item.subTitle} keyword={searchQueryValue} />
+                            </div>
+                          </div>
+                          <div className="search-page__cell-tail">
+                            <span>{formatTimestamp(item.timestamp, locale)}</span>
+                            <Icon name="arrow-right" size={16} color="var(--text-placeholder)" />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
+
+                {!isLoading && results.others.length > 0 ? (
+                  <section className="search-page__group">
+                    <div className="search-page__group-title">
+                      {text('search.sectionOthers', 'Content (Files / Articles / Creations)')}
+                    </div>
+                    <div className="search-page__group-content">
+                      {results.others.map((item) => (
+                        <button
+                          key={`other-${item.type}-${item.id}`}
+                          type="button"
+                          className="search-page__cell"
+                          onClick={() => {
+                            void handleItemClick(item);
+                          }}
+                        >
+                          <div className="search-page__cell-icon">
+                            <span>{item.avatar || resolveItemBadge(item.type)}</span>
+                          </div>
+                          <div className="search-page__cell-main">
+                            <div className="search-page__cell-title">
+                              <HighlightText text={item.title} keyword={searchQueryValue} />
+                            </div>
+                            <div className="search-page__cell-subtitle">{item.subTitle}</div>
+                          </div>
+                          <div className="search-page__cell-tail">
+                            <span>{formatTimestamp(item.timestamp, locale)}</span>
+                            <Icon name="arrow-right" size={16} color="var(--text-placeholder)" />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
+
+                {!isLoading && !hasResults ? (
+                  <div className="search-page__no-result">
+                    <Icon name="search" size={28} color="var(--text-placeholder)" />
+                    <p>
+                      {text('search.noResults', 'No results found for "{keyword}"', {
+                        keyword: searchQueryValue,
+                      })}
+                    </p>
+                  </div>
+                ) : null}
+
+                {!contextSessionId && !isLoading ? (
+                  <section className="search-page__group search-page__group--web">
+                    <div className="search-page__group-content">
                       <button
-                        key={`agent-${item.id}`}
                         type="button"
-                        className="search-page__cell"
+                        className="search-page__cell search-page__cell--web"
                         onClick={() => {
-                          void handleItemClick(item);
+                          void handleWebSearch();
                         }}
                       >
-                        <div className="search-page__cell-icon">
-                          {typeof item.avatar === 'string' && item.avatar.startsWith('http')
-                            ? <img src={item.avatar} alt={item.title} />
-                            : <span>{item.avatar || resolveIconEmoji(item.type)}</span>}
+                        <div className="search-page__web-icon">
+                          <Icon name="search" size={18} color="#ffffff" />
                         </div>
                         <div className="search-page__cell-main">
                           <div className="search-page__cell-title">
-                            <HighlightText text={item.title} keyword={searchQueryValue} />
+                            {text('search.webSearch', 'Search Web')}
+                            <span className="search-page__web-keyword"> "{rawQueryValue}"</span>
                           </div>
-                          <div className="search-page__cell-subtitle">{item.subTitle}</div>
+                          <div className="search-page__cell-subtitle">
+                            {text('search.webSearchDesc', 'Web, encyclopedia and videos')}
+                          </div>
                         </div>
                         <Icon name="arrow-right" size={16} color="var(--text-placeholder)" />
                       </button>
-                    ))}
-                  </div>
-                </section>
-              ) : null}
-
-              {!isLoading && results.chats.length > 0 ? (
-                <section className="search-page__group">
-                  <div className="search-page__group-title">
-                    {contextSessionId
-                      ? text('sectionContextChats', undefined, { count: results.chats.length })
-                      : text('sectionChats')}
-                  </div>
-                  <div className="search-page__group-content">
-                    {results.chats.map((item) => (
-                      <button
-                        key={`chat-${item.sessionId || item.id}-${item.messageId || 'latest'}`}
-                        type="button"
-                        className="search-page__cell"
-                        onClick={() => {
-                          void handleItemClick(item);
-                        }}
-                      >
-                        <div className="search-page__cell-icon">
-                          {typeof item.avatar === 'string' && item.avatar.startsWith('http')
-                            ? <img src={item.avatar} alt={item.title} />
-                            : <span>{item.avatar || resolveIconEmoji(item.type)}</span>}
-                        </div>
-                        <div className="search-page__cell-main">
-                          <div className="search-page__cell-title">
-                            <HighlightText text={item.title} keyword={searchQueryValue} />
-                          </div>
-                          <div className="search-page__cell-subtitle">
-                            <HighlightText text={item.subTitle} keyword={searchQueryValue} />
-                          </div>
-                        </div>
-                        <div className="search-page__cell-tail">
-                          <span>{formatTimestamp(item.timestamp, locale)}</span>
-                          <Icon name="arrow-right" size={16} color="var(--text-placeholder)" />
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              ) : null}
-
-              {!isLoading && results.others.length > 0 ? (
-                <section className="search-page__group">
-                  <div className="search-page__group-title">{text('sectionOthers')}</div>
-                  <div className="search-page__group-content">
-                    {results.others.map((item) => (
-                      <button
-                        key={`other-${item.type}-${item.id}`}
-                        type="button"
-                        className="search-page__cell"
-                        onClick={() => {
-                          void handleItemClick(item);
-                        }}
-                      >
-                        <div className="search-page__cell-icon">
-                          <span>{item.avatar || resolveIconEmoji(item.type)}</span>
-                        </div>
-                        <div className="search-page__cell-main">
-                          <div className="search-page__cell-title">
-                            <HighlightText text={item.title} keyword={searchQueryValue} />
-                          </div>
-                          <div className="search-page__cell-subtitle">{item.subTitle}</div>
-                        </div>
-                        <div className="search-page__cell-tail">
-                          <span>{formatTimestamp(item.timestamp, locale)}</span>
-                          <Icon name="arrow-right" size={16} color="var(--text-placeholder)" />
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              ) : null}
-
-              {!isLoading && !hasResults ? (
-                <div className="search-page__no-result">
-                  <Icon name="search" size={28} color="var(--text-placeholder)" />
-                  <p>{text('noResults', 'search.noResults', { keyword: searchQueryValue })}</p>
-                </div>
-              ) : null}
-
-              {!contextSessionId && !isLoading ? (
-                <section className="search-page__group search-page__group--web">
-                  <div className="search-page__group-content">
-                    <button
-                      type="button"
-                      className="search-page__cell search-page__cell--web"
-                      onClick={() => {
-                        void handleWebSearch();
-                      }}
-                    >
-                      <div className="search-page__web-icon">
-                        <Icon name="search" size={18} color="#ffffff" />
-                      </div>
-                      <div className="search-page__cell-main">
-                        <div className="search-page__cell-title">
-                          {text('webSearch')}
-                          <span className="search-page__web-keyword"> "{rawQueryValue}"</span>
-                        </div>
-                        <div className="search-page__cell-subtitle">{text('webSearchDesc')}</div>
-                      </div>
-                      <Icon name="arrow-right" size={16} color="var(--text-placeholder)" />
-                    </button>
-                  </div>
-                </section>
-              ) : null}
-            </div>
+                    </div>
+                  </section>
+                ) : null}
+              </div>
             )
           )}
         </div>

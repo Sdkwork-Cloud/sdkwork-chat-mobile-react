@@ -1,5 +1,6 @@
 import React from 'react';
 import { Avatar, Button, Icon, Popup, Toast } from '@sdkwork/react-mobile-commons';
+import { useOptionalTranslation } from '@/src/core/i18n/I18nContext';
 import { EmptyState, PageScaffold, SectionCard, SegmentTabs } from '../components';
 import { distributionService, type TeamMember } from '../services/DistributionService';
 import { formatDateTime } from './helpers';
@@ -18,7 +19,13 @@ const fillTemplate = (template: string, values: Record<string, string | number>)
   });
 
 export const MyTeamPage: React.FC<MyTeamPageProps> = ({ t, onBack }) => {
+  const appI18n = useOptionalTranslation();
   const tr = (key: string, fallback: string) => {
+    const appValue = appI18n?.t(key);
+    if (appValue && appValue !== key) {
+      return appValue;
+    }
+
     const value = t?.(key) ?? key;
     return value === key ? fallback : value;
   };
