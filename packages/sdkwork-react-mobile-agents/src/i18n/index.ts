@@ -1,53 +1,70 @@
-import { useCallback, useEffect } from 'react';
-import type { Locale } from '@/src/core/i18n/config';
-import { DEFAULT_LOCALE } from '@/src/core/i18n/config';
-import { useTranslation } from '@/src/core/i18n/I18nContext';
-import { getTranslationValue } from '@/src/core/i18n/resources';
+import { useCallback } from 'react';
+import enUS from './locales/en-US';
+import zhCN from './locales/zh-CN';
 import type { AgentsTranslationKeys } from './types';
+
+type Locale = 'zh-CN' | 'en-US';
+type ExternalTranslator = (key: string, params?: Record<string, string | number>) => string;
+
+const DEFAULT_LOCALE: Locale = 'zh-CN';
+const resources: Record<Locale, Record<string, string>> = {
+  'zh-CN': zhCN,
+  'en-US': enUS,
+};
 
 let currentLocale: Locale = DEFAULT_LOCALE;
 
-const interpolate = (message: string, params?: Record<string, string>) => {
+const normalizeLocale = (locale?: string): Locale => (locale === 'en-US' ? 'en-US' : 'zh-CN');
+
+const interpolate = (message: string, params?: Record<string, string | number>) => {
   if (!params) {
     return message;
   }
 
   return Object.entries(params).reduce((output, [paramKey, value]) => {
+    const nextValue = String(value);
     return output
-      .replace(new RegExp(`{{${paramKey}}}`, 'g'), value)
-      .replace(new RegExp(`\\{${paramKey}\\}`, 'g'), value);
+      .replace(new RegExp(`{{${paramKey}}}`, 'g'), nextValue)
+      .replace(new RegExp(`\\{${paramKey}\\}`, 'g'), nextValue);
   }, message);
 };
 
+const getLocalTranslation = (locale: Locale, key: AgentsTranslationKeys): string => {
+  return resources[locale][key] || resources[DEFAULT_LOCALE][key] || key;
+};
+
 export function setLocale(locale: string): void {
-  currentLocale = locale === 'en-US' ? 'en-US' : 'zh-CN';
+  currentLocale = normalizeLocale(locale);
 }
 
 export function getLocale(): Locale {
   return currentLocale;
 }
 
-export function t(key: AgentsTranslationKeys, params?: Record<string, string>): string {
-  const message = getTranslationValue(currentLocale, key) || key;
-  return interpolate(message, params);
+export function t(key: AgentsTranslationKeys, params?: Record<string, string | number>): string {
+  return interpolate(getLocalTranslation(currentLocale, key), params);
 }
 
-export function useAgentsI18n() {
-  const appI18n = useTranslation();
-
-  useEffect(() => {
-    currentLocale = appI18n.locale;
-  }, [appI18n.locale]);
+export function useAgentsI18n(externalT?: ExternalTranslator, locale?: string) {
+  const activeLocale = normalizeLocale(locale || currentLocale);
 
   const translate = useCallback(
-    (key: AgentsTranslationKeys, params?: Record<string, string>) => appI18n.t(key, params),
-    [appI18n]
+    (key: AgentsTranslationKeys, params?: Record<string, string | number>) => {
+      if (externalT) {
+        const externalValue = externalT(key, params);
+        if (externalValue && externalValue !== key) {
+          return externalValue;
+        }
+      }
+      return interpolate(getLocalTranslation(activeLocale, key), params);
+    },
+    [activeLocale, externalT],
   );
 
   return {
     t: translate,
-    locale: appI18n.locale,
-    setLocale: appI18n.setLocale,
+    locale: activeLocale,
+    setLocale,
   };
 }
 

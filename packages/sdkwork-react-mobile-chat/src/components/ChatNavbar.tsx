@@ -10,7 +10,7 @@ interface ChatNavbarProps {
   variant?: 'default' | 'transparent';
 }
 
-export const ChatNavbar: React.FC<ChatNavbarProps> = ({ title, onBack, sessionId, onMenuClick, variant = 'default' }) => {
+export const ChatNavbar: React.FC<ChatNavbarProps> = ({ title, onBack, sessionId: _sessionId, onMenuClick, variant = 'default' }) => {
   const handleMenuClick = () => {
      onMenuClick?.();
   };

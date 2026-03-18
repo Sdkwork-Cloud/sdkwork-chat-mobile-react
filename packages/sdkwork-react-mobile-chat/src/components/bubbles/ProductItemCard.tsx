@@ -32,7 +32,7 @@ export const ProductItemCard: React.FC<ProductItemCardProps> = ({
   onClick,
   onBuy,
   width,
-  isHero = false,
+  isHero: _isHero = false,
   rank,
 }) => {
   const startPos = useRef({ x: 0, y: 0 });

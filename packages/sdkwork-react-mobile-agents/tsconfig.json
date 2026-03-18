@@ -24,7 +24,9 @@
       "@sdkwork/react-mobile-commons": ["../sdkwork-react-mobile-commons/src/index.ts"],
       "@sdkwork/react-mobile-commons/*": ["../sdkwork-react-mobile-commons/src/*"],
       "@sdkwork/react-mobile-auth": ["../sdkwork-react-mobile-auth/src/index.ts"],
-      "@sdkwork/react-mobile-auth/*": ["../sdkwork-react-mobile-auth/src/*"]
+      "@sdkwork/react-mobile-auth/*": ["../sdkwork-react-mobile-auth/src/*"],
+      "@sdkwork/react-mobile-chat": ["../sdkwork-react-mobile-chat/src/index.ts"],
+      "@sdkwork/react-mobile-chat/*": ["../sdkwork-react-mobile-chat/src/*"]
     }
   },
   "include": ["src/**/*"],

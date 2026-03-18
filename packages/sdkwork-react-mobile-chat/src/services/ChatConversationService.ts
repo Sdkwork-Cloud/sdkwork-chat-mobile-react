@@ -195,6 +195,7 @@ const buildContinuationReply = (
   agent: Agent,
   goal?: ConversationGoal,
 ): string => {
+  const behaviorId = agent.behaviorId || agent.id;
   if (goal?.kind === 'shopping') {
     if (goal.step <= 0) {
       return [
@@ -277,7 +278,7 @@ const buildContinuationReply = (
     ].join('\n');
   }
 
-  if (agent.id === 'agent_coder') {
+  if (behaviorId === 'agent_coder') {
     return [
       'Further debugging suggestions:',
       '1. Add logs around key state transitions.',
@@ -286,7 +287,7 @@ const buildContinuationReply = (
     ].join('\n');
   }
 
-  if (agent.id === 'agent_writer') {
+  if (behaviorId === 'agent_writer') {
     return [
       'Writing structure suggestions:',
       '1. Opening: one sentence to define the pain point.',
@@ -312,6 +313,7 @@ const buildGoalFromPrompt = (
 ): ConversationGoal => {
   const clean = stripReplyPrefix(prompt);
   const lower = clean.toLowerCase();
+  const behaviorId = agent.behaviorId || agent.id;
 
   if (isContinuation(clean)) {
     const isGoalFresh = now - previousGoal.updatedAt < GOAL_TTL_MS;
@@ -320,9 +322,9 @@ const buildGoalFromPrompt = (
       return { ...previousGoal, updatedAt: now };
     }
 
-    if (agent.id === 'agent_coder') return { kind: 'coding', topic: 'coding issue', step: 0, updatedAt: now };
-    if (agent.id === 'agent_writer') return { kind: 'writing', topic: 'writing task', step: 0, updatedAt: now };
-    if (agent.id === 'agent_english') return { kind: 'english', topic: 'english practice', step: 0, updatedAt: now };
+    if (behaviorId === 'agent_coder') return { kind: 'coding', topic: 'coding issue', step: 0, updatedAt: now };
+    if (behaviorId === 'agent_writer') return { kind: 'writing', topic: 'writing task', step: 0, updatedAt: now };
+    if (behaviorId === 'agent_english') return { kind: 'english', topic: 'english practice', step: 0, updatedAt: now };
 
     const lastUser = [...history].reverse().find((item) => item.role === 'user')?.content || '';
     const infer = `${lastUser} ${clean}`.toLowerCase();
@@ -332,10 +334,10 @@ const buildGoalFromPrompt = (
     return { kind: 'general', topic: lastUser || 'general task', step: 0, updatedAt: now };
   }
 
-  if (agent.id === 'agent_image') return { kind: 'image', topic: clean, step: 0, updatedAt: now };
-  if (agent.id === 'agent_coder') return { kind: 'coding', topic: clean, step: 0, updatedAt: now };
-  if (agent.id === 'agent_writer') return { kind: 'writing', topic: clean, step: 0, updatedAt: now };
-  if (agent.id === 'agent_english') return { kind: 'english', topic: clean, step: 0, updatedAt: now };
+  if (behaviorId === 'agent_image') return { kind: 'image', topic: clean, step: 0, updatedAt: now };
+  if (behaviorId === 'agent_coder') return { kind: 'coding', topic: clean, step: 0, updatedAt: now };
+  if (behaviorId === 'agent_writer') return { kind: 'writing', topic: clean, step: 0, updatedAt: now };
+  if (behaviorId === 'agent_english') return { kind: 'english', topic: clean, step: 0, updatedAt: now };
 
   if (includesAny(lower, SHOPPING_KEYWORDS) || includesAny(lower, ORDER_KEYWORDS)) {
     return { kind: 'shopping', topic: clean, step: 0, updatedAt: now };
@@ -355,9 +357,10 @@ const buildResponse = (
   const cleanPrompt = stripReplyPrefix(prompt);
   const lower = cleanPrompt.toLowerCase();
   const lastUserMessage = [...history].reverse().find((msg) => msg.role === 'user')?.content || '';
+  const behaviorId = agent.behaviorId || agent.id;
 
   if (images && images.length > 0) {
-    if (agent.id === 'agent_image') {
+    if (behaviorId === 'agent_image') {
       return [
         'Image received. You can specify a direction:',
         '1. Style transfer: cyberpunk / illustration / cinematic.',
@@ -382,7 +385,7 @@ const buildResponse = (
     return `Based on your request, here are 3 options for direct comparison:\n\n[product] ${JSON.stringify(cards)}`;
   }
 
-  if (agent.id === 'agent_coder') {
+  if (behaviorId === 'agent_coder') {
     if (lower.includes('typeerror') || lower.includes('cannot read properties') || lower.includes('\u62a5\u9519')) {
       return [
         'This error usually means a value is null or undefined. Debug in this order:',
@@ -404,7 +407,7 @@ const buildResponse = (
     ].join('\n');
   }
 
-  if (agent.id === 'agent_writer') {
+  if (behaviorId === 'agent_writer') {
     if (lower.includes('\u5468\u62a5') || lower.includes('\u65e5\u62a5')) {
       return [
         'Weekly report template:',
@@ -427,7 +430,7 @@ const buildResponse = (
     ].join('\n');
   }
 
-  if (agent.id === 'agent_english') {
+  if (behaviorId === 'agent_english') {
     if (/[\u4e00-\u9fa5]/.test(cleanPrompt)) {
       return [
         'Great. I can help you translate and polish it.',

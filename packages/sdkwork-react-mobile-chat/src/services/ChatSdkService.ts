@@ -82,7 +82,8 @@ class ChatSdkServiceImpl implements IChatSdkService {
       name: request.agent?.name || 'Chat Session',
       type: 'chat',
       description: request.agent?.description,
-      modelId: request.agent?.id,
+      modelId: request.agent?.sdkModelId || request.agent?.id,
+      systemPrompt: request.agent?.systemInstruction,
     }) as SdkApiResult<SdkChatSessionVO>;
 
     if (!this.isSuccessCode(sessionResult.code)) {
@@ -133,6 +134,8 @@ class ChatSdkServiceImpl implements IChatSdkService {
         content: request.prompt,
         type: request.images && request.images.length > 0 ? 'image' : 'text',
         format: 'markdown',
+        modelId: request.agent?.sdkModelId || request.agent?.id,
+        systemPrompt: request.agent?.systemInstruction,
       }) as SdkApiResult<SdkChatMessageVO>;
 
       if (!this.isSuccessCode(messageResult.code)) {

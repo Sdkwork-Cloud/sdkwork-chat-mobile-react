@@ -1,8 +1,10 @@
 import React from 'react';
 import { CellGroup, CellItem, Page, Toast, Switch } from '@sdkwork/react-mobile-commons';
+import { resolveSessionAgent } from '../config/agentRegistry';
 import { useChatStoreActions, useChatStoreState } from '../stores/chatStore';
 import { chatService } from '../services/ChatService';
 import { AvatarGrid } from '../components/ChatDetail/AvatarGrid';
+import { resolveSessionDisplayName } from '../utils/resolveSessionDisplayName';
 import './ChatDetailsPage.css';
 
 interface ChatDetailsPageProps {
@@ -51,8 +53,12 @@ export const ChatDetailsPage: React.FC<ChatDetailsPageProps> = ({
     );
   }
 
-  const displayAvatar = isGroup ? '\ud83e\udd1d' : '\ud83e\udd16';
-  const displayName = isGroup ? (session.groupName || tr('chat.group', 'Group')) : 'AI Assistant';
+  const agent = isGroup ? null : resolveSessionAgent(session);
+  const displayAvatar = isGroup ? '\ud83e\udd1d' : (agent?.avatar || '\ud83e\udd16');
+  const displayName = resolveSessionDisplayName(session, {
+    fallback: 'OpenChat',
+    groupFallback: tr('chat.group', 'Group'),
+  });
   const qrCodeType: 'user' | 'group' | 'agent' = isGroup ? 'group' : (session.type === 'agent' ? 'agent' : 'user');
   const qrCodeTitle = isGroup
     ? tr('chat.group_qrcode', '\u7fa4\u4e8c\u7ef4\u7801')

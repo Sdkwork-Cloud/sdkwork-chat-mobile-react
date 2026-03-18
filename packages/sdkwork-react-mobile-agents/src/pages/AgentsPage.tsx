@@ -79,6 +79,7 @@ const AgentsSkeleton: React.FC = () => (
 );
 
 interface AgentsPageProps {
+  t?: (key: string, params?: Record<string, string | number>) => string;
   onAgentClick?: (agentId: string) => void | Promise<void>;
   scannedAgent?: { id?: string; name?: string };
   onOpenScannedAgent?: (agentId: string) => void | Promise<void>;
@@ -126,12 +127,13 @@ const matchesCategory = (agent: Agent, categoryId: string) => {
 };
 
 const AgentsPage: React.FC<AgentsPageProps> = ({
+  t: externalT,
   onAgentClick,
   scannedAgent,
   onOpenScannedAgent,
   onSearchClick,
 }) => {
-  const { t } = useAgentsI18n();
+  const { t } = useAgentsI18n(externalT);
   const { agents, isLoading } = useAgents();
   const [activeCategory, setActiveCategory] = useState('all');
   const [pendingAgentId, setPendingAgentId] = useState<string | null>(null);

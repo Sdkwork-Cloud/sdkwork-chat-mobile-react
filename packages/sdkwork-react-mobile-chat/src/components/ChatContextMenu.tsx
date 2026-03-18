@@ -19,7 +19,7 @@ export const ChatContextMenu: React.FC<ChatContextMenuProps> = ({
   anchorRect,
   onClose,
   onAction,
-  isUser,
+  isUser: _isUser,
   canRecall,
 }) => {
   const [position, setPosition] = useState<{

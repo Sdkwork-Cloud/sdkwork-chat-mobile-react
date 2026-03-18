@@ -1,7 +1,8 @@
 import { AbstractStorageService, EVENTS, resolveServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
 import type { Result, ServiceFactoryDeps, ServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
-import { AGENT_REGISTRY, DEFAULT_AGENT_ID, getAgent } from '../config/agentRegistry';
-import type { IChatService, Message, ChatSession, ChatStatusChangePayload } from '../types';
+import { DEFAULT_AGENT_ID, resolveAgentProfile, resolveSessionAgent } from '../config/agentRegistry';
+import type { Agent } from '../config/agentRegistry';
+import type { IChatService, Message, ChatSession, ChatStatusChangePayload, CreateChatSessionOptions } from '../types';
 
 const toSessionPreview = (content: string): string => {
   const value = (content || '').trim();
@@ -18,6 +19,82 @@ const FORWARD_CONTENT_KEY = 'forward_content';
 const CHAT_EVENTS = {
   STATUS_CHANGE: 'status:change',
 } as const;
+
+const normalizeSessionTitle = (value?: string): string => (value || '').trim();
+
+const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const readThreadOrdinal = (title: string | undefined, baseTitle: string): number | null => {
+  const normalizedTitle = normalizeSessionTitle(title);
+  if (!normalizedTitle) return 1;
+  if (normalizedTitle === baseTitle) return 1;
+
+  const matched = normalizedTitle.match(new RegExp(`^${escapeRegExp(baseTitle)} #(\\d+)$`));
+  if (!matched) return null;
+
+  const ordinal = Number.parseInt(matched[1] || '', 10);
+  return Number.isFinite(ordinal) && ordinal > 1 ? ordinal : null;
+};
+
+const resolveNextAgentSessionTitle = (
+  agent: Agent,
+  sessions: ChatSession[],
+  requestedTitle?: string,
+): string => {
+  const explicitTitle = normalizeSessionTitle(requestedTitle);
+  if (explicitTitle) return explicitTitle;
+
+  const baseTitle = normalizeSessionTitle(agent.name) || 'OpenChat';
+  const takenOrdinals = new Set<number>();
+
+  for (const session of sessions) {
+    if (session.type !== 'agent' || session.agentId !== agent.id) continue;
+    const ordinal = readThreadOrdinal(session.title, baseTitle);
+    if (ordinal) takenOrdinals.add(ordinal);
+  }
+
+  if (!takenOrdinals.size) return baseTitle;
+
+  let nextOrdinal = 1;
+  while (takenOrdinals.has(nextOrdinal)) {
+    nextOrdinal += 1;
+  }
+  return nextOrdinal === 1 ? baseTitle : `${baseTitle} #${nextOrdinal}`;
+};
+
+const backfillMissingAgentSessionTitles = (sessions: ChatSession[]): { sessions: ChatSession[]; changed: boolean } => {
+  let changed = false;
+  const nextSessions = [...sessions];
+  const missingSessions = nextSessions
+    .map((session, index) => ({ session, index }))
+    .filter(({ session }) => session.type === 'agent' && !normalizeSessionTitle(session.title))
+    .sort((left, right) => left.session.createTime - right.session.createTime);
+
+  for (const { session, index } of missingSessions) {
+    const agent = resolveSessionAgent(session);
+    const nextTitle = resolveNextAgentSessionTitle(
+      agent,
+      nextSessions.filter((candidate) => candidate.id !== session.id),
+    );
+
+    if (nextTitle === session.title) continue;
+    nextSessions[index] = { ...session, title: nextTitle };
+    changed = true;
+  }
+
+  return changed ? { sessions: nextSessions, changed } : { sessions, changed };
+};
+
+const getLatestAgentSession = (sessions: ChatSession[], agentId: string): ChatSession | undefined =>
+  sessions
+    .filter((session) => session.type === 'agent' && session.agentId === agentId)
+    .sort((left, right) => {
+      const rightActivity = right.lastMessageTime || right.updateTime || right.createTime;
+      const leftActivity = left.lastMessageTime || left.updateTime || left.createTime;
+      if (rightActivity !== leftActivity) return rightActivity - leftActivity;
+      return right.createTime - left.createTime;
+    })[0];
 
 const getForwardStorage = (): Storage | null => {
   if (typeof window === 'undefined') return null;
@@ -42,10 +119,16 @@ class ChatServiceImpl extends AbstractStorageService<ChatSession> implements ICh
   }
 
   protected async onInitialize() {
-    const list = this.cache || [];
+    let list = this.cache || [];
+    const titledState = backfillMissingAgentSessionTitles(list);
+    if (titledState.changed) {
+      list = titledState.sessions;
+      this.cache = list;
+      await this.commit();
+    }
 
     if (list.length === 0) {
-      const agent = AGENT_REGISTRY[DEFAULT_AGENT_ID];
+      const agent = resolveAgentProfile(DEFAULT_AGENT_ID);
       const now = this.now();
       const initialMsg: Message = {
         id: this.createId('msg'),
@@ -61,6 +144,8 @@ class ChatServiceImpl extends AbstractStorageService<ChatSession> implements ICh
         id: 'session_default',
         type: 'agent',
         agentId: DEFAULT_AGENT_ID,
+        agentProfile: agent,
+        title: resolveNextAgentSessionTitle(agent, list),
         lastMessageContent: agent.initialMessage,
         lastMessageTime: now,
         unreadCount: 1,
@@ -82,7 +167,7 @@ class ChatServiceImpl extends AbstractStorageService<ChatSession> implements ICh
       sort: { field: 'lastMessageTime', order: 'desc' },
     });
 
-    const sorted = (page.content || []).sort((a, b) => {
+    const sorted = (page.content || []).sort((a: ChatSession, b: ChatSession) => {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
       return 0;
@@ -91,12 +176,19 @@ class ChatServiceImpl extends AbstractStorageService<ChatSession> implements ICh
     return { success: true, data: sorted };
   }
 
-  async createSession(agentId: string): Promise<Result<ChatSession>> {
+  async createSession(
+    agentId: string,
+    agentProfile?: Partial<Agent>,
+    options?: CreateChatSessionOptions,
+  ): Promise<Result<ChatSession>> {
     const list = await this.loadData();
-    const existing = list.find((s) => s.type === 'agent' && s.agentId === agentId);
-    if (existing) return { success: true, data: existing };
+    const shouldReuseExisting = options?.reuseExisting !== false;
+    if (shouldReuseExisting) {
+      const existing = getLatestAgentSession(list, agentId);
+      if (existing) return { success: true, data: existing };
+    }
 
-    const agent = getAgent(agentId);
+    const agent = resolveAgentProfile(agentId, agentProfile);
     const now = this.now();
     const sessionId = this.createId('session');
 
@@ -104,6 +196,8 @@ class ChatServiceImpl extends AbstractStorageService<ChatSession> implements ICh
       id: sessionId,
       type: 'agent',
       agentId: agent.id,
+      agentProfile: agent,
+      title: resolveNextAgentSessionTitle(agent, list, options?.title),
       lastMessageContent: agent.initialMessage,
       lastMessageTime: now,
       unreadCount: 0,

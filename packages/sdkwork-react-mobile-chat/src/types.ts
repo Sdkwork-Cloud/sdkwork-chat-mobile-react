@@ -1,5 +1,6 @@
 
 import type { BaseEntity, Result } from '@sdkwork/react-mobile-core';
+import type { Agent } from './config/agentRegistry';
 
 export interface Message extends BaseEntity {
   id: string;
@@ -25,6 +26,8 @@ export interface ChatSession extends BaseEntity {
   updateTime: number;
   type: SessionType;
   agentId: string;
+  agentProfile?: Agent;
+  title?: string;
   
   // Group Metadata
   groupName?: string;
@@ -56,9 +59,18 @@ export interface ChatStatusChangePayload {
   message?: string;
 }
 
+export interface CreateChatSessionOptions {
+  reuseExisting?: boolean;
+  title?: string;
+}
+
 export interface IChatService {
   getSessionList(): Promise<Result<ChatSession[]>>;
-  createSession(agentId: string): Promise<Result<ChatSession>>;
+  createSession(
+    agentId: string,
+    agentProfile?: Partial<Agent>,
+    options?: CreateChatSessionOptions
+  ): Promise<Result<ChatSession>>;
   addMessage(sessionId: string, messageData: Partial<Message>): Promise<Result<ChatSession>>;
   clearHistory(sessionId: string): Promise<Result<void>>;
   togglePin(sessionId: string): Promise<Result<void>>;

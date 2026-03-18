@@ -182,10 +182,25 @@ const resolveChatAgentId = (agentId: string) => {
 };
 
 const openAgentConversation = async (agentId: string) => {
-  const { chatService, DEFAULT_AGENT_ID } = await import('@sdkwork/react-mobile-chat');
+  const [{ chatService, DEFAULT_AGENT_ID }, { agentService }] = await Promise.all([
+    import('@sdkwork/react-mobile-chat'),
+    import('@sdkwork/react-mobile-agents'),
+  ]);
   const chatAgentId = resolveChatAgentId(agentId);
+  const selectedAgent = await agentService.getAgentById(agentId).catch(() => null);
+  const agentProfile = selectedAgent
+    ? {
+        behaviorId: chatAgentId,
+        sdkModelId: (selectedAgent.model || '').trim() || agentId,
+        ...(selectedAgent.name ? { name: selectedAgent.name } : {}),
+        ...(selectedAgent.avatar ? { avatar: selectedAgent.avatar } : {}),
+        ...(selectedAgent.description ? { description: selectedAgent.description } : {}),
+        ...(selectedAgent.systemPrompt ? { systemInstruction: selectedAgent.systemPrompt } : {}),
+        ...(selectedAgent.tags?.length ? { tags: selectedAgent.tags } : {}),
+      }
+    : undefined;
 
-  const createResult = await chatService.createSession(chatAgentId).catch(() => null);
+  const createResult = await chatService.createSession(agentId, agentProfile).catch(() => null);
   const createdSessionId = createResult?.data?.id;
   if (createResult?.success && createdSessionId) {
     navigate(ROUTE_PATHS.chat, { id: createdSessionId });
@@ -194,7 +209,7 @@ const openAgentConversation = async (agentId: string) => {
 
   const listResult = await chatService.getSessionList().catch(() => null);
   const sessions = Array.isArray(listResult?.data) ? listResult.data : [];
-  const matchedSessionId = sessions.find((item: any) => item?.agentId === chatAgentId)?.id;
+  const matchedSessionId = sessions.find((item: any) => item?.agentId === agentId)?.id;
   const latestSessionId = sessions[0]?.id;
 
   if (matchedSessionId || latestSessionId) {

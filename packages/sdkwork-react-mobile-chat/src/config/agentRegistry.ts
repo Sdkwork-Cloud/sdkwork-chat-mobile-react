@@ -2,6 +2,8 @@ export const DEFAULT_AGENT_ID = 'omni_core';
 
 export interface Agent {
   id: string;
+  behaviorId?: string;
+  sdkModelId?: string;
   name: string;
   avatar: string;
   description: string;
@@ -117,3 +119,28 @@ export const AGENT_REGISTRY: Record<string, Agent> = {
 };
 
 export const getAgent = (id: string): Agent => AGENT_REGISTRY[id] || AGENT_REGISTRY[DEFAULT_AGENT_ID];
+
+export const resolveAgentProfile = (id: string, override?: Partial<Agent> | null): Agent => {
+  const requestedId = (id || override?.id || DEFAULT_AGENT_ID).trim() || DEFAULT_AGENT_ID;
+  const behaviorId = (override?.behaviorId || requestedId).trim() || DEFAULT_AGENT_ID;
+  const base = getAgent(behaviorId);
+  const definedOverride = Object.fromEntries(
+    Object.entries(override || {}).filter(([, value]) => value !== undefined),
+  ) as Partial<Agent>;
+
+  return {
+    ...base,
+    ...definedOverride,
+    id: requestedId,
+    behaviorId,
+    sdkModelId: override?.sdkModelId?.trim() || base.sdkModelId,
+    tags: override?.tags?.length ? [...override.tags] : [...base.tags],
+  };
+};
+
+export const resolveSessionAgent = (session?: { agentId?: string; agentProfile?: Partial<Agent> | null } | null): Agent => {
+  if (!session?.agentId && !session?.agentProfile?.id) {
+    return resolveAgentProfile(DEFAULT_AGENT_ID);
+  }
+  return resolveAgentProfile(session.agentId || session.agentProfile?.id || DEFAULT_AGENT_ID, session.agentProfile);
+};

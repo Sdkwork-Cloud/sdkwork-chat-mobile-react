@@ -20,7 +20,7 @@ const nativeIOSRuntime: OAuthInteractionRuntime = {
 };
 
 describe('LoginPage provider deck', () => {
-  it('renders domestic oauth providers including wechat and qq', () => {
+  it('renders domestic oauth providers without extra explainer copy', () => {
     const html = renderToStaticMarkup(
       <LoginPage
         market="cn"
@@ -32,11 +32,14 @@ describe('LoginPage provider deck', () => {
 
     expect(html).toContain('WeChat');
     expect(html).toContain('QQ');
-    expect(html).toContain('Browser handoff');
-    expect(html).toContain('Returns here after authorization');
+    expect(html).not.toContain('Domestic sign in');
+    expect(html).not.toContain('Optimized for WeChat, QQ and cross-border fallback providers.');
+    expect(html).not.toContain('Browser handoff');
+    expect(html).not.toContain('Returns here after authorization');
+    expect(html).not.toContain('Best fit');
   });
 
-  it('renders international oauth providers without wechat or qq', () => {
+  it('renders international oauth providers without extra explainer copy', () => {
     const html = renderToStaticMarkup(
       <LoginPage
         market="global"
@@ -50,7 +53,10 @@ describe('LoginPage provider deck', () => {
     expect(html).toContain('Apple');
     expect(html).not.toContain('WeChat');
     expect(html).not.toContain('QQ');
-    expect(html).toContain('Native app');
-    expect(html).toContain('Uses installed provider app when available');
+    expect(html).not.toContain('International sign in');
+    expect(html).not.toContain('Optimized for Google, Apple and globally available providers.');
+    expect(html).not.toContain('Native app');
+    expect(html).not.toContain('Uses installed provider app when available');
+    expect(html).not.toContain('Best fit');
   });
 });

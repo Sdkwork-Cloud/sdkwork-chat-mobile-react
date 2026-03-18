@@ -37,7 +37,7 @@ interface ChatFilesPageProps {
 
 export const ChatFilesPage: React.FC<ChatFilesPageProps> = ({
   t,
-  sessionId,
+  sessionId: _sessionId,
   onBack,
 }) => {
   const tr = (key: string, fallback: string) => {

@@ -15,6 +15,13 @@
     "declarationMap": true,
     "sourceMap": true,
     "outDir": "./dist",
+    "baseUrl": ".",
+    "paths": {
+      "@sdkwork/react-mobile-core": ["../sdkwork-react-mobile-core/src/index.ts"],
+      "@sdkwork/react-mobile-core/*": ["../sdkwork-react-mobile-core/src/*"],
+      "@sdkwork/react-mobile-commons": ["../sdkwork-react-mobile-commons/src/index.ts"],
+      "@sdkwork/react-mobile-commons/*": ["../sdkwork-react-mobile-commons/src/*"]
+    },
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true

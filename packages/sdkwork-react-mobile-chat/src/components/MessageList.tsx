@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState, useMemo, useLayoutEffect, useCallba
 import { Message, ChatConfig } from '../types';
 import { ChatMessageItem } from './ChatMessageItem';
 import { useChatStoreActions, useChatStoreState } from '../stores/chatStore';
-import { getAgent } from '../config/agentRegistry';
+import { resolveSessionAgent } from '../config/agentRegistry';
 
 interface MessageListProps {
   t?: (key: string) => string;
@@ -110,8 +110,8 @@ const WelcomeChips: React.FC<{
 }> = ({ sessionId, locale, title, onSend }) => {
   const { getSession } = useChatStoreState();
   const session = getSession(sessionId);
-  const agent = session ? getAgent(session.agentId) : undefined;
-  const prompts = resolveWelcomePrompts(agent?.id, locale);
+  const agent = session ? resolveSessionAgent(session) : undefined;
+  const prompts = resolveWelcomePrompts(agent?.behaviorId || agent?.id, locale);
 
   return (
     <div

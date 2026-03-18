@@ -7,12 +7,16 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
-    "dev": "tsup src/index.ts --format cjs,esm --dts --watch"
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "peerDependencies": {
     "react": "catalog:",
     "react-dom": "catalog:",
     "@sdkwork/react-mobile-core": "workspace:*",
+    "@sdkwork/react-mobile-commons": "workspace:*",
     "@tiptap/core": "catalog:",
     "@tiptap/extension-placeholder": "catalog:",
     "@tiptap/react": "catalog:",
@@ -25,6 +29,7 @@
   "devDependencies": {
     "@types/react": "catalog:",
     "typescript": "catalog:",
-    "tsup": "catalog:"
+    "tsup": "catalog:",
+    "vitest": "catalog:"
   }
 }

@@ -66,24 +66,14 @@ const providerIconMap: Record<OAuthProviderId, { icon: React.ReactNode; color?: 
 
 const SocialButton = ({
   label,
-  description,
-  modeLabel,
-  hint,
-  recommendedLabel,
   icon,
   color,
-  isRecommended,
   onClick,
 }: {
   label: string;
-  description: string;
-  modeLabel: string;
-  hint: string;
-  recommendedLabel: string;
   icon: React.ReactNode;
   onClick: () => void;
   color?: string;
-  isRecommended?: boolean;
 }) => (
   <div
     onClick={onClick}
@@ -94,7 +84,7 @@ const SocialButton = ({
       gap: '7px',
       cursor: 'pointer',
       transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-      width: '94px',
+      width: '72px',
     }}
   >
     <div
@@ -113,48 +103,8 @@ const SocialButton = ({
       }}
     >
       {icon}
-      {isRecommended ? (
-        <span
-          style={{
-            position: 'absolute',
-            top: '-8px',
-            right: '-8px',
-            padding: '2px 6px',
-            borderRadius: '999px',
-            background: 'linear-gradient(135deg, #34c759 0%, #12b886 100%)',
-            color: '#fff',
-            fontSize: '9px',
-            fontWeight: 700,
-            letterSpacing: '0.04em',
-            boxShadow: '0 6px 14px rgba(18,184,134,0.32)',
-          }}
-        >
-          {recommendedLabel}
-        </span>
-      ) : null}
     </div>
     <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.72)', fontWeight: 600 }}>{label}</span>
-    <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.38)', textAlign: 'center', lineHeight: 1.35 }}>
-      {description}
-    </span>
-    <span
-      style={{
-        padding: '4px 8px',
-        borderRadius: '999px',
-        fontSize: '9px',
-        fontWeight: 700,
-        color: '#dbeafe',
-        background: 'rgba(59, 130, 246, 0.18)',
-        border: '1px solid rgba(96, 165, 250, 0.22)',
-        letterSpacing: '0.04em',
-        textTransform: 'uppercase',
-      }}
-    >
-      {modeLabel}
-    </span>
-    <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.4)', textAlign: 'center', lineHeight: 1.4 }}>
-      {hint}
-    </span>
   </div>
 );
 
@@ -200,13 +150,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     () => buildOAuthProviderDeck({ market: resolvedMarket, runtime }),
     [resolvedMarket, runtime]
   );
-
-  const marketTitle = resolvedMarket === 'cn'
-    ? tr('auth_oauth_domestic_title', 'Domestic sign in')
-    : tr('auth_oauth_global_title', 'International sign in');
-  const marketDescription = resolvedMarket === 'cn'
-    ? tr('auth_oauth_domestic_desc', 'Optimized for WeChat, QQ and cross-border fallback providers.')
-    : tr('auth_oauth_global_desc', 'Optimized for Google, Apple and globally available providers.');
 
   const handleLogin = async () => {
     clearError();
@@ -363,22 +306,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           <div style={{ flex: 1.5, minHeight: '20px' }} />
 
           <div style={{ marginTop: 'auto', flexShrink: 0 }}>
-            <div
-              style={{
-                marginBottom: '14px',
-                padding: '12px 14px',
-                borderRadius: '16px',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-              }}
-            >
-              <div style={{ fontSize: '12px', fontWeight: 700, color: '#fff', marginBottom: '4px', letterSpacing: '0.02em' }}>
-                {marketTitle}
-              </div>
-              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>
-                {marketDescription}
-              </div>
-            </div>
             <Divider style={{ margin: '12px 0', opacity: 0.3 }}>
               <span style={{ fontSize: '11px', fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>
                 {tr('auth_social_divider', 'Or continue with')}
@@ -391,13 +318,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   <SocialButton
                     key={provider.id}
                     label={provider.title}
-                    description={tr(`auth_oauth_provider_${provider.id}_desc`, provider.description)}
-                    modeLabel={tr(`auth_oauth_mode_${provider.mode}`, provider.modeLabel)}
-                    hint={tr(`auth_oauth_mode_${provider.mode}_hint`, provider.hint)}
-                    recommendedLabel={tr('auth_oauth_recommended', 'Best fit')}
                     icon={visuals.icon}
                     color={visuals.color}
-                    isRecommended={provider.isRecommended}
                     onClick={() => handleSocialLogin(provider.id)}
                   />
                 );

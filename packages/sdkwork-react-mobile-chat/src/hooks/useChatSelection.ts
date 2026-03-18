@@ -1,6 +1,5 @@
 
 import { useState, useCallback } from 'react';
-import { Message } from '../types';
 import { chatService } from '../services/ChatService';
 import { Toast } from '@sdkwork/react-mobile-commons';
 

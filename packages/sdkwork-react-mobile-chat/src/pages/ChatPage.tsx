@@ -5,10 +5,11 @@ import { MessageList } from '../components/MessageList';
 import { ChatSelectionBar } from '../components/ChatSelectionBar';
 import { useChatSelection } from '../hooks/useChatSelection';
 import { useChatStream } from '../hooks/useChatStream';
-import { getAgent } from '../config/agentRegistry';
+import { resolveSessionAgent } from '../config/agentRegistry';
 import { chatService } from '../services/ChatService';
 import { useChatStoreActions, useChatStoreState } from '../stores/chatStore';
 import type { Message } from '../types';
+import { resolveSessionDisplayName } from '../utils/resolveSessionDisplayName';
 import { resolveChatBackground } from './chatBackgroundResolver';
 import { resolveChatConfig } from './chatConfigResolver';
 import './ChatPage.css';
@@ -81,7 +82,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({
   });
 
   const session = getSession(sessionId);
-  const agent = session ? getAgent(session.agentId) : getAgent('omni_core');
+  const agent = resolveSessionAgent(session);
 
   useEffect(() => {
     setBgImage(
@@ -178,6 +179,13 @@ export const ChatPage: React.FC<ChatPageProps> = ({
   );
 
   const chatConfig = useMemo(() => resolveChatConfig(session), [session?.sessionConfig?.showAvatar]);
+  const pageTitle = useMemo(
+    () => resolveSessionDisplayName(session, {
+      fallback: 'OpenChat',
+      groupFallback: tr('chat.group', 'Group'),
+    }),
+    [session, tr],
+  );
 
   const rightNav = (
     <div className="chat-page__right-nav">
@@ -221,7 +229,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({
   return (
     <Page
       className="chat-page-root"
-      title={session.groupName || agent.name}
+      title={pageTitle}
       showBack={Boolean(onBack)}
       onBack={onBack}
       rightElement={rightNav}

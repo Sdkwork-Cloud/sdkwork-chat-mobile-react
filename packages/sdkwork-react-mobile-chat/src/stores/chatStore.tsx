@@ -9,6 +9,8 @@ import React, {
 } from 'react';
 import type { ChatSession, Message } from '../types';
 import { chatService } from '../services/ChatService';
+import type { Agent } from '../config/agentRegistry';
+import type { CreateChatSessionOptions } from '../types';
 
 interface ChatStoreStateContextType {
   sessions: ChatSession[];
@@ -17,7 +19,7 @@ interface ChatStoreStateContextType {
 }
 
 interface ChatStoreActionsContextType {
-  createSession: (agentId: string) => Promise<string>;
+  createSession: (agentId: string, agentProfile?: Partial<Agent>, options?: CreateChatSessionOptions) => Promise<string>;
   addMessage: (sessionId: string, message: Partial<Message>) => Promise<void>;
   updateMessage: (sessionId: string, messageId: string, updates: Partial<Message>) => void;
   updateMessageContent: (sessionId: string, messageId: string, content: string, isStreaming: boolean) => void;
@@ -65,6 +67,7 @@ const isSameSessionSnapshot = (prev: ChatSession, next: ChatSession): boolean =>
     prev.id !== next.id ||
     prev.type !== next.type ||
     prev.agentId !== next.agentId ||
+    prev.title !== next.title ||
     prev.groupName !== next.groupName ||
     prev.lastMessageContent !== next.lastMessageContent ||
     prev.lastMessageTime !== next.lastMessageTime ||
@@ -175,8 +178,8 @@ export const ChatStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const getSession = useCallback((sessionId: string) => sessions.find((s) => s.id === sessionId), [sessions]);
 
-  const createSession = useCallback(async (agentId: string) => {
-    const res = await chatService.createSession(agentId);
+  const createSession = useCallback(async (agentId: string, agentProfile?: Partial<Agent>, options?: CreateChatSessionOptions) => {
+    const res = await chatService.createSession(agentId, agentProfile, options);
     if (res.success && res.data) {
       const createdSession = res.data;
       setSessions((prev) => {

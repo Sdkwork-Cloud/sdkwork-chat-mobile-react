@@ -8,9 +8,10 @@ import {
   useLongPress,
 } from '@sdkwork/react-mobile-commons';
 import type { Action } from '@sdkwork/react-mobile-commons';
-import { getAgent } from '../config/agentRegistry';
+import { resolveSessionAgent } from '../config/agentRegistry';
 import { useChatStoreActions } from '../stores/chatStore';
 import type { ChatSession } from '../types';
+import { resolveSessionDisplayName } from '../utils/resolveSessionDisplayName';
 import './ChatListItem.css';
 
 interface ChatListItemProps {
@@ -24,8 +25,14 @@ export const ChatListItem: React.FC<ChatListItemProps> = React.memo(({ session, 
   const suppressNextClickRef = useRef(false);
 
   const isGroup = session.type === 'group';
-  const agent = useMemo(() => (isGroup ? null : getAgent(session.agentId)), [isGroup, session.agentId]);
-  const displayName = isGroup ? session.groupName || '\u7fa4\u804a' : agent?.name || 'OpenChat';
+  const agent = useMemo(
+    () => (isGroup ? null : resolveSessionAgent(session)),
+    [isGroup, session],
+  );
+  const displayName = resolveSessionDisplayName(session, {
+    fallback: 'OpenChat',
+    groupFallback: '\u7fa4\u804a',
+  });
   const agentAvatar = isGroup ? '' : agent?.avatar || '';
   const avatarSrc = !isGroup && /^https?:\/\//i.test(agentAvatar) ? agentAvatar : undefined;
 
@@ -126,13 +133,13 @@ export const ChatListItem: React.FC<ChatListItemProps> = React.memo(({ session, 
   const handleLongPress = useCallback(async () => {
     suppressNextClickRef.current = true;
     const result = await ActionSheet.showActions({
-      title: session.groupName || '\u4f1a\u8bdd\u64cd\u4f5c',
+      title: displayName || '\u4f1a\u8bdd\u64cd\u4f5c',
       actions: longPressActions.map((action) => ({ text: action.text, color: action.color, key: action.key })),
     });
     if (!result) return;
     const selected = longPressActions.find((item) => item.key === result.key);
     selected?.onClick();
-  }, [longPressActions, session.groupName]);
+  }, [displayName, longPressActions]);
 
   const longPressProps = useLongPress({
     onLongPress: () => {

@@ -237,6 +237,12 @@ const resources: Record<Locale, TranslationResources> = {
   'en-US': enUS,
 };
 
+type TranslationNamespace = keyof TranslationResources;
+
+const isTranslationNamespace = (value: string): value is TranslationNamespace => {
+  return value in zhCN;
+};
+
 interface I18nContextType {
   locale: Locale;
   setLocale: (locale: Locale) => void;
@@ -262,8 +268,8 @@ export function I18nProvider({ children, defaultLocale = 'zh-CN' }: I18nProvider
   const t = useCallback((key: string, params?: Record<string, string | number>): string => {
     const [namespace, translationKey] = key.split('.');
     const translations = resources[locale];
-    if (!translations || !(namespace in translations)) return key;
-    const value = (translations as Record<string, Record<string, string>>)[namespace]?.[translationKey];
+    if (!translations || !isTranslationNamespace(namespace)) return key;
+    const value = translations[namespace]?.[translationKey];
     if (!value) return key;
 
     if (!params) {
