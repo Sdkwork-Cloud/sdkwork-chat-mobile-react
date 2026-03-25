@@ -13,6 +13,7 @@ export default defineConfig({
         utils: resolve(__dirname, 'src/utils/index.ts'),
         events: resolve(__dirname, 'src/events/index.ts'),
         hooks: resolve(__dirname, 'src/hooks/index.ts'),
+        im: resolve(__dirname, 'src/im/index.ts'),
         i18n: resolve(__dirname, 'src/i18n/index.ts'),
       },
       formats: ['es', 'cjs'],
@@ -69,6 +70,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
+      '@openchat/sdkwork-im-sdk': resolve(__dirname, '../../../openchat/sdkwork-im-sdk/sdkwork-im-sdk-typescript/composed/src/index.ts'),
+      '@openchat/sdkwork-im-wukongim-adapter': resolve(__dirname, '../../../openchat/sdkwork-im-sdk/sdkwork-im-sdk-typescript/adapter-wukongim/src/index.ts'),
       '@sdkwork/app-sdk': resolve(__dirname, '../../../../spring-ai-plus-app-api/sdkwork-sdk-app/sdkwork-app-sdk-typescript/src/index.ts'),
       '@sdkwork/sdk-common': resolve(__dirname, '../../../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript/src/index.ts'),
     },

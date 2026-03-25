@@ -112,6 +112,7 @@
     "react-router-dom": "catalog:",
     "qrcode": "^1.5.4",
     "uuid": "catalog:",
+    "wukongimjssdk": "^1.3.5",
     "zustand": "catalog:"
   },
   "devDependencies": {

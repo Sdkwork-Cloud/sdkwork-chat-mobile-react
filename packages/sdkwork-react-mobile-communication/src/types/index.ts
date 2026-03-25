@@ -1,9 +1,10 @@
-import type { BaseEntity } from '@sdkwork/react-mobile-core';
-
 export type CallType = 'audio' | 'video';
 export type CallStatus = 'missed' | 'received' | 'outgoing';
 
-export interface CallRecord extends BaseEntity {
+export interface CallRecord {
+  id: string;
+  createTime: number;
+  updateTime: number;
   contactName: string;
   contactAvatar: string;
   type: CallType;

@@ -67,8 +67,8 @@ function firstNonEmpty(...values: Array<string | undefined>): string {
   return '';
 }
 
-function unwrapResult<T>(result: { code?: string; msg?: string; data?: T }, fallback: string): T {
-  const code = (result?.code || '').trim();
+function unwrapResult<T>(result: { code?: string | number; msg?: string; data?: T }, fallback: string): T {
+  const code = String(result?.code ?? '').trim();
   if (code && code !== '2000') {
     throw new Error((result?.msg || '').trim() || fallback);
   }
@@ -92,8 +92,8 @@ function mapProfile(profile: UserProfileVO): UserCenterProfile {
   };
 }
 
-function ensureSuccess(result: { code?: string; msg?: string }, fallback: string): void {
-  const code = (result?.code || '').trim();
+function ensureSuccess(result: { code?: string | number; msg?: string }, fallback: string): void {
+  const code = String(result?.code ?? '').trim();
   if (code && code !== '2000') {
     throw new Error((result?.msg || '').trim() || fallback);
   }
@@ -135,7 +135,7 @@ class UserCenterServiceImpl implements IUserCenterService {
     });
     const response = await client.user.getUserProfile();
     const data = unwrapResult<UserProfileVO>(
-      response as { code?: string; msg?: string; data?: UserProfileVO },
+      response as { code?: string | number; msg?: string; data?: UserProfileVO },
       'Failed to load user profile'
     );
     return mapProfile(data);
@@ -147,7 +147,7 @@ class UserCenterServiceImpl implements IUserCenterService {
     });
     const response = await client.user.updateUserProfile(input);
     const data = unwrapResult<UserProfileVO>(
-      response as { code?: string; msg?: string; data?: UserProfileVO },
+      response as { code?: string | number; msg?: string; data?: UserProfileVO },
       'Failed to update user profile'
     );
     return mapProfile(data);

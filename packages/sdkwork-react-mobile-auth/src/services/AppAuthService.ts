@@ -14,6 +14,7 @@ import type {
   VerifyCodeSendForm,
   VerifyResultVO,
 } from '@sdkwork/app-sdk';
+import { clearAppImSdkSession, syncAppImSdkSession } from '@sdkwork/react-mobile-core/im';
 import type { SocialLoginRequest, SocialProvider } from '../types';
 import { requestNativeSocialAuthorization } from '../bridge';
 import { executeOAuthAuthorization } from '../oauth/oauthAuthorization';
@@ -335,6 +336,29 @@ function persistAndBindSession(session: AppAuthSession): void {
   });
 }
 
+async function syncImSession(session: AppAuthSession): Promise<void> {
+  try {
+    await syncAppImSdkSession({
+      userId: session.userId,
+      username: session.username,
+      displayName: session.displayName,
+      authToken: session.authToken,
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
+    });
+  } catch (error) {
+    console.warn('[AppAuthService] Failed to sync IM session', error);
+  }
+}
+
+async function clearImSession(): Promise<void> {
+  try {
+    await clearAppImSdkSession();
+  } catch (error) {
+    console.warn('[AppAuthService] Failed to clear IM session', error);
+  }
+}
+
 export const appAuthService: IAppAuthService = {
   async login(input: AppAuthLoginInput): Promise<AppAuthSession> {
     const client = getAppSdkClientWithSession();
@@ -347,6 +371,7 @@ export const appAuthService: IAppAuthService = {
     const userFields = await resolveProfileOrFallback(input.username, loginData.userInfo);
     const session = mapSessionFromLoginVO(loginData, userFields);
     persistAndBindSession(session);
+    await syncImSession(session);
     return session;
   },
 
@@ -378,15 +403,18 @@ export const appAuthService: IAppAuthService = {
       const profileResponse = await client.user.getUserProfile();
       const profile = unwrapApiData<UserProfileVO>(profileResponse);
       const userFields = mapUserSessionFields(profile, '');
-      return {
+      const session = {
         ...userFields,
         authToken,
         accessToken: resolveAppSdkAccessToken(),
         refreshToken: tokens.refreshToken,
       };
+      await syncImSession(session);
+      return session;
     } catch (error) {
       if (isInvalidAuthError(error)) {
         clearAppSdkSessionTokens();
+        await clearImSession();
       }
       return null;
     }
@@ -400,6 +428,7 @@ export const appAuthService: IAppAuthService = {
       // Local cleanup is authoritative for logout completion.
     } finally {
       clearAppSdkSessionTokens();
+      await clearImSession();
     }
   },
 
@@ -427,10 +456,12 @@ export const appAuthService: IAppAuthService = {
       ...session,
       refreshToken: session.refreshToken || nextRefreshToken,
     });
-    return {
+    const nextSession = {
       ...session,
       refreshToken: session.refreshToken || nextRefreshToken,
     };
+    await syncImSession(nextSession);
+    return nextSession;
   },
 
   async sendVerifyCode(input: AppAuthSendVerifyCodeInput): Promise<void> {
@@ -496,6 +527,10 @@ export const appAuthService: IAppAuthService = {
     let state = (input.state || '').trim() || undefined;
 
     if (!code) {
+      if (!redirectUri) {
+        throw new Error('OAuth redirect URI is required');
+      }
+
       const oauthUrlResult = await client.auth.getOauthUrl({
         provider,
         redirectUri,
@@ -538,6 +573,7 @@ export const appAuthService: IAppAuthService = {
     const userFields = await resolveProfileOrFallback('', loginData.userInfo);
     const session = mapSessionFromLoginVO(loginData, userFields);
     persistAndBindSession(session);
+    await syncImSession(session);
     return session;
   },
 

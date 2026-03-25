@@ -20,7 +20,7 @@ const TAG = 'AgentSdkService';
 const SUCCESS_CODE = '2000';
 
 interface AgentSdkError {
-  code?: string;
+  code?: string | number;
   message: string;
 }
 
@@ -62,11 +62,11 @@ class AgentSdkServiceImpl implements IAgentSdkService {
     this.lastError = error;
   }
 
-  private isSuccessCode(code: string | undefined): boolean {
-    return code === SUCCESS_CODE;
+  private isSuccessCode(code: string | number | undefined): boolean {
+    return String(code ?? '').trim() === SUCCESS_CODE;
   }
 
-  private failBusiness(result: { code?: string; msg?: string }, fallback: string): null {
+  private failBusiness(result: { code?: string | number; msg?: string }, fallback: string): null {
     this.setLastError({ code: result.code, message: result.msg || fallback });
     this.deps.logger.warn(TAG, fallback, { code: result.code, message: result.msg });
     return null;

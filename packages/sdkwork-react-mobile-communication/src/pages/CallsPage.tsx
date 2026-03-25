@@ -1,5 +1,5 @@
 import React from 'react';
-import { Phone, Video, PhoneMissed, PhoneIncoming, PhoneOutgoing } from 'lucide-react';
+import { Video, PhoneMissed, PhoneIncoming, PhoneOutgoing } from 'lucide-react';
 import { Page, Toast } from '@sdkwork/react-mobile-commons';
 import { prepareCallMediaSession } from '@sdkwork/react-mobile-core';
 import { useCommunication } from '../hooks/useCommunication';

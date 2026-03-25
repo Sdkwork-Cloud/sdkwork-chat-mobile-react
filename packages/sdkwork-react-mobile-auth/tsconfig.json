@@ -9,7 +9,9 @@
     "allowImportingTsExtensions": true,
     "baseUrl": ".",
     "paths": {
-      "@sdkwork/react-mobile-commons": ["../sdkwork-react-mobile-commons/src/index.ts"]
+      "@sdkwork/react-mobile-commons": ["../sdkwork-react-mobile-commons/src/index.ts"],
+      "@sdkwork/react-mobile-core": ["../sdkwork-react-mobile-core/src/index.ts"],
+      "@sdkwork/react-mobile-core/im": ["../sdkwork-react-mobile-core/src/im/index.ts"]
     },
     "strict": true,
     "noUnusedLocals": true,

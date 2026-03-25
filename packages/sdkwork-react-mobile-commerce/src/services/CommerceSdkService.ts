@@ -19,13 +19,13 @@ const TAG = 'CommerceSdkService';
 
 interface SdkApiResult<T> {
   data: T;
-  code: string;
+  code: string | number;
   msg: string;
   requestId?: string;
 }
 
 export interface CommerceSdkError {
-  code?: string;
+  code?: string | number;
   message: string;
 }
 
@@ -80,8 +80,8 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
     this.lastError = error;
   }
 
-  private isSuccessCode(code: string | undefined): boolean {
-    return code === '2000';
+  private isSuccessCode(code: string | number | undefined): boolean {
+    return String(code ?? '').trim() === '2000';
   }
 
   private toNumber(value: unknown, fallback = 0): number {
@@ -144,7 +144,7 @@ class CommerceSdkServiceImpl implements ICommerceSdkService {
     return { list: [], total: 0 };
   }
 
-  private failBusiness(result: { code?: string; msg?: string }, fallback: string): null {
+  private failBusiness(result: { code?: string | number; msg?: string }, fallback: string): null {
     this.setLastError({ code: result.code, message: result.msg || fallback });
     this.deps.logger.warn(TAG, fallback, { code: result.code, message: result.msg });
     return null;

@@ -22,11 +22,13 @@ const mocks = vi.hoisted(() => {
   return {
     client,
     applyAppSdkSessionTokens: vi.fn(),
+    clearAppImSdkSession: vi.fn(),
     clearAppSdkSessionTokens: vi.fn(),
     getAppSdkClientWithSession: vi.fn(() => client),
     persistAppSdkSessionTokens: vi.fn(),
     readAppSdkSessionTokens: vi.fn(),
     resolveAppSdkAccessToken: vi.fn(() => 'runtime-access-token'),
+    syncAppImSdkSession: vi.fn(),
   };
 });
 
@@ -37,6 +39,11 @@ vi.mock('../sdk/useAppSdkClient', () => ({
   persistAppSdkSessionTokens: mocks.persistAppSdkSessionTokens,
   readAppSdkSessionTokens: mocks.readAppSdkSessionTokens,
   resolveAppSdkAccessToken: mocks.resolveAppSdkAccessToken,
+}));
+
+vi.mock('@sdkwork/react-mobile-core/im', () => ({
+  clearAppImSdkSession: mocks.clearAppImSdkSession,
+  syncAppImSdkSession: mocks.syncAppImSdkSession,
 }));
 
 describe('appAuthService', () => {
@@ -70,6 +77,14 @@ describe('appAuthService', () => {
     });
 
     expect(mocks.clearAppSdkSessionTokens).not.toHaveBeenCalled();
+    expect(mocks.syncAppImSdkSession).toHaveBeenCalledWith({
+      userId: '42',
+      username: 'system',
+      displayName: 'System User',
+      authToken: 'persisted-auth-token',
+      accessToken: 'runtime-access-token',
+      refreshToken: 'persisted-refresh-token',
+    });
   });
 
   it('clears session when restore fails with invalid auth semantics', async () => {
@@ -81,6 +96,7 @@ describe('appAuthService', () => {
 
     await expect(appAuthService.restoreSession()).resolves.toBeNull();
     expect(mocks.clearAppSdkSessionTokens).toHaveBeenCalledTimes(1);
+    expect(mocks.clearAppImSdkSession).toHaveBeenCalledTimes(1);
   });
 
   it('always clears persisted tokens during logout even when remote logout fails', async () => {
@@ -90,5 +106,45 @@ describe('appAuthService', () => {
 
     await expect(appAuthService.logout()).resolves.toBeUndefined();
     expect(mocks.clearAppSdkSessionTokens).toHaveBeenCalledTimes(1);
+    expect(mocks.clearAppImSdkSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('syncs IM bridge after credential login succeeds', async () => {
+    mocks.client.auth.login.mockResolvedValue({
+      data: {
+        authToken: 'fresh-auth-token',
+        refreshToken: 'fresh-refresh-token',
+        userInfo: {
+          id: 7,
+          username: 'neo',
+          nickname: 'The One',
+        },
+      },
+    });
+
+    const { appAuthService } = await import('./AppAuthService');
+
+    await expect(
+      appAuthService.login({
+        username: 'neo',
+        password: 'matrix',
+      }),
+    ).resolves.toEqual({
+      userId: '7',
+      username: 'neo',
+      displayName: 'The One',
+      authToken: 'fresh-auth-token',
+      accessToken: 'runtime-access-token',
+      refreshToken: 'fresh-refresh-token',
+    });
+
+    expect(mocks.syncAppImSdkSession).toHaveBeenCalledWith({
+      userId: '7',
+      username: 'neo',
+      displayName: 'The One',
+      authToken: 'fresh-auth-token',
+      accessToken: 'runtime-access-token',
+      refreshToken: 'fresh-refresh-token',
+    });
   });
 });

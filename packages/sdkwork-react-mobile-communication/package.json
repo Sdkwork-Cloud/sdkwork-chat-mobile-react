@@ -7,12 +7,15 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
-    "dev": "tsup src/index.ts --format cjs,esm --dts --watch"
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "devDependencies": {
     "@types/react": "catalog:",
     "typescript": "catalog:",
-    "tsup": "catalog:"
+    "tsup": "catalog:",
+    "vitest": "catalog:"
   },
   "peerDependencies": {
     "react": "catalog:",
@@ -21,6 +24,7 @@
     "react-i18next": "catalog:",
     "i18next": "catalog:",
     "lucide-react": "catalog:",
+    "@sdkwork/react-mobile-commons": "workspace:*",
     "@sdkwork/react-mobile-core": "workspace:*"
   }
 }

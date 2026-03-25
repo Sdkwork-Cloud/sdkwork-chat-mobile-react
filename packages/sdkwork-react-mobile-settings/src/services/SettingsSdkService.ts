@@ -7,7 +7,7 @@ const TAG = 'SettingsSdkService';
 
 interface SdkApiResult<T> {
   data: T;
-  code: string;
+  code: string | number;
   msg: string;
   requestId?: string;
 }
@@ -54,8 +54,8 @@ class SettingsSdkServiceImpl implements ISettingsSdkService {
     }
   }
 
-  private isSuccessCode(code: string | undefined): boolean {
-    return code === '2000';
+  private isSuccessCode(code: string | number | undefined): boolean {
+    return String(code ?? '').trim() === '2000';
   }
 
   private mapRemoteConfig(data: unknown): Partial<AppConfig> | null {

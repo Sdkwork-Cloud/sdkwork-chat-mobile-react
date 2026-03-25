@@ -58,6 +58,7 @@
       "@sdkwork/react-mobile-core/hooks": ["./packages/sdkwork-react-mobile-core/src/hooks/index.ts"],
       "@sdkwork/react-mobile-core/utils": ["./packages/sdkwork-react-mobile-core/src/utils/index.ts"],
       "@sdkwork/react-mobile-core/constants": ["./packages/sdkwork-react-mobile-core/src/constants/index.ts"],
+      "@sdkwork/react-mobile-core/im": ["./packages/sdkwork-react-mobile-core/src/im/index.ts"],
       "@sdkwork/react-mobile-core": ["./packages/sdkwork-react-mobile-core/src/index.ts"],
       "@sdkwork/react-mobile-commons": ["./packages/sdkwork-react-mobile-commons/src/index.ts"],
       "@sdkwork/react-mobile-creation": ["./packages/sdkwork-react-mobile-creation/src/index.ts"]
