@@ -71,7 +71,7 @@ const mocks = vi.hoisted(() => {
   };
 });
 
-vi.mock('@sdkwork/app-sdk', () => ({
+vi.mock('@sdkwork/im-backend-sdk', () => ({
   createClient: mocks.createClientMock,
 }));
 

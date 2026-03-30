@@ -1,4 +1,8 @@
-import { createClient, type SdkworkAppClient, type SdkworkAppConfig } from '@sdkwork/app-sdk';
+import {
+  createClient,
+  type SdkworkBackendClient,
+  type SdkworkBackendConfig,
+} from '@sdkwork/im-backend-sdk';
 import type {
   OpenChatBackendClientLike,
   OpenChatConnectionState,
@@ -33,9 +37,9 @@ export interface AppImSdkSessionOptions {
   bootstrapRealtime?: boolean;
 }
 
-let appImClient: SdkworkAppClient | null = null;
+let appImClient: SdkworkBackendClient | null = null;
 let appImSdk: OpenChatImSdk | null = null;
-let appImConfig: SdkworkAppConfig | null = null;
+let appImConfig: SdkworkBackendConfig | null = null;
 let appImRuntimeConfig: AppImSdkRuntimeConfig | null = null;
 let appImSessionIdentity: AppImSessionIdentity | null = null;
 let appImConnectionState: OpenChatConnectionState = 'idle';
@@ -88,8 +92,8 @@ export function createAppImSdkRuntimeConfig(
 }
 
 export function createAppImSdkClientConfig(
-  overrides: Partial<SdkworkAppConfig & { env?: AppRuntimeEnv }> = {},
-): SdkworkAppConfig {
+  overrides: Partial<SdkworkBackendConfig & { env?: AppRuntimeEnv }> = {},
+): SdkworkBackendConfig {
   const runtime = createAppImSdkRuntimeConfig({
     env: overrides.env,
     baseUrl: overrides.baseUrl,
@@ -123,21 +127,21 @@ export function hasAppImSdkBaseUrl(): boolean {
 }
 
 export function initAppImSdkClient(
-  overrides: Partial<SdkworkAppConfig & { env?: AppRuntimeEnv }> = {},
-): SdkworkAppClient {
+  overrides: Partial<SdkworkBackendConfig & { env?: AppRuntimeEnv }> = {},
+): SdkworkBackendClient {
   appImConfig = createAppImSdkClientConfig(overrides);
   appImClient = createClient(appImConfig);
   return appImClient;
 }
 
-export function getAppImSdkClient(): SdkworkAppClient {
+export function getAppImSdkClient(): SdkworkBackendClient {
   if (!appImClient) {
     return initAppImSdkClient();
   }
   return appImClient;
 }
 
-export function getAppImSdkClientConfig(): SdkworkAppConfig | null {
+export function getAppImSdkClientConfig(): SdkworkBackendConfig | null {
   return appImConfig;
 }
 
@@ -155,22 +159,10 @@ function bindConnectionState(runtime: OpenChatImSdk): void {
   });
 }
 
-function createOpenChatBackendClient(appClient: SdkworkAppClient): OpenChatBackendClientLike {
-  return {
-    setAuthToken(token: string) {
-      appClient.setAuthToken(token);
-    },
-    setAccessToken(token: string) {
-      appClient.setAccessToken(token);
-    },
-    http: appClient.http,
-  };
-}
-
 export function initAppImSdk(
-  overrides: Partial<SdkworkAppConfig & { env?: AppRuntimeEnv }> = {},
+  overrides: Partial<SdkworkBackendConfig & { env?: AppRuntimeEnv }> = {},
 ): OpenChatImSdk {
-  const backendClient = createOpenChatBackendClient(initAppImSdkClient(overrides));
+  const backendClient = initAppImSdkClient(overrides) as unknown as OpenChatBackendClientLike;
   appImSdk = new OpenChatImSdkClient({
     backendClient,
     realtimeAdapter: new OpenChatWukongimAdapter(),
@@ -233,6 +225,7 @@ export async function syncAppImSdkSession(
   backendClient.setAccessToken(accessToken || normalizedAuthToken);
 
   const runtime = getAppImSdk();
+  runtime.session.setAuthToken?.(normalizedAuthToken);
   runtime.session.setAccessToken(normalizedAuthToken);
 
   if (accessToken && accessToken !== normalizedAuthToken) {

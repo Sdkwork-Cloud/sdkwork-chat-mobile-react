@@ -61,7 +61,8 @@
       "@sdkwork/react-mobile-core/im": ["./packages/sdkwork-react-mobile-core/src/im/index.ts"],
       "@sdkwork/react-mobile-core": ["./packages/sdkwork-react-mobile-core/src/index.ts"],
       "@sdkwork/react-mobile-commons": ["./packages/sdkwork-react-mobile-commons/src/index.ts"],
-      "@sdkwork/react-mobile-creation": ["./packages/sdkwork-react-mobile-creation/src/index.ts"]
+      "@sdkwork/react-mobile-creation": ["./packages/sdkwork-react-mobile-creation/src/index.ts"],
+      "@sdkwork/im-backend-sdk": ["../openchat/sdkwork-im-sdk/sdkwork-im-sdk-typescript/generated/server-openapi/src/index.ts"]
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
@@ -69,6 +70,8 @@
   "exclude": [
     "backup",
     "dist",
+    "**/dist",
+    "packages/*/dist",
     "node_modules",
     "sdkwork-sdk-app",
     "tmp"

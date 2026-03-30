@@ -1,15 +1,8 @@
 import {
-  APP_SDK_AUTH_TOKEN_STORAGE_KEY,
-  getAppSdkCoreClientWithSession,
   resolveServiceFactoryRuntimeDeps,
 } from '@sdkwork/react-mobile-core';
+import { getAppImSdk, getAppImSessionIdentity } from '@sdkwork/react-mobile-core/im';
 import type { ServiceFactoryDeps, ServiceFactoryRuntimeDeps } from '@sdkwork/react-mobile-core';
-import type {
-  FriendRemarkUpdateForm,
-  FriendRequestCreateForm,
-  FriendRequestProcessForm,
-  QueryParams,
-} from '@sdkwork/app-sdk';
 import type { Contact, FriendRequest, FriendRequestStatus, IContactsService } from '../types';
 
 const STORAGE_KEYS = {
@@ -123,11 +116,8 @@ class ContactsServiceImpl implements IContactsService {
     return this.deps.clock.now();
   }
 
-  private async getSdkClient() {
-    return getAppSdkCoreClientWithSession({
-      storage: this.deps.storage,
-      authStorageKey: APP_SDK_AUTH_TOKEN_STORAGE_KEY,
-    });
+  private getImSdk() {
+    return getAppImSdk();
   }
 
   private createAvatar(seed: string): string {
@@ -347,8 +337,8 @@ class ContactsServiceImpl implements IContactsService {
 
   async getContacts(): Promise<Contact[]> {
     await this.init();
-    const client = await this.getSdkClient();
-    const response = await client.social.listContacts();
+    const sdk = this.getImSdk();
+    const response = await sdk.contacts.list();
     const data = this.unwrapResult<unknown[]>(response, [], 'Failed to load contacts');
     const contacts = this.normalizeContactList(data);
     await this.saveContactsToStorage(contacts);
@@ -357,8 +347,8 @@ class ContactsServiceImpl implements IContactsService {
 
   async getContactById(id: string): Promise<Contact | null> {
     await this.init();
-    const client = await this.getSdkClient();
-    const response = await client.social.getContactDetail(id);
+    const sdk = this.getImSdk();
+    const response = await sdk.contacts.get(id);
     const data = this.unwrapResult<unknown>(response, null, 'Failed to load contact detail');
     if (!data) {
       return null;
@@ -375,9 +365,11 @@ class ContactsServiceImpl implements IContactsService {
       return null;
     }
 
-    const client = await this.getSdkClient();
-    const params: QueryParams = { keyword };
-    const response = await client.social.listContacts(params);
+    const sdk = this.getImSdk();
+    const currentUserId = getAppImSessionIdentity()?.userId;
+    const response = currentUserId
+      ? await sdk.contacts.search(currentUserId, keyword)
+      : await sdk.contacts.list({ keyword });
     const data = this.unwrapResult<unknown[]>(response, [], 'Failed to search contacts');
     const contacts = this.normalizeContactList(data);
     return contacts.find((item) => item.name === keyword) || contacts[0] || null;
@@ -401,14 +393,15 @@ class ContactsServiceImpl implements IContactsService {
       updateTime: now,
     });
 
-    const client = await this.getSdkClient();
     const message = toText(contact.remark) || `Hi, I am ${draft.name}`;
-    const requestBody: FriendRequestCreateForm = {
+    const sdk = this.getImSdk();
+    const result = await sdk.friends.request({
       toUserId: target,
       message,
-    };
-    const response = await client.social.sendFriendRequest(requestBody);
-    this.unwrapResult<unknown>(response, undefined, 'Failed to send friend request');
+    });
+    if (!result.success) {
+      throw new Error('Failed to send friend request');
+    }
     await this.upsertContact(draft);
     this.deps.eventBus.emit(CONTACTS_EVENTS.CONTACT_ADDED, { contact: draft });
     return draft;
@@ -417,12 +410,11 @@ class ContactsServiceImpl implements IContactsService {
   async updateContact(id: string, updates: Partial<Contact>): Promise<void> {
     await this.init();
     if (updates.remark !== undefined) {
-      const client = await this.getSdkClient();
-      const requestBody: FriendRemarkUpdateForm = {
-        remark: updates.remark || '',
-      };
-      const response = await client.social.updateFriendRemark(id, requestBody);
-      this.unwrapResult<unknown>(response, undefined, 'Failed to update contact remark');
+      const sdk = this.getImSdk();
+      const success = await sdk.contacts.setRemark(id, updates.remark || '');
+      if (!success) {
+        throw new Error('Failed to update contact remark');
+      }
     }
 
     const contacts = await this.getContactsFromStorage();
@@ -441,9 +433,11 @@ class ContactsServiceImpl implements IContactsService {
 
   async deleteContact(id: string): Promise<void> {
     await this.init();
-    const client = await this.getSdkClient();
-    const response = await client.social.deleteContact(id);
-    this.unwrapResult<unknown>(response, undefined, 'Failed to delete contact');
+    const sdk = this.getImSdk();
+    const success = await sdk.contacts.delete(id);
+    if (!success) {
+      throw new Error('Failed to delete contact');
+    }
 
     const contacts = await this.getContactsFromStorage();
     const filtered = contacts.filter((item) => item.id !== id);
@@ -480,8 +474,8 @@ class ContactsServiceImpl implements IContactsService {
 
   async getFriendRequests(): Promise<FriendRequest[]> {
     await this.init();
-    const client = await this.getSdkClient();
-    const response = await client.social.listFriendRequests();
+    const sdk = this.getImSdk();
+    const response = await sdk.friends.requests();
     const data = this.unwrapResult<unknown[]>(response, [], 'Failed to load friend requests');
     const requests = this.normalizeRequestList(data);
     await this.saveFriendRequestsToStorage(requests);
@@ -501,14 +495,18 @@ class ContactsServiceImpl implements IContactsService {
       updateTime: now,
     });
 
-    const client = await this.getSdkClient();
-    const requestBody: FriendRequestCreateForm = {
+    const sdk = this.getImSdk();
+    const result = await sdk.friends.request({
       toUserId,
       message,
-    };
-    const response = await client.social.sendFriendRequest(requestBody);
-    const data = this.unwrapResult<unknown>(response, requestDraft, 'Failed to send friend request');
-    const request = this.mapRemoteRequest(data);
+    });
+    if (!result.success) {
+      throw new Error('Failed to send friend request');
+    }
+    const request = this.mapRemoteRequest({
+      ...requestDraft,
+      id: result.requestId || requestDraft.id,
+    });
     await this.upsertRequest(request);
     this.deps.eventBus.emit(CONTACTS_EVENTS.FRIEND_REQUEST_RECEIVED, { request });
     return request;
@@ -516,10 +514,11 @@ class ContactsServiceImpl implements IContactsService {
 
   async acceptFriendRequest(requestId: string): Promise<void> {
     await this.init();
-    const client = await this.getSdkClient();
-    const requestBody: FriendRequestProcessForm = { action: 'accept' };
-    const response = await client.social.processFriendRequest(requestId, requestBody);
-    this.unwrapResult<unknown>(response, undefined, 'Failed to accept friend request');
+    const sdk = this.getImSdk();
+    const success = await sdk.friends.accept(requestId);
+    if (!success) {
+      throw new Error('Failed to accept friend request');
+    }
 
     const accepted = await this.updateRequestStatus(requestId, 'accepted');
     if (accepted) {
@@ -548,10 +547,11 @@ class ContactsServiceImpl implements IContactsService {
 
   async rejectFriendRequest(requestId: string): Promise<void> {
     await this.init();
-    const client = await this.getSdkClient();
-    const requestBody: FriendRequestProcessForm = { action: 'reject' };
-    const response = await client.social.processFriendRequest(requestId, requestBody);
-    this.unwrapResult<unknown>(response, undefined, 'Failed to reject friend request');
+    const sdk = this.getImSdk();
+    const success = await sdk.friends.reject(requestId);
+    if (!success) {
+      throw new Error('Failed to reject friend request');
+    }
 
     const rejected = await this.updateRequestStatus(requestId, 'rejected');
     if (rejected) {

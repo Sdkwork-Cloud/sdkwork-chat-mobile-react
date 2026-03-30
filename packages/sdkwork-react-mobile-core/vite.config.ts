@@ -72,6 +72,7 @@ export default defineConfig({
       '@': resolve(__dirname, 'src'),
       '@openchat/sdkwork-im-sdk': resolve(__dirname, '../../../openchat/sdkwork-im-sdk/sdkwork-im-sdk-typescript/composed/src/index.ts'),
       '@openchat/sdkwork-im-wukongim-adapter': resolve(__dirname, '../../../openchat/sdkwork-im-sdk/sdkwork-im-sdk-typescript/adapter-wukongim/src/index.ts'),
+      '@sdkwork/im-backend-sdk': resolve(__dirname, '../../../openchat/sdkwork-im-sdk/sdkwork-im-sdk-typescript/generated/server-openapi/src/index.ts'),
       '@sdkwork/app-sdk': resolve(__dirname, '../../../../spring-ai-plus-app-api/sdkwork-sdk-app/sdkwork-app-sdk-typescript/src/index.ts'),
       '@sdkwork/sdk-common': resolve(__dirname, '../../../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript/src/index.ts'),
     },

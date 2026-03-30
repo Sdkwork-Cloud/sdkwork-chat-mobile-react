@@ -5,6 +5,12 @@
     "jsx": "react-jsx",
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@sdkwork/react-mobile-core": ["../sdkwork-react-mobile-core/src/index.ts"],
+      "@sdkwork/react-mobile-core/im": ["../sdkwork-react-mobile-core/src/im/index.ts"],
+      "@sdkwork/react-mobile-commons": ["../sdkwork-react-mobile-commons/src/index.ts"]
+    },
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
     "strict": true,

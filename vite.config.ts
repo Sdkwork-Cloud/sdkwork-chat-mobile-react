@@ -26,6 +26,7 @@ export default defineConfig(({ mode }) => {
           { find: /^@sdkwork\/react-mobile-core\/im$/, replacement: path.resolve(__dirname, './packages/sdkwork-react-mobile-core/src/im/index.ts') },
           { find: '@openchat/sdkwork-im-sdk', replacement: path.resolve(__dirname, '../openchat/sdkwork-im-sdk/sdkwork-im-sdk-typescript/composed/src/index.ts') },
           { find: '@openchat/sdkwork-im-wukongim-adapter', replacement: path.resolve(__dirname, '../openchat/sdkwork-im-sdk/sdkwork-im-sdk-typescript/adapter-wukongim/src/index.ts') },
+          { find: '@sdkwork/im-backend-sdk', replacement: path.resolve(__dirname, '../openchat/sdkwork-im-sdk/sdkwork-im-sdk-typescript/generated/server-openapi/src/index.ts') },
           { find: '@sdkwork/app-sdk', replacement: path.resolve(__dirname, '../../spring-ai-plus-app-api/sdkwork-sdk-app/sdkwork-app-sdk-typescript/src/index.ts') },
           { find: '@sdkwork/sdk-common', replacement: path.resolve(__dirname, '../../sdk/sdkwork-sdk-commons/sdkwork-sdk-common-typescript/src/index.ts') },
           // Sub-path exports for core package (must come before main package entry)

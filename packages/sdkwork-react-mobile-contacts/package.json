@@ -13,6 +13,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "@sdkwork/react-mobile-core": "workspace:*",
+    "@sdkwork/react-mobile-commons": "workspace:*",
     "zustand": "catalog:",
     "react-i18next": "catalog:",
     "i18next": "catalog:",
